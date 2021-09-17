@@ -1,0 +1,27 @@
+version: "3.5"
+
+services: 
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: builder
+    container_name: backend
+    stdin_open: true
+    tty: true
+    env_file: 
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+        - .:/app
+
+  db_admin:
+      image: dpage/pgadmin4:5
+      ports:
+        - '8001:80'
+      environment:
+        - PGADMIN_DEFAULT_EMAIL=jeerywa@gmail.com
+        - PGADMIN_DEFAULT_PASSWORD=jerry0315
+      volumes:
+        - ./db_admin/servers.json:/pgadmin4/servers.json
