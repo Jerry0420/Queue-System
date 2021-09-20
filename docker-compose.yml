@@ -7,8 +7,12 @@ services:
       dockerfile: Dockerfile
     restart: always
     container_name: backend
+    networks:
+      - queue_system
     env_file: 
       - .env
+    depends_on:
+      - db
     environment:
         - TZ=Asia/Taipei
     ports:
@@ -16,17 +20,23 @@ services:
     logging:
       driver: "json-file"
       options:
-          max-size: "50m"
-          max-file: "3"
+        max-size: "50m"
+        max-file: "3"
   db:
-      image: postgres:13
-      restart: always
-      env_file: 
-        - .env
-      environment:
-        - POSTGRES_INITDB_ARGS=--data-checksums
-      volumes:
-          - db_data:/var/lib/postgresql/data
+    image: postgres:13
+    restart: always
+    networks:
+      - queue_system
+    env_file: 
+      - .env
+    environment:
+      - POSTGRES_INITDB_ARGS=--data-checksums
+    volumes:
+      - db_data:/var/lib/postgresql/data
 
 volumes: 
   db_data: {}
+
+networks: 
+  queue_system:
+    name: queue_system

@@ -7,6 +7,8 @@ services:
       dockerfile: Dockerfile
       target: builder
     container_name: backend
+    networks:
+      - queue_system
     stdin_open: true
     tty: true
     env_file: 
@@ -14,14 +16,18 @@ services:
     ports:
       - "8000:8000"
     volumes:
-        - .:/app
+      - .:/app
 
   db_admin:
-      image: dpage/pgadmin4:5
-      ports:
-        - '8001:80'
-      environment:
-        - PGADMIN_DEFAULT_EMAIL=jeerywa@gmail.com
-        - PGADMIN_DEFAULT_PASSWORD=jerry0315
-      volumes:
-        - ./db_admin/servers.json:/pgadmin4/servers.json
+    image: dpage/pgadmin4:5
+    ports:
+      - '8001:80'
+    depends_on:
+      - db
+    networks:
+      - queue_system
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=jeerywa@gmail.com
+      - PGADMIN_DEFAULT_PASSWORD=jerry0315
+    volumes:
+      - ./db_admin/servers.json:/pgadmin4/servers.json
