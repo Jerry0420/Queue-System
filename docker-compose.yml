@@ -9,10 +9,10 @@ services:
     container_name: backend
     networks:
       - queue_system
-    env_file: 
-      - .env
     depends_on:
       - db
+    volumes:
+      - ./config/:/app/config/
     environment:
         - TZ=Asia/Taipei
     ports:
