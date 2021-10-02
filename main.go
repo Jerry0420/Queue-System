@@ -1,23 +1,15 @@
 package main
 
 import (
-    "fmt"
-    "net/http"
-    "log"
-    "github.com/spf13/viper"
+	"fmt"
+	"log"
+	"net/http"
+	"github.com/jerry0420/queue-system/config"
 )
 
-func init() {
-	viper.SetConfigFile(`./config/config.json`)
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(err)
-	}
-}
-
 func hello(w http.ResponseWriter, r *http.Request) {
-    env := viper.GetString(`env`)
-    fmt.Fprintf(w, env)
+    serverConfig := config.NewConfig()
+    fmt.Fprintf(w, serverConfig.ENV())
 }
 
 func main() {

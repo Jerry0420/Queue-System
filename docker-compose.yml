@@ -11,8 +11,8 @@ services:
       - queue_system
     depends_on:
       - db
-    volumes:
-      - ./config/:/app/config/
+    env_file: 
+      - .env
     environment:
         - TZ=Asia/Taipei
     ports:
