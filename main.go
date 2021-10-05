@@ -1,23 +1,22 @@
 package main
 
 import (
-    "fmt"
-    "net/http"
-    "log"
-    "github.com/spf13/viper"
+	"context"
+	"fmt"
+	"log"
+	"net/http"
+	"github.com/jerry0420/queue-system/config"
+	"github.com/jerry0420/queue-system/logging"
 )
 
-func init() {
-	viper.SetConfigFile(`./config/config.json`)
-	err := viper.ReadInConfig()
-	if err != nil {
-		panic(err)
-	}
-}
-
 func hello(w http.ResponseWriter, r *http.Request) {
-    env := viper.GetString(`env`)
-    fmt.Fprintf(w, env)
+    logger := logging.NewLogger([]string{"requestID", "duration"}, false)
+    ctx := context.WithValue(r.Context(), "requestID", "aaaaaaaaaa")
+    ctx = context.WithValue(ctx, "duration", 3)
+    logger.INFOf(ctx, "hello world %d", 1234)
+
+    serverConfig := config.NewConfig()
+    fmt.Fprintf(w, serverConfig.ENV())
 }
 
 func main() {

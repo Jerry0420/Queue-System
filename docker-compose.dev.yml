@@ -11,8 +11,12 @@ services:
       - queue_system
     stdin_open: true
     tty: true
+    env_file: 
+      - .env
     ports:
       - "8000:8000"
+    ports:
+      - "3000:3000"
     volumes:
       - .:/app
 
