@@ -19,6 +19,7 @@ services:
       - "3000:3000"
     volumes:
       - .:/app
+      - ./logs:/app/logs
 
   db_admin:
     image: dpage/pgadmin4:5
