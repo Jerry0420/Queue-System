@@ -3,10 +3,10 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"io"
 	"log"
 	"net/http"
-    "io"
-	"encoding/json"
 	"github.com/jerry0420/queue-system/config"
 	"github.com/jerry0420/queue-system/logging"
 	"github.com/jerry0420/queue-system/utils"
@@ -14,7 +14,7 @@ import (
 
 func middleware(next http.HandlerFunc) http.HandlerFunc {
     return func(w http.ResponseWriter, r *http.Request) {
-        logger := logging.NewLogger([]string{"requestID", "duration", "code"}, false)        
+        logger := logging.NewLogger([]string{"method", "url", "code", "sep", "requestID", "duration"}, false)        
         ctx := context.WithValue(r.Context(), "requestID", "aaaaaaaaaa")
         r = r.WithContext(ctx)
         

@@ -9,6 +9,7 @@ WORKDIR /app
 COPY --from=builder /app/main /app
 RUN addgroup -S appgroup && \
     adduser -S appuser -G appgroup && \
+    mkdir /app/logs && \
     chown appuser:appgroup -R /app
 USER appuser
 ENTRYPOINT /app/main
