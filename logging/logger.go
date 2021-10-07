@@ -7,11 +7,11 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
-	"path/filepath"
 )
 type LoggerTool interface {
 	parseContextValue(context context.Context) []interface{}
@@ -27,6 +27,7 @@ type loggerTool struct {
 	logger *log.Logger
 	logFile *os.File
 	contextKeys []string
+	receiveMessage chan bool
 }
 
 func getLogFilePathOfToday() string{
@@ -42,6 +43,34 @@ func getLogFilePathOfToday() string{
 	return fmt.Sprintf("%s/%s.log", logBaseDir, time.Now().Format("20060102"))
 }
 
+func rotateLogFile(lt *loggerTool) {
+	for {
+		select {
+		case <- lt.receiveMessage:
+			// daily rotate the log file.
+			today := fmt.Sprint(time.Now().Format("20060102"))
+			if !strings.Contains(lt.logFile.Name(), today) {
+				lt.Lock()
+				logFilePath := getLogFilePathOfToday()
+				newlogFile, err := os.OpenFile(logFilePath, os.O_APPEND | os.O_CREATE | os.O_WRONLY, 0644)
+				if err != nil {
+					log.Fatalf("Fail to open log file :%v", err)
+				}
+		
+				lt.logger.SetOutput(io.MultiWriter(os.Stdout, newlogFile))
+				
+				err = lt.logFile.Close()
+				if err != nil {
+					log.Fatalf("Fail to close old log file :%v", err)
+				}
+				lt.logFile = newlogFile
+				defer lt.Unlock()
+			}
+		default:
+		}
+	}
+}
+
 func NewLogger(contextKeys []string, disable bool) *loggerTool {
 	var lt *loggerTool
 
@@ -55,11 +84,15 @@ func NewLogger(contextKeys []string, disable bool) *loggerTool {
 		logger: log.New(io.MultiWriter(os.Stdout, logFile), "", log.Ldate|log.Ltime),
 		logFile: logFile,
 		contextKeys: contextKeys,
+		receiveMessage: make(chan bool, 10000),
 	}
 
 	if disable == true {
 		lt.logger = log.New(ioutil.Discard, "", log.Ldate)
 	}
+	
+	go rotateLogFile(lt)
+
 	return lt
 }
 
@@ -80,7 +113,6 @@ func (lt *loggerTool) parseContextValue(context context.Context) []interface{} {
 
 func (lt *loggerTool) generateLogContent(level string, message []interface{}) []interface{} {
 	var content []interface{}
-
 	_, file, line, _ := runtime.Caller(2)
 	content = append(content, fmt.Sprint(level, file, ":", line, " |"))
 
@@ -109,46 +141,26 @@ func (lt *loggerTool) generateLogContent(level string, message []interface{}) []
 	return content
 }
 
-// daily rotate the log file.
-func (lt *loggerTool) writeContentOut(content []interface{}) {
-	today := fmt.Sprint(time.Now().Format("20060102"))
-	if !strings.Contains(lt.logFile.Name(), today) {
-		logFilePath := getLogFilePathOfToday()
-		lt.Lock()
-		newlogFile, err := os.OpenFile(logFilePath, os.O_APPEND | os.O_CREATE | os.O_WRONLY, 0644)
-		if err != nil {
-			log.Fatalf("Fail to open log file :%v", err)
-		}
-
-		lt.logger.SetOutput(io.MultiWriter(os.Stdout, newlogFile))
-		
-		err = lt.logFile.Close()
-		if err != nil {
-			log.Fatalf("Fail to close old log file :%v", err)
-		}
-		lt.logFile = newlogFile
-		defer lt.Unlock()
-	}
+func (lt *loggerTool) INFOf(message ...interface{}) {
+	lt.receiveMessage <- true
+	content := lt.generateLogContent("[INFO] ", message)
 	lt.logger.Println(content...)
 }
 
-func (lt *loggerTool) INFOf(message ...interface{}) {
-	content := lt.generateLogContent("[INFO] ", message)
-	lt.writeContentOut(content)
-}
-
 func (lt *loggerTool) WARNf(message ...interface{}) {
+	lt.receiveMessage <- true
 	content := lt.generateLogContent("[WARN] ", message)
-	lt.writeContentOut(content)
+	lt.logger.Println(content...)
 }
 
 func (lt *loggerTool) ERRORf(message ...interface{}) {
+	lt.receiveMessage <- true
 	content := lt.generateLogContent("[ERROR] ", message)
-	lt.writeContentOut(content)
+	lt.logger.Println(content...)
 }
 
 func (lt *loggerTool) FATALf(message ...interface{}) {
+	lt.receiveMessage <- true
 	content := lt.generateLogContent("[FATAL] ", message)
-	lt.writeContentOut(content)
-	os.Exit(1)
+	lt.logger.Fatalln(content...)
 }
