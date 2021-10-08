@@ -32,6 +32,7 @@ services:
     environment:
       - POSTGRES_INITDB_ARGS=--data-checksums
     volumes:
+      - ./scripts/create-db-user.sh:/docker-entrypoint-initdb.d/create-db-user.sh
       - db_data:/var/lib/postgresql/data
 
 volumes: 

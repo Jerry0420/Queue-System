@@ -52,16 +52,16 @@ func (config Config) POSTGRES_PORT() int {
 }
 
 func (config Config) POSTGRES_DB() string {
-	content := config.validate(os.Getenv("POSTGRES_DB"))
+	content := config.validate(os.Getenv("POSTGRES_BACKEND_DB"))
 	return content
 }
 
 func (config Config) POSTGRES_USER() string {
-	content := config.validate(os.Getenv("POSTGRES_USER"))
+	content := config.validate(os.Getenv("POSTGRES_BACKEND_USER"))
 	return content
 }
 
 func (config Config) POSTGRES_PASSWORD() string {
-	content := config.validate(os.Getenv("POSTGRES_PASSWORD"))
+	content := config.validate(os.Getenv("POSTGRES_BACKEND_PASSWORD"))
 	return content
 }
