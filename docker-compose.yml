@@ -13,8 +13,6 @@ services:
       - db
     env_file: 
       - .env
-    environment:
-        - TZ=Asia/Taipei
     ports:
       - "8000:8000"
     volumes:
