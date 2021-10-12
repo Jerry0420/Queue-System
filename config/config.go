@@ -51,6 +51,11 @@ func (config Config) POSTGRES_PORT() int {
 	return POSTGRES_PORT
 }
 
+func (config Config) POSTGRES_SSL() string {
+	content := config.validate(os.Getenv("POSTGRES_SSL"))
+	return content
+}
+
 func (config Config) POSTGRES_DB() string {
 	content := config.validate(os.Getenv("POSTGRES_BACKEND_DB"))
 	return content
