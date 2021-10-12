@@ -13,8 +13,6 @@ services:
       - db
     env_file: 
       - .env
-    environment:
-        - TZ=Asia/Taipei
     ports:
       - "8000:8000"
     volumes:
@@ -23,7 +21,7 @@ services:
       driver: "none"
       
   db:
-    image: postgres:13
+    image: postgres:14.0-alpine
     restart: always
     networks:
       - queue_system
@@ -32,6 +30,7 @@ services:
     environment:
       - POSTGRES_INITDB_ARGS=--data-checksums
     volumes:
+      - ./scripts/create-db-user.sh:/docker-entrypoint-initdb.d/create-db-user.sh
       - db_data:/var/lib/postgresql/data
 
 volumes: 
