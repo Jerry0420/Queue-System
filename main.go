@@ -19,7 +19,8 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jerry0420/queue-system/config"
 	"github.com/jerry0420/queue-system/logging"
-	"github.com/jerry0420/queue-system/utils"
+	"github.com/jerry0420/queue-system/domain"
+    "github.com/jerry0420/queue-system/presenter"
 )
 
 func main() {
@@ -54,11 +55,11 @@ func main() {
 
     router := mux.NewRouter()
 
-
     
+
     // unsupported route goes here.
     router.HandleFunc("/{rest_of_router}", func (w http.ResponseWriter, r *http.Request)  {
-        utils.JsonResponse(w, nil, utils.ServerError40401)
+        presenter.JsonResponse(w, nil, domain.ServerError40401)
     })
 
     server := &http.Server{
