@@ -13,12 +13,12 @@ type Store struct {
 	SessionID string `json:"session_id"`
 }
 
-type StoreRepository interface {
+type StoreRepositoryInterface interface {
 
 }
 
-type StoreUsecase interface {
-	
+type StoreUsecaseInterface interface {
+
 }
 
 // query := `INSERT INTO stores (email, password, name, description, status) VALUES ($1, $2, $3, $4, $5) `

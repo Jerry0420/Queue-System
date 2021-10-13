@@ -12,10 +12,10 @@ type Customer struct {
 
 }
 
-type CustomerRepository interface {
+type CustomerRepositoryInterface interface {
 
 }
 
-type CustomerUsecase interface {
+type CustomerUsecaseInterface interface {
 	
 }

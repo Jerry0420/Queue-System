@@ -6,10 +6,10 @@ type Queue struct {
 	StoreID int `json:"store_id"`
 }
 
-type QueueRepository interface {
+type QueueRepositoryInterface interface {
 
 }
 
-type QueueUsecase interface {
+type QueueUsecaseInterface interface {
 	
 }
