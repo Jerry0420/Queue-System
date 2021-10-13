@@ -1,17 +1,22 @@
 package main
 
 import (
-    "database/sql"    
-    "fmt"
-    "net/http" 
-    _ "github.com/lib/pq"
+	"context"
+	"database/sql"
+	"fmt"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
+
+	_ "github.com/lib/pq"
 
 	// "bytes"
 	// "context"
 	// "encoding/json"
 	// "io"
 	// "log"
-    "github.com/gorilla/mux"
+	"github.com/gorilla/mux"
 	"github.com/jerry0420/queue-system/config"
 	"github.com/jerry0420/queue-system/logging"
 	"github.com/jerry0420/queue-system/utils"
@@ -49,15 +54,38 @@ func main() {
 
     router := mux.NewRouter()
 
+
+    
     // unsupported route goes here.
     router.HandleFunc("/{rest_of_router}", func (w http.ResponseWriter, r *http.Request)  {
         utils.JsonResponse(w, nil, utils.ServerError40401)
     })
 
-    err = http.ListenAndServe("0.0.0.0:8000", router)
-    if err != nil {
-        logger.FATALf("ListenAndServe http fail %v", err)
+    server := &http.Server{
+        Addr:         "0.0.0.0:8000",
+        WriteTimeout: time.Second * 15,
+        ReadTimeout:  time.Second * 15,
+        IdleTimeout:  time.Second * 60,
+        Handler: router,
     }
+
+    go func() {
+        if err := server.ListenAndServe(); err != nil {
+            logger.FATALf("ListenAndServe http fail %v", err)
+        }
+    }()
+    
+    quit := make(chan os.Signal, 1)
+    signal.Notify(quit, os.Interrupt)
+
+    // Block until receive signal...
+    <-quit
+
+    ctx, cancel := context.WithTimeout(context.Background(), time.Second * 15)
+    defer cancel()
+    server.Shutdown(ctx)
+    logger.INFOf("shutting down")
+    os.Exit(0)
 }
 
 // func middleware(next http.HandlerFunc) http.HandlerFunc {
