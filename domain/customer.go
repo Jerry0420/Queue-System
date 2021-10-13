@@ -9,7 +9,6 @@ type Customer struct {
 	QueueID int `json:"queue_id"`
 	Status string `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
-
 }
 
 type CustomerRepositoryInterface interface {

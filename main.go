@@ -10,22 +10,20 @@ import (
 	"time"
 
 	_ "github.com/lib/pq"
-
-	// "bytes"
-	// "context"
-	// "encoding/json"
-	// "io"
-	// "log"
 	"github.com/gorilla/mux"
+
 	"github.com/jerry0420/queue-system/config"
 	"github.com/jerry0420/queue-system/logging"
 	"github.com/jerry0420/queue-system/domain"
     "github.com/jerry0420/queue-system/presenter"
+    "github.com/jerry0420/queue-system/repository/db"
+    "github.com/jerry0420/queue-system/usecase"
+    "github.com/jerry0420/queue-system/delivery/http"
+    "github.com/jerry0420/queue-system/middleware"
 )
 
 func main() {
     logger := logging.NewLogger([]string{"method", "url", "code", "sep", "requestID", "duration"}, false)
-    
     serverConfig := config.NewConfig()
     dbConnectionString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", 
         serverConfig.POSTGRES_USER(), 
@@ -55,9 +53,21 @@ func main() {
 
     router := mux.NewRouter()
 
-    
+    storeReposotory := repository.NewStoreRepository(db, logger)
+    queueReposotory := repository.NewQueueRepository(db, logger)
+    customerReposotory := repository.NewCustomerRepository(db, logger)
 
-    // unsupported route goes here.
+    storeUsecase := usecase.NewStoreUsecase(storeReposotory, logger)
+    queueUsecase := usecase.NewQueueUsecase(queueReposotory, logger)
+    customerUsecase := usecase.NewCustomerUsecase(customerReposotory, logger)
+
+    middleware.NewMiddleware(router, logger)
+
+    delivery.NewStoreDelivery(router, logger, storeUsecase)
+    delivery.NewQueueDelivery(router, logger, queueUsecase)
+    delivery.NewCustomerDelivery(router, logger, customerUsecase)
+
+    // final route, for unsupported route!.
     router.HandleFunc("/{rest_of_router}", func (w http.ResponseWriter, r *http.Request)  {
         presenter.JsonResponse(w, nil, domain.ServerError40401)
     })
@@ -88,28 +98,3 @@ func main() {
     logger.INFOf("shutting down")
     os.Exit(0)
 }
-
-// func middleware(next http.HandlerFunc) http.HandlerFunc {
-//     return func(w http.ResponseWriter, r *http.Request) {
-//         logger := logging.NewLogger([]string{"method", "url", "code", "sep", "requestID", "duration"}, false)        
-//         ctx := context.WithValue(r.Context(), "requestID", "aaaaaaaaaa")
-//         r = r.WithContext(ctx)
-        
-//         responseWrapper := &utils.ResponseWrapper{
-//             ResponseWriter: w,
-//             Buffer: &bytes.Buffer{},
-//         }
-
-//         next(responseWrapper, r)
-        
-//         var wrapperResponse *utils.ResponseFormat
-//         json.Unmarshal(responseWrapper.Buffer.Bytes(), &wrapperResponse)
-//         ctx = context.WithValue(r.Context(), "code", wrapperResponse.Code)
-//         ctx = context.WithValue(ctx, "duration", 3)
-        
-//         io.Copy(w, responseWrapper.Buffer)
-//         r = r.WithContext(ctx)
-        
-//         logger.INFOf(r.Context(), "hello world %d", 1234)
-//     }
-// }
