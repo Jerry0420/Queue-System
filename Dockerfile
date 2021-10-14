@@ -1,6 +1,14 @@
+FROM node:16.11.1-alpine AS builder-frontend
+WORKDIR /app
+COPY ./src ./src
+COPY ./public ./public
+COPY package.json package-lock.json ./
+RUN npm install && npm run build
+
 FROM golang:1.17.1-alpine AS builder
 WORKDIR /app
 COPY . .
+COPY --from=builder-frontend /app/build /app
 RUN go build -o main /app/main.go && \
     /app/scripts/install-migrate.sh
 

@@ -10,6 +10,9 @@ down_dev:
 exec_backend_dev:
 	docker exec -it backend sh
 
+exec_frontend_dev:
+	docker exec -it frontend sh
+
 up_build:
 	docker-compose up -d --build
 
