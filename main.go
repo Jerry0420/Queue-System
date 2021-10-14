@@ -67,6 +67,10 @@ func main() {
     delivery.NewQueueDelivery(router, logger, queueUsecase)
     delivery.NewCustomerDelivery(router, logger, customerUsecase)
 
+    router.HandleFunc("/hello", func (w http.ResponseWriter, r *http.Request)  {
+        presenter.JsonResponseOK(w, map[string]string{"hello": "world"})
+    })
+
     // final route, for unsupported route!.
     router.HandleFunc("/{rest_of_router}", func (w http.ResponseWriter, r *http.Request)  {
         presenter.JsonResponse(w, nil, domain.ServerError40401)
