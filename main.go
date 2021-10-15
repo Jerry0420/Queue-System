@@ -75,7 +75,7 @@ func main() {
     })
 
     frontendFiles := utils.GetFrontendFiles(files, "build")
-    delivery.NewFrontendDelivery(router, logger, "build", frontendFiles)
+    delivery.NewFrontendDelivery(router, logger, frontendFiles)
 
     server := &http.Server{
         Addr:         "0.0.0.0:8000",
