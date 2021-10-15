@@ -8,7 +8,7 @@ RUN npm install && npm run build
 FROM golang:1.17.1-alpine AS builder
 WORKDIR /app
 COPY . .
-COPY --from=builder-frontend /app/build /app
+COPY --from=builder-frontend /app/build /app/build
 RUN go build -o main /app/main.go && \
     /app/scripts/install-migrate.sh
 
