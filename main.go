@@ -8,19 +8,22 @@ import (
 	"os"
 	"os/signal"
 	"time"
-
-	_ "github.com/lib/pq"
+    "embed"
 	"github.com/gorilla/mux"
+	_ "github.com/lib/pq"
 
 	"github.com/jerry0420/queue-system/config"
+	"github.com/jerry0420/queue-system/delivery/http"
 	"github.com/jerry0420/queue-system/logging"
-	"github.com/jerry0420/queue-system/domain"
-    "github.com/jerry0420/queue-system/presenter"
-    "github.com/jerry0420/queue-system/repository/db"
-    "github.com/jerry0420/queue-system/usecase"
-    "github.com/jerry0420/queue-system/delivery/http"
-    "github.com/jerry0420/queue-system/middleware"
+	"github.com/jerry0420/queue-system/middleware"
+	"github.com/jerry0420/queue-system/presenter"
+	"github.com/jerry0420/queue-system/repository/db"
+	"github.com/jerry0420/queue-system/usecase"
+	"github.com/jerry0420/queue-system/utils"
 )
+
+//go:embed build
+var files embed.FS
 
 func main() {
     logger := logging.NewLogger([]string{"method", "url", "code", "sep", "requestID", "duration"}, false)
@@ -71,10 +74,8 @@ func main() {
         presenter.JsonResponseOK(w, map[string]string{"hello": "world"})
     })
 
-    // final route, for unsupported route!.
-    router.HandleFunc("/{rest_of_router}", func (w http.ResponseWriter, r *http.Request)  {
-        presenter.JsonResponse(w, nil, domain.ServerError40401)
-    })
+    frontendFiles := utils.GetFrontendFiles(files, "build")
+    delivery.NewFrontendDelivery(router, logger, "build", frontendFiles)
 
     server := &http.Server{
         Addr:         "0.0.0.0:8000",

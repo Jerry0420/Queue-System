@@ -1,11 +1,12 @@
 package middleware
 
 import (
-	"context"
-	"net/http"
 	"bytes"
+	"context"
 	"encoding/json"
 	"io"
+	"net/http"
+
 	"github.com/gorilla/mux"
 	"github.com/jerry0420/queue-system/logging"
 	"github.com/jerry0420/queue-system/presenter"
@@ -31,7 +32,10 @@ func (mw *middleware) loggingMiddleware(next http.Handler) http.Handler {
         
         var wrapperResponse *presenter.ResponseFormat
         json.Unmarshal(responseWrapper.Buffer.Bytes(), &wrapperResponse)
-        ctx = context.WithValue(r.Context(), "code", wrapperResponse.Code)
+		if wrapperResponse != nil {
+			// api routes will go here.
+			ctx = context.WithValue(r.Context(), "code", wrapperResponse.Code)
+		}
         ctx = context.WithValue(ctx, "duration", 3)
         
         io.Copy(w, responseWrapper.Buffer)
