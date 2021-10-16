@@ -12,14 +12,14 @@ import (
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 
-	"github.com/jerry0420/queue-system/config"
-	"github.com/jerry0420/queue-system/delivery/http"
-	"github.com/jerry0420/queue-system/logging"
-	"github.com/jerry0420/queue-system/middleware"
-	"github.com/jerry0420/queue-system/presenter"
-	"github.com/jerry0420/queue-system/repository/db"
-	"github.com/jerry0420/queue-system/usecase"
-	"github.com/jerry0420/queue-system/utils"
+	"github.com/jerry0420/queue-system/backend/config"
+	"github.com/jerry0420/queue-system/backend/delivery/http"
+	"github.com/jerry0420/queue-system/backend/logging"
+	"github.com/jerry0420/queue-system/backend/middleware"
+	"github.com/jerry0420/queue-system/backend/presenter"
+	"github.com/jerry0420/queue-system/backend/repository/db"
+	"github.com/jerry0420/queue-system/backend/usecase"
+	"github.com/jerry0420/queue-system/backend/utils"
 )
 
 //go:embed build

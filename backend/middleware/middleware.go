@@ -8,8 +8,8 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/jerry0420/queue-system/logging"
-	"github.com/jerry0420/queue-system/presenter"
+	"github.com/jerry0420/queue-system/backend/logging"
+	"github.com/jerry0420/queue-system/backend/presenter"
 )
 
 type middleware struct {

@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"bytes"
-	"github.com/jerry0420/queue-system/domain"
+	"github.com/jerry0420/queue-system/backend/domain"
 )
 
 type ResponseWrapper struct {

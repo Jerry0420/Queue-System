@@ -4,7 +4,7 @@ import (
 	"io/fs"
 	"net/http"
 	"github.com/gorilla/mux"
-	"github.com/jerry0420/queue-system/logging"
+	"github.com/jerry0420/queue-system/backend/logging"
 )
 
 type frontendDelivery struct {

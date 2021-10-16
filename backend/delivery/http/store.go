@@ -2,8 +2,8 @@ package delivery
 
 import (
 	"github.com/gorilla/mux"
-	"github.com/jerry0420/queue-system/logging"
-	"github.com/jerry0420/queue-system/domain"
+	"github.com/jerry0420/queue-system/backend/logging"
+	"github.com/jerry0420/queue-system/backend/domain"
 )
 
 type storeDelivery struct {

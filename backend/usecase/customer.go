@@ -1,8 +1,8 @@
 package usecase
 
 import (
-	"github.com/jerry0420/queue-system/logging"
-	"github.com/jerry0420/queue-system/domain"
+	"github.com/jerry0420/queue-system/backend/logging"
+	"github.com/jerry0420/queue-system/backend/domain"
 )
 
 type customerUsecase struct {

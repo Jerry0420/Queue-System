@@ -1,8 +1,8 @@
 FROM node:16.11.1-alpine AS builder-frontend
 WORKDIR /app
+COPY package.json package-lock.json ./
 COPY ./src ./src
 COPY ./public ./public
-COPY package.json package-lock.json ./
 RUN npm install && npm run build
 
 FROM golang:1.17.1-alpine AS builder

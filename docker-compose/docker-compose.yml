@@ -3,7 +3,7 @@ version: "3.5"
 services: 
   backend:
     build:
-      context: .
+      context: ../
       dockerfile: Dockerfile
     restart: always
     container_name: backend
@@ -12,7 +12,7 @@ services:
     depends_on:
       - db
     env_file: 
-      - .env
+      - ../.env
     ports:
       - "8000:8000"
     volumes:
@@ -26,11 +26,11 @@ services:
     networks:
       - queue_system
     env_file: 
-      - .env
+      - ../.env
     environment:
       - POSTGRES_INITDB_ARGS=--data-checksums
     volumes:
-      - ./scripts/create-db-user.sh:/docker-entrypoint-initdb.d/create-db-user.sh
+      - ../scripts/create-db-user.sh:/docker-entrypoint-initdb.d/create-db-user.sh
       - db_data:/var/lib/postgresql/data
 
 volumes: 
