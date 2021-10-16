@@ -1,9 +1,10 @@
-package utils
+package presenter
 
 import (
 	"encoding/json"
 	"net/http"
 	"bytes"
+	"github.com/jerry0420/queue-system/backend/domain"
 )
 
 type ResponseWrapper struct {
@@ -24,7 +25,7 @@ func JsonResponseOK(w http.ResponseWriter, response interface{}) {
 	JsonResponse(w, response, nil)
 }
 
-func JsonResponse(w http.ResponseWriter, response interface{}, serverError *ServerError) {
+func JsonResponse(w http.ResponseWriter, response interface{}, serverError *domain.ServerError) {
 	w.Header().Set("Content-Type", "application/json")
 
 	var code int

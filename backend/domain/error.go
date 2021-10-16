@@ -1,4 +1,4 @@
-package utils
+package domain
 
 import (
 	"errors"
@@ -17,9 +17,9 @@ func (serverError *ServerError) Error() string {
 var (
     // list of all custom errors.
     // check README file for detailed description.
-    ServerError40001 *ServerError
+    ServerError40401 *ServerError
 )
 
 func init() {
-    ServerError40001 = &ServerError{Code: 40001, BaseError: errors.New("some reason...")}
+    ServerError40401 = &ServerError{Code: 40401, BaseError: errors.New("unsupported url route")}
 }
