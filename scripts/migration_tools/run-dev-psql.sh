@@ -1,0 +1,3 @@
+#!/bin/sh
+
+psql -U $POSTGRES_BACKEND_USER $POSTGRES_BACKEND_DB

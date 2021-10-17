@@ -29,8 +29,11 @@ services:
       - ../.env
     environment:
       - POSTGRES_INITDB_ARGS=--data-checksums
+    working_dir: /migration_tools
     volumes:
       - ../scripts/create-db-user.sh:/docker-entrypoint-initdb.d/create-db-user.sh
+      - ../scripts/migration_tools:/migration_tools
+      - ../migrations:/migration_tools/migrations
       - db_data:/var/lib/postgresql/data
 
 volumes: 
