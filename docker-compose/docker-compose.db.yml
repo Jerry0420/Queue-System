@@ -17,6 +17,29 @@ services:
       - ../scripts/create-db-user.sh:/docker-entrypoint-initdb.d/create-db-user.sh
       - db_data:/var/lib/postgresql/data
   
+  vault:
+    build:
+      context: ./vault
+      dockerfile: Dockerfile.vault
+    container_name: vault
+    restart: always
+    ports:
+      - "8200:8200"
+    networks:
+      - queue_system_db
+    env_file: 
+      - .env.db
+    environment:
+      - VAULT_ADDR=http://127.0.0.1:8200
+      - VAULT_API_ADDR=http://127.0.0.1:8200
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - ./vault/config:/vault/config
+      - vault_file:/vault/file
+      - vault_logs:/vault/logs
+    command: server -config=/vault/config/vault-config.json
+
   migration_tools:
     image: alpine:3.14
     container_name: migration_tools
@@ -32,6 +55,8 @@ services:
       
 volumes: 
   db_data: {}
+  vault_file: {}
+  vault_logs: {}
 
 networks: 
   queue_system_db:
