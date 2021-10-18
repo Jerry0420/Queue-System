@@ -1,15 +1,34 @@
+up_db:
+	docker-compose -f ./docker-compose/docker-compose.db.yml up -d --build
+
+exec_db:
+	docker exec -it migration_tools sh
+
+down_db:
+	docker-compose -f ./docker-compose/docker-compose.db.yml down
+
+dowm_migration_tools:
+	docker stop migration_tools
+	docker rm migration_tools
+
+# ========================================================
+
 up_build_dev:
-	docker-compose -f ./docker-compose/docker-compose.yml -f ./docker-compose/docker-compose.dev.yml up -d --build
+	docker-compose -f ./docker-compose/docker-compose.dev.yml up -d --build
 
 down_dev:
-	docker-compose -f ./docker-compose/docker-compose.yml -f ./docker-compose/docker-compose.dev.yml down
-	docker volume rm docker-compose_db_data
+	docker-compose -f ./docker-compose/docker-compose.dev.yml down
 
-exec_backend_dev:
+exec_backend:
 	docker exec -it backend sh
 
-exec_frontend_dev:
+exec_frontend:
 	docker exec -it frontend sh
+
+logs_backend:
+	docker-compose logs -f backend
+
+# =========================================================
 
 up_build:
 	docker-compose -f ./docker-compose/docker-compose.yml up -d --build
@@ -17,11 +36,7 @@ up_build:
 down:
 	docker-compose -f ./docker-compose/docker-compose.yml down
 
-exec_backend:
-	docker exec -it backend sh
-
-logs_backend:
-	docker-compose logs -f backend
+# ==========================================================
 
 kind_create:
 	kind create cluster --config ./scripts/kind.yaml
@@ -31,6 +46,8 @@ kind_delete:
 
 kind_loadimage:
 	kind load docker-image jerry0420/queue-system:v$(ver)
+
+# ==========================================================
 
 docker_build:
 	docker build -f Dockerfile -t jerry0420/queue-system:v$(ver) .

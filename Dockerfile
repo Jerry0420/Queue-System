@@ -7,7 +7,10 @@ RUN npm install && npm run build
 
 FROM golang:1.17.1-alpine AS builder
 WORKDIR /app
-COPY . .
+COPY ./backend ./backend
+COPY ./main.go ./main.go
+COPY ./go.mod ./go.mod
+COPY ./go.sum ./go.sum
 COPY --from=builder-frontend /app/build /app/build
 RUN go build -o main /app/main.go
 

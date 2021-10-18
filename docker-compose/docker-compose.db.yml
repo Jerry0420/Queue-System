@@ -1,0 +1,38 @@
+version: "3.5"
+
+services:     
+  db:
+    image: postgres:14.0-alpine
+    container_name: db
+    restart: always
+    ports:
+      - "5432:5432"
+    networks:
+      - queue_system_db
+    env_file: 
+      - .env.db
+    environment:
+      - POSTGRES_INITDB_ARGS=--data-checksums
+    volumes:
+      - ../scripts/create-db-user.sh:/docker-entrypoint-initdb.d/create-db-user.sh
+      - db_data:/var/lib/postgresql/data
+  
+  migration_tools:
+    image: alpine:3.14
+    container_name: migration_tools
+    networks:
+      - queue_system_db
+    env_file: 
+      - .env.db
+    working_dir: /migration_tools
+    stdin_open: true
+    tty: true
+    volumes:
+      - ../scripts/migration_tools:/migration_tools
+      
+volumes: 
+  db_data: {}
+
+networks: 
+  queue_system_db:
+    name: queue_system_db
