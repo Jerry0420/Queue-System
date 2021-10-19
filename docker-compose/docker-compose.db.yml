@@ -8,7 +8,7 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - queue_system_db
+      - queue_system
     env_file: 
       - .env.db
     environment:
@@ -26,7 +26,7 @@ services:
     ports:
       - "8200:8200"
     networks:
-      - queue_system_db
+      - queue_system
     env_file: 
       - .env.db
     environment:
@@ -45,7 +45,7 @@ services:
     image: alpine:3.14
     container_name: migration_tools
     networks:
-      - queue_system_db
+      - queue_system
     env_file: 
       - .env.db
     working_dir: /migration_tools
@@ -60,5 +60,5 @@ volumes:
   vault_logs: {}
 
 networks: 
-  queue_system_db:
-    name: queue_system_db
+  queue_system:
+    external: true

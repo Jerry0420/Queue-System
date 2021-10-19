@@ -60,4 +60,4 @@ services:
 
 networks: 
   queue_system:
-    name: queue_system
+    external: true

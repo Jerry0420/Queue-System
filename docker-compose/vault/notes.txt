@@ -2,16 +2,18 @@ vault operator init -key-shares=1 -key-threshold=1
 vault operator unseal
 vault login
 vault policy write db vault/policies/db.hcl
-vault token create -policy=db -period=10s
+vault token create -policy=db
+vault secrets enable database
 vault write database/config/queue_system @/vault/config/connection_db.json
 vault write -force database/rotate-root/queue_system
 vault write database/roles/vault_db db_name=queue_system creation_statements=@/vault/config/create_user.sql default_ttl=1h max_ttl=24h
+
 vault read database/creds/vault_db
 vault lease revoke database/creds/vault_db/eo1fLLWilP9TfRvBh8N7ue02
 
-Unseal Key 1: 4sWKhw8+0U1n0XZfxyHNwn5+RGWc6INsbqyRQxZdyrA=
-Initial Root Token: s.CDPxcOfxbAJoZOIG8z8Bzosd
-token                s.583U6l2xNplaRO3RJJdWpYKa
+Unseal Key 1: gw2YpAE+B2sQk2evqCxbfG6KmarjIz31qskW4FbVqQA=
+Initial Root Token: s.zg9nxH12vmrNmKseOYS9xcX5
+token                s.wY62ahSQp1phZ04RvJjP6AfI
 
 curl \
     --header "X-Vault-Token: s.583U6l2xNplaRO3RJJdWpYKa" \
