@@ -1,0 +1,34 @@
+vault operator init -key-shares=1 -key-threshold=1
+vault operator unseal
+vault login
+vault policy write db vault/policies/db.hcl
+vault token create -policy=db -period=10s
+vault write database/config/queue_system @/vault/config/connection_db.json
+vault write -force database/rotate-root/queue_system
+vault write database/roles/vault_db db_name=queue_system creation_statements=@/vault/config/create_user.sql default_ttl=1h max_ttl=24h
+vault read database/creds/vault_db
+vault lease revoke database/creds/vault_db/eo1fLLWilP9TfRvBh8N7ue02
+
+Unseal Key 1: 4sWKhw8+0U1n0XZfxyHNwn5+RGWc6INsbqyRQxZdyrA=
+Initial Root Token: s.CDPxcOfxbAJoZOIG8z8Bzosd
+token                s.583U6l2xNplaRO3RJJdWpYKa
+
+curl \
+    --header "X-Vault-Token: s.583U6l2xNplaRO3RJJdWpYKa" \
+    http://10.0.46.26:8200/v1/database/creds/vault_db
+
+curl \
+    --header "X-Vault-Token: s.LJMUoqxrSa84DLcVOClx97s5" \
+    --request PUT \
+    --data '{"lease_id": "database/creds/vault_db/DleRmd2JmugA6mu0VZ7m2fky"}' \
+    http://10.0.46.26:8200/v1/sys/leases/revoke
+
+curl \
+    --header "X-Vault-Token: s.583U6l2xNplaRO3RJJdWpYKa" \
+    --request POST \
+    --data '{"increment": "30s"}' \
+    http://10.0.46.26:8200/v1/auth/token/renew-self
+
+curl \
+    --header "X-Vault-Token: s.583U6l2xNplaRO3RJJdWpYKa" \
+    http://10.0.46.26:8200/v1/auth/token/lookup-self

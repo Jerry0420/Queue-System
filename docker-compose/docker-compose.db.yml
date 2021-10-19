@@ -36,6 +36,7 @@ services:
       - IPC_LOCK
     volumes:
       - ./vault/config:/vault/config
+      - ./vault/policies:/vault/policies
       - vault_file:/vault/file
       - vault_logs:/vault/logs
     command: server -config=/vault/config/vault-config.json
