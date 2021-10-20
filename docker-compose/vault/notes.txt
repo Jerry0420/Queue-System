@@ -1,36 +1,55 @@
-vault operator init -key-shares=1 -key-threshold=1
-vault operator unseal
-vault login
-vault policy write db vault/policies/db.hcl
-vault token create -policy=db
+vault operator init -key-shares=1 -key-threshold=1 -format=json 
+vault operator init -format=json > /vault/config/keys.json
+vault operator unseal xxxxxxxxxkey
 vault secrets enable database
+vault login xxxxxxxxkey
+
+vault policy write db vault/policies/db.hcl
 vault write database/config/queue_system @/vault/config/connection_db.json
 vault write -force database/rotate-root/queue_system
 vault write database/roles/vault_db db_name=queue_system creation_statements=@/vault/config/create_user.sql default_ttl=1h max_ttl=24h
+vault token create -policy=db -period 30s
 
 vault read database/creds/vault_db
 vault lease revoke database/creds/vault_db/eo1fLLWilP9TfRvBh8N7ue02
 
-Unseal Key 1: gw2YpAE+B2sQk2evqCxbfG6KmarjIz31qskW4FbVqQA=
-Initial Root Token: s.zg9nxH12vmrNmKseOYS9xcX5
-token                s.wY62ahSQp1phZ04RvJjP6AfI
+Unseal Key 1: 4sWKhw8+0U1n0XZfxyHNwn5+RGWc6INsbqyRQxZdyrA=
+Initial Root Token: s.CDPxcOfxbAJoZOIG8z8Bzosd
+token                s.ctRZXsDk14wcjKwHwzzasBMO
 
 curl \
-    --header "X-Vault-Token: s.583U6l2xNplaRO3RJJdWpYKa" \
+    --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \
     http://10.0.46.26:8200/v1/database/creds/vault_db
 
 curl \
-    --header "X-Vault-Token: s.LJMUoqxrSa84DLcVOClx97s5" \
+    --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \
     --request PUT \
-    --data '{"lease_id": "database/creds/vault_db/DleRmd2JmugA6mu0VZ7m2fky"}' \
+    --data '{"lease_id": "database/creds/vault_db/2NJXKSGyYZOHCcKhOFiweG0i"}' \
     http://10.0.46.26:8200/v1/sys/leases/revoke
 
 curl \
-    --header "X-Vault-Token: s.583U6l2xNplaRO3RJJdWpYKa" \
+    --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \
+    --request PUT \
+    --data '{"lease_id": "database/creds/vault_db/2NJXKSGyYZOHCcKhOFiweG0i", "increment": 1800}' \
+    http://10.0.46.26:8200/v1/sys/leases/renew
+
+curl \
+    --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \
+    --request PUT \
+    --data '{"lease_id": "database/creds/vault_db/2NJXKSGyYZOHCcKhOFiweG0i"}' \
+    http://10.0.46.26:8200/v1/sys/leases/lookup
+
+curl \
+    --header "X-Vault-Token: s.qjWvh5lVAlEBNtsquplUML1o" \
     --request POST \
-    --data '{"increment": "30s"}' \
+    --data '{"increment": "10s"}' \
     http://10.0.46.26:8200/v1/auth/token/renew-self
 
 curl \
-    --header "X-Vault-Token: s.583U6l2xNplaRO3RJJdWpYKa" \
+    --header "X-Vault-Token: s.qjWvh5lVAlEBNtsquplUML1o" \
     http://10.0.46.26:8200/v1/auth/token/lookup-self
+
+curl \
+    --header "X-Vault-Token: s.ctRZXsDk14wcjKwHwzzasBMO" \
+    --request POST \
+    http://10.0.46.26:8200/v1/auth/token/revoke-self

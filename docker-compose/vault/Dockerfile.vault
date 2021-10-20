@@ -1,4 +1,4 @@
-FROM alpine:3.14
+FROM python:alpine3.14
 
 ENV VAULT_VERSION 1.5.9
 

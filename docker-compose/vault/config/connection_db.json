@@ -1,7 +1,0 @@
-{
-    "plugin_name": "postgresql-database-plugin",
-    "allowed_roles": "vault_db",
-    "connection_url": "postgresql://{{username}}:{{password}}@db:5432/queue_system?sslmode=disable",
-    "username": "vault",
-    "password": "vault"
-  }
