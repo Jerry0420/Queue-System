@@ -13,9 +13,9 @@ vault token create -policy=db -period 30s
 vault read database/creds/vault_db
 vault lease revoke database/creds/vault_db/eo1fLLWilP9TfRvBh8N7ue02
 
-Unseal Key 1: 4sWKhw8+0U1n0XZfxyHNwn5+RGWc6INsbqyRQxZdyrA=
-Initial Root Token: s.CDPxcOfxbAJoZOIG8z8Bzosd
-token                s.ctRZXsDk14wcjKwHwzzasBMO
+['ngF5v2ByBS/pvUC/j4byC61cKZ5WdqCeG9ILc1p/bePT', 'zAlx+tac3v78naPfZilwMT3/7wXd68mA/9VspqnVwyQZ', '2W/amFht9CaeiZrV2zrYk+xU5p1OJShkDWmM8RWoSzq5', 'nBObiEbbH66uk5i/eysndlD1hBqvWSKEAs5PsXTlzRzq', '2poE1SXqR5Zwzvdv6xLPHGvO8UIz20/hqfJo58joo+fQ']
+s.o3xp1BpJ9tCEf2ZKzi0B62Hk
+s.N8mpGgUKOuagWA0blvfYPme6
 
 curl \
     --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \
