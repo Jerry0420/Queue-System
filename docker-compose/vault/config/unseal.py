@@ -4,6 +4,7 @@ import json
 import subprocess
 import os
 import signal
+import traceback
 
 '''
 This script will unseal vault server and get a periodic token.
@@ -79,6 +80,7 @@ def main():
 if __name__ == '__main__':
     try:
         main()
-    except Exception:
+    except BaseException:
+        traceback.print_exc()
         # no matter what error happen....just kill process 1 (which means, kill the vault server.)
         os.kill(1, signal.SIGTERM)
