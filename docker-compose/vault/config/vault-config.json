@@ -1,7 +1,7 @@
 {
     "storage": {
       "file": {
-        "path": "vault/file"
+        "path": "/vault/file"
       }
     },
     "listener": {

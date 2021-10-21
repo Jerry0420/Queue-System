@@ -1,14 +1,20 @@
-FROM python:alpine3.14
+FROM golang:1.17.1-alpine AS builder
+WORKDIR /vault
+COPY ./config/unseal.go /vault/unseal.go
+RUN go build -o unseal /vault/unseal.go
 
+FROM alpine:3.14
 ENV VAULT_VERSION 1.5.9
-
+COPY --from=builder /vault/unseal /vault/unseal
 RUN mkdir /vault && \
     wget --output-document=/tmp/vault.zip https://releases.hashicorp.com/vault/${VAULT_VERSION}/vault_${VAULT_VERSION}_linux_amd64.zip && \
     unzip /tmp/vault.zip -d /vault && \
     rm -f /tmp/vault.zip && \
-    chmod +x /vault
+    chmod +x /vault && \
+    mv /vault/vault /usr/bin/
 
 ENV PATH="PATH=$PATH:$PWD/vault"
 COPY ./config/vault-config.json /vault/config/vault-config.json
+WORKDIR /vault
 EXPOSE 8200
 ENTRYPOINT ["vault"]
