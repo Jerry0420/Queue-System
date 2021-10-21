@@ -19,37 +19,37 @@ s.N8mpGgUKOuagWA0blvfYPme6
 
 curl \
     --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \
-    http://10.0.46.26:8200/v1/database/creds/vault_db
+    http://127.0.0.1:8200/v1/database/creds/vault_db
 
 curl \
     --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \
     --request PUT \
     --data '{"lease_id": "database/creds/vault_db/2NJXKSGyYZOHCcKhOFiweG0i"}' \
-    http://10.0.46.26:8200/v1/sys/leases/revoke
+    http://127.0.0.1:8200/v1/sys/leases/revoke
 
 curl \
     --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \
     --request PUT \
     --data '{"lease_id": "database/creds/vault_db/2NJXKSGyYZOHCcKhOFiweG0i", "increment": 1800}' \
-    http://10.0.46.26:8200/v1/sys/leases/renew
+    http://127.0.0.1:8200/v1/sys/leases/renew
 
 curl \
     --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \
     --request PUT \
     --data '{"lease_id": "database/creds/vault_db/2NJXKSGyYZOHCcKhOFiweG0i"}' \
-    http://10.0.46.26:8200/v1/sys/leases/lookup
+    http://127.0.0.1:8200/v1/sys/leases/lookup
 
 curl \
-    --header "X-Vault-Token: s.qjWvh5lVAlEBNtsquplUML1o" \
+    --header "X-Vault-Token: s.B1tGTaBfgQSTLV3GzL6kpr64" \
     --request POST \
-    --data '{"increment": "10s"}' \
-    http://10.0.46.26:8200/v1/auth/token/renew-self
+    --data '{"increment": 3600}' \
+    http://127.0.0.1:8200/v1/auth/token/renew-self
 
 curl \
-    --header "X-Vault-Token: s.qjWvh5lVAlEBNtsquplUML1o" \
-    http://10.0.46.26:8200/v1/auth/token/lookup-self
+    --header "X-Vault-Token: s.B1tGTaBfgQSTLV3GzL6kpr64" \
+    http://127.0.0.1:8200/v1/auth/token/lookup-self
 
 curl \
-    --header "X-Vault-Token: s.ctRZXsDk14wcjKwHwzzasBMO" \
+    --header "X-Vault-Token: s.B1tGTaBfgQSTLV3GzL6kpr64" \
     --request POST \
-    http://10.0.46.26:8200/v1/auth/token/revoke-self
+    http://127.0.0.1:8200/v1/auth/token/revoke-self

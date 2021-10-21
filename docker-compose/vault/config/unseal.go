@@ -21,10 +21,12 @@ func unseal() {
 	const basePath = "/vault"
 	configPath := filepath.Join(basePath, "config")
 	policiesPath := filepath.Join(basePath, "policies")
+	logsPath := filepath.Join(basePath, "logs")
 
 	dbPolicyFile := filepath.Join(policiesPath, "db_hcl.sh")
 	dbConnectionFile := filepath.Join(configPath, "connection_db.sh")
 	ruleSqlFile := filepath.Join(configPath, "create_user.sql")
+	logFile := filepath.Join(logsPath, "audit.log")
 
 	dbName := os.Getenv("POSTGRES_BACKEND_DB")
 	credName := os.Getenv("VAULT_CRED_NAME")
@@ -83,6 +85,9 @@ func unseal() {
 	}
 
 	cmd = "vault secrets enable database"
+	exec.Command("sh", "-c", cmd).Output()
+
+	cmd = fmt.Sprintf("vault audit enable file file_path=%s", logFile)
 	exec.Command("sh", "-c", cmd).Output()
 
 	cmd = fmt.Sprintf("%s | vault policy write %s -", dbPolicyFile, policyName)
