@@ -88,7 +88,7 @@ func unseal() {
 	cmd = fmt.Sprintf("%s | vault policy write %s -", dbPolicyFile, policyName)
 	exec.Command("sh", "-c", cmd).Output()
 
-	cmd = fmt.Sprintf("%s | vault write database/config/%s", dbConnectionFile, dbName)
+	cmd = fmt.Sprintf("%s | vault write database/config/%s -", dbConnectionFile, dbName)
 	exec.Command("sh", "-c", cmd).Output()
 
 	// cmd = fmt.Sprintf("vault write -force database/rotate-root/%s", dbName)

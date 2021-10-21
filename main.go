@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+    "fmt"
     "embed"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -27,14 +27,24 @@ var files embed.FS
 
 func main() {
     logger := logging.NewLogger([]string{"method", "url", "code", "sep", "requestID", "duration"}, false)
-    serverConfig := config.NewConfig()
+    
+    serverConfig := config.NewConfig(logger)
+    vault := config.NewVault(
+        serverConfig.VAULT_SERVER(), 
+        serverConfig.VAULT_TOKEN(), 
+        serverConfig.VAULT_CRED_NAME(), 
+        logger,
+    )
+
+    leaseId, username, password := vault.GetDbSecret()
+    defer vault.RevokeLease(leaseId)
     dbConnectionString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", 
-        serverConfig.POSTGRES_USER(), 
-        serverConfig.POSTGRES_PASSWORD(), 
-        serverConfig.POSTGRES_HOST(), 
-        serverConfig.POSTGRES_PORT(), 
-        serverConfig.POSTGRES_DB(),
-        serverConfig.POSTGRES_SSL(),
+		username, 
+		password, 
+		serverConfig.POSTGRES_HOST(), 
+		serverConfig.POSTGRES_PORT(), 
+		serverConfig.POSTGRES_DB(),
+		serverConfig.POSTGRES_SSL(),
     )
     
     db, err := sql.Open("postgres", dbConnectionString)
@@ -50,7 +60,7 @@ func main() {
     defer func() {
 		err := db.Close()
 		if err != nil {
-			logger.FATALf("db connection close fail %v", err)
+			logger.ERRORf("db connection close fail %v", err)
 		}
 	}()
 
@@ -87,7 +97,7 @@ func main() {
 
     go func() {
         if err := server.ListenAndServe(); err != nil {
-            logger.FATALf("ListenAndServe http fail %v", err)
+            logger.ERRORf("ListenAndServe http fail %v", err)
         }
     }()
     
@@ -101,5 +111,4 @@ func main() {
     defer cancel()
     server.Shutdown(ctx)
     logger.INFOf("shutting down")
-    os.Exit(0)
 }
