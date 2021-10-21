@@ -7,21 +7,20 @@ RUN npm install && npm run build
 
 FROM golang:1.17.1-alpine AS builder
 WORKDIR /app
-COPY . .
+COPY ./backend ./backend
+COPY ./main.go ./main.go
+COPY ./go.mod ./go.mod
+COPY ./go.sum ./go.sum
 COPY --from=builder-frontend /app/build /app/build
-RUN go build -o main /app/main.go && \
-    /app/scripts/install-migrate.sh
+RUN go build -o main /app/main.go
 
 FROM alpine:3.14
 EXPOSE 8000
 WORKDIR /app
 COPY --from=builder /app/main /app
-COPY --from=builder /usr/bin/migrate /usr/bin/migrate
-COPY ./scripts/migration.sh ./scripts/migration.sh
-COPY ./migrations ./migrations
 RUN addgroup -S appgroup && \
     adduser -S appuser -G appgroup && \
     mkdir /app/logs && \
     chown appuser:appgroup -R /app
 USER appuser
-ENTRYPOINT /app/scripts/migration.sh up && /app/main
+ENTRYPOINT /app/main

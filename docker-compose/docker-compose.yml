@@ -9,34 +9,18 @@ services:
     container_name: backend
     networks:
       - queue_system
-    depends_on:
-      - db
     env_file: 
-      - ../.env
+      - .env
     ports:
       - "8000:8000"
     volumes:
       - log_dir:/app/logs:rw
     logging:
       driver: "none"
-      
-  db:
-    image: postgres:14.0-alpine
-    restart: always
-    networks:
-      - queue_system
-    env_file: 
-      - ../.env
-    environment:
-      - POSTGRES_INITDB_ARGS=--data-checksums
-    volumes:
-      - ../scripts/create-db-user.sh:/docker-entrypoint-initdb.d/create-db-user.sh
-      - db_data:/var/lib/postgresql/data
 
 volumes: 
-  db_data: {}
   log_dir: {}
 
 networks: 
   queue_system:
-    name: queue_system
+    external: true

@@ -1,0 +1,55 @@
+vault operator init -key-shares=1 -key-threshold=1 -format=json 
+vault operator init -format=json > /vault/config/keys.json
+vault operator unseal xxxxxxxxxkey
+vault secrets enable database
+vault login xxxxxxxxkey
+
+vault policy write db vault/policies/db.hcl
+vault write database/config/queue_system @/vault/config/connection_db.json
+vault write -force database/rotate-root/queue_system
+vault write database/roles/vault_db db_name=queue_system creation_statements=@/vault/config/create_user.sql default_ttl=1h max_ttl=24h
+vault token create -policy=db -period 30s
+
+vault read database/creds/vault_db
+vault lease revoke database/creds/vault_db/eo1fLLWilP9TfRvBh8N7ue02
+
+['ngF5v2ByBS/pvUC/j4byC61cKZ5WdqCeG9ILc1p/bePT', 'zAlx+tac3v78naPfZilwMT3/7wXd68mA/9VspqnVwyQZ', '2W/amFht9CaeiZrV2zrYk+xU5p1OJShkDWmM8RWoSzq5', 'nBObiEbbH66uk5i/eysndlD1hBqvWSKEAs5PsXTlzRzq', '2poE1SXqR5Zwzvdv6xLPHGvO8UIz20/hqfJo58joo+fQ']
+s.o3xp1BpJ9tCEf2ZKzi0B62Hk
+s.N8mpGgUKOuagWA0blvfYPme6
+
+curl \
+    --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \
+    http://10.0.46.26:8200/v1/database/creds/vault_db
+
+curl \
+    --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \
+    --request PUT \
+    --data '{"lease_id": "database/creds/vault_db/2NJXKSGyYZOHCcKhOFiweG0i"}' \
+    http://10.0.46.26:8200/v1/sys/leases/revoke
+
+curl \
+    --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \
+    --request PUT \
+    --data '{"lease_id": "database/creds/vault_db/2NJXKSGyYZOHCcKhOFiweG0i", "increment": 1800}' \
+    http://10.0.46.26:8200/v1/sys/leases/renew
+
+curl \
+    --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \
+    --request PUT \
+    --data '{"lease_id": "database/creds/vault_db/2NJXKSGyYZOHCcKhOFiweG0i"}' \
+    http://10.0.46.26:8200/v1/sys/leases/lookup
+
+curl \
+    --header "X-Vault-Token: s.qjWvh5lVAlEBNtsquplUML1o" \
+    --request POST \
+    --data '{"increment": "10s"}' \
+    http://10.0.46.26:8200/v1/auth/token/renew-self
+
+curl \
+    --header "X-Vault-Token: s.qjWvh5lVAlEBNtsquplUML1o" \
+    http://10.0.46.26:8200/v1/auth/token/lookup-self
+
+curl \
+    --header "X-Vault-Token: s.ctRZXsDk14wcjKwHwzzasBMO" \
+    --request POST \
+    http://10.0.46.26:8200/v1/auth/token/revoke-self

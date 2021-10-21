@@ -38,8 +38,10 @@ yarn-error.log*
 
 .vscode
 .env
+.env.db
 
 config.json
 
 gin-bin
 logs
+notes.txt

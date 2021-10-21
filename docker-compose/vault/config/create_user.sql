@@ -1,0 +1,5 @@
+CREATE USER "{{name}}" WITH ENCRYPTED PASSWORD '{{password}}' VALID UNTIL
+'{{expiration}}';
+GRANT USAGE ON SCHEMA public to "{{name}}";
+GRANT SELECT, INSERT, UPDATE, DELETE, REFERENCES ON ALL TABLES IN SCHEMA public to "{{name}}";
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public to "{{name}}";
