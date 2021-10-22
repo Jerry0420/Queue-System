@@ -13,7 +13,7 @@ vault write database/config/queue_system @/vault/config/connection_db.json
 vault write -force database/rotate-root/queue_system
 vault write database/roles/vault_db db_name=queue_system creation_statements=@/vault/config/create_user.sql default_ttl=1h max_ttl=24h
 
-vault write auth/approle/role/vault_db token_policies="db" token_ttl=1h token_max_ttl=24h token_num_uses=0 secret_id_ttl=10m secret_id_num_uses=10
+vault write auth/approle/role/vault_db token_policies="db" token_ttl=1h token_max_ttl=24h token_num_uses=0 secret_id_ttl=1h secret_id_num_uses=10
 vault read auth/approle/role/vault_db/role-id -format=json
 vault write -force -wrap-ttl=60s auth/approle/role/vault_db/secret-id -format=json
 vault unwrap -format=json xxxxxxxxx

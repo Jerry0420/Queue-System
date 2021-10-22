@@ -1,7 +1,7 @@
 #!/bin/sh
 
 cat <<EOF
-path "database/creds/$VAULT_CRED_NAME" {
+path "database/creds/$VAULT_ROLE_NAME" {
   capabilities = ["read"]
 }
 
