@@ -1,21 +1,32 @@
 vault operator init -key-shares=1 -key-threshold=1 -format=json 
 vault operator init -format=json > /vault/config/keys.json
+
 vault operator unseal xxxxxxxxxkey
-vault secrets enable database
+
 vault login xxxxxxxxkey
 
+vault secrets enable database
 vault policy write db vault/policies/db.hcl
+vault auth enable approle
+
 vault write database/config/queue_system @/vault/config/connection_db.json
 vault write -force database/rotate-root/queue_system
 vault write database/roles/vault_db db_name=queue_system creation_statements=@/vault/config/create_user.sql default_ttl=1h max_ttl=24h
+
+vault write auth/approle/role/vault_db token_policies="db" token_ttl=1h token_max_ttl=24h token_num_uses=0 secret_id_ttl=10m secret_id_num_uses=10
+vault read auth/approle/role/vault_db/role-id -format=json
+vault write -force -wrap-ttl=60s auth/approle/role/vault_db/secret-id -format=json
+vault unwrap -format=json xxxxxxxxx
+vault write auth/approle/login -format=json role_id="675a50e7-cfe0-be76-e35f-49ec009731ea" secret_id="ed0a642f-2acf-c2da-232f-1b21300d5f29"
+
+------
 vault token create -policy=db -period 30s
+vault login xxxxxxxxkey
 
 vault read database/creds/vault_db
 vault lease revoke database/creds/vault_db/eo1fLLWilP9TfRvBh8N7ue02
 
-['ngF5v2ByBS/pvUC/j4byC61cKZ5WdqCeG9ILc1p/bePT', 'zAlx+tac3v78naPfZilwMT3/7wXd68mA/9VspqnVwyQZ', '2W/amFht9CaeiZrV2zrYk+xU5p1OJShkDWmM8RWoSzq5', 'nBObiEbbH66uk5i/eysndlD1hBqvWSKEAs5PsXTlzRzq', '2poE1SXqR5Zwzvdv6xLPHGvO8UIz20/hqfJo58joo+fQ']
-s.o3xp1BpJ9tCEf2ZKzi0B62Hk
-s.N8mpGgUKOuagWA0blvfYPme6
+-----
 
 curl \
     --header "X-Vault-Token: s.PLKPwzbi2u1WWOrYunxgyJsZ" \

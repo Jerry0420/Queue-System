@@ -31,13 +31,14 @@ func main() {
     serverConfig := config.NewConfig(logger)
     vault := config.NewVault(
         serverConfig.VAULT_SERVER(), 
-        serverConfig.VAULT_TOKEN(), 
+        serverConfig.VAULT_ROLE_ID(),
+        serverConfig.VAULT_WRAPPED_TOKEN(), 
         serverConfig.VAULT_CRED_NAME(), 
         logger,
     )
 
-    leaseId, username, password := vault.GetDbSecret()
-    defer vault.RevokeLease(leaseId)
+    username, password, leaseId := vault.GetDbCred()
+    defer vault.RevokeLeaseAndToken(leaseId)
     dbConnectionString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", 
 		username, 
 		password, 
