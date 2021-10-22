@@ -64,6 +64,16 @@ func (config Config) POSTGRES_DB() string {
 	return content
 }
 
+func (config Config) POSTGRES_DEV_USER() string {
+	content := config.validate(os.Getenv("POSTGRES_DEV_USER"))
+	return content
+}
+
+func (config Config) POSTGRES_DEV_PASSWORD() string {
+	content := config.validate(os.Getenv("POSTGRES_DEV_PASSWORD"))
+	return content
+}
+
 func (config Config) VAULT_SERVER() string {
 	content := config.validate(os.Getenv("VAULT_SERVER"))
 	return content

@@ -29,16 +29,30 @@ func main() {
     logger := logging.NewLogger([]string{"method", "url", "code", "sep", "requestID", "duration"}, false)
     
     serverConfig := config.NewConfig(logger)
-    vault := config.NewVault(
-        serverConfig.VAULT_SERVER(), 
-        serverConfig.VAULT_ROLE_ID(),
-        serverConfig.VAULT_WRAPPED_TOKEN(), 
-        serverConfig.VAULT_CRED_NAME(), 
-        logger,
-    )
 
-    username, password, leaseId := vault.GetDbCred()
-    defer vault.RevokeLeaseAndToken(leaseId)
+    var username string
+    var password string
+
+    if serverConfig.ENV() == "prod" {
+        logical, token, sys := config.NewVaultConnection(
+            serverConfig.VAULT_SERVER(), 
+            serverConfig.VAULT_ROLE_ID(),
+            serverConfig.VAULT_WRAPPED_TOKEN(), 
+            logger,
+        )
+        vaultWrapper := config.NewVaultWrapper(
+            logical, 
+            token, 
+            sys,
+            logger,
+        )
+        username, password = vaultWrapper.GetDbCred(serverConfig.VAULT_CRED_NAME())
+        defer vaultWrapper.RevokeLeaseAndToken()
+    } else {
+        username = serverConfig.POSTGRES_DEV_USER()
+        password = serverConfig.POSTGRES_DEV_PASSWORD()
+    }
+
     dbConnectionString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", 
 		username, 
 		password, 
@@ -97,6 +111,7 @@ func main() {
     }
 
     go func() {
+        logger.INFOf("Server Start!")
         if err := server.ListenAndServe(); err != nil {
             logger.ERRORf("ListenAndServe http fail %v", err)
         }

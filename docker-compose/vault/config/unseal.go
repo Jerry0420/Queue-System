@@ -18,9 +18,6 @@ import (
 // After get a pair of role id and wrapped token, copy and paste to server env file, the server will then unwrap the wrapped token to get the secret id. 
 // With role id and secret id, the server can login vault server and retrive a periodic token to interact with vault server. 
 
-// ["I41jT6kHVQdo2bQ7e0ThbwdLe27vRa7l0UAdYrnwDXVI","vPsIGoQ4w+KFTSSn4O2oTfACqc30iq/IE5pAcuj7+vuT","nHpPP24Oa4zOgEKtB76hOHfDF1ZBSNynqzJ/IUpdoAXo"]
-// s.dcNMDzoadZ59ADZAXw8SfEtT
-
 func unseal() {
 	const basePath = "/vault"
 	configPath := filepath.Join(basePath, "config")
@@ -119,8 +116,8 @@ func unseal() {
 		"1h", // token_ttl 
 		"24h", // token_max_ttl
 		0, // token_num_uses
-		"60m", // secret_id_ttl
-		10, // secret_id_num_uses
+		"30m", // secret_id_ttl
+		1, // secret_id_num_uses
 	)
 	exec.Command("sh", "-c", cmd).Output()
 
@@ -162,7 +159,7 @@ func unseal() {
 
 	cmd = fmt.Sprintf(
 		"vault write -force -wrap-ttl=%s auth/approle/role/%s/secret-id -format=json", 
-		"60m", // wrap-ttl of wrapped token
+		"30m", // wrap-ttl of wrapped token
 		roleName,
 	)
 	out, _ = exec.Command("sh", "-c", cmd).Output()
