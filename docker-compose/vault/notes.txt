@@ -46,7 +46,7 @@ curl \
     http://127.0.0.1:8200/v1/auth/token/renew-self
 
 curl \
-    --header "X-Vault-Token: s.B1tGTaBfgQSTLV3GzL6kpr64" \
+    --header "X-Vault-Token: s.ycCG2s49qmZjaLEP0gneloZM" \
     http://127.0.0.1:8200/v1/auth/token/lookup-self
 
 curl \

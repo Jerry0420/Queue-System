@@ -8,6 +8,11 @@ import (
 	"github.com/jerry0420/queue-system/backend/logging"
 )
 
+
+// ["WJF6M0icMOKNQPLBHvQ3fr/uLJHVfXF3/GxQzvn9pmis","bDmP+pPsD1cTDlwVV1246ddvL+dDrrOQXyRG9xRnw5BY","P17W7Mk0tw0nqP6aW9lLWbd75IpT6+RV7nL17v9KR27n"]
+// s.zKXJZ5ZUMtMYOjwPlLvPg32k
+// s.ycCG2s49qmZjaLEP0gneloZM
+
 type vaultWrapper struct {
 	address string
 	token string
@@ -28,45 +33,52 @@ func NewVault(address string, token string, credName string, logger logging.Logg
 }
 
 func (vault *vaultWrapper) checkAndRenewToken() {
+	var tokenInfo *api.Secret
+	var err error
+	var ttl time.Duration
 	for {
-		tokenInfo, err := vault.client.Auth().Token().LookupSelf()
+		tokenInfo, err = vault.client.Auth().Token().LookupSelf()
 		if err != nil {
 			vault.logger.ERRORf("Fail to lookup token info. %v", err)
 		}
-		ttl, err := tokenInfo.TokenTTL()
+		ttl, err = tokenInfo.TokenTTL()
 		if err != nil {
 			vault.logger.ERRORf("Fail to get token ttl. %v", err)
 		}
-		if ttl <= time.Minute * 15 {
+		if ttl <= time.Minute * 30 {
 			tokenInfo, err = vault.client.Auth().Token().RenewSelf(3600)
 			if err != nil {
 				vault.logger.ERRORf("Fail to renew token. %v", err)
 			}
 		} else {
-			timer := time.NewTimer(ttl - time.Minute * 15)
-			<- timer.C
+			// May be some delay after the server running long period of time.
+			time.Sleep(ttl - time.Minute * 30)
 		}
 	}
 }
 
 func (vault *vaultWrapper) checkAndRenewCred(leaseId string) {
+	var credInfo *api.Secret
+	var err error
+	var ttl time.Duration
+
 	for {
-		credInfo, err := vault.client.Sys().Lookup(leaseId)
+		credInfo, err = vault.client.Sys().Lookup(leaseId)
 		if err != nil {
 			vault.logger.ERRORf("Fail to lookup cred info. %v", err)
 		}
-		ttl, err := credInfo.TokenTTL()
+		ttl, err = credInfo.TokenTTL()
 		if err != nil {
 			vault.logger.ERRORf("Fail to get cred ttl. %v", err)
 		}
-		if ttl <= time.Minute * 15 {
+		if ttl <= time.Minute * 30 {
 			credInfo, err = vault.client.Sys().Renew(leaseId, 3600)
 			if err != nil {
 				vault.logger.ERRORf("Fail to renew cred %s %v", leaseId, err)
 			}
 		} else {
-			timer := time.NewTimer(ttl - time.Minute * 15)
-			<- timer.C
+			// May be some delay after the server running long period of time.
+			time.Sleep(ttl - time.Minute * 30)
 		}
 	}
 }
