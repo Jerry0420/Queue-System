@@ -19,7 +19,7 @@ services:
   
   vault:
     build:
-      context: ./vault
+      context: ../vault
       dockerfile: Dockerfile.vault
     container_name: vault
     restart: always
@@ -36,9 +36,9 @@ services:
     cap_add:
       - IPC_LOCK
     volumes:
-      - ./vault/config:/vault/config
-      - ./vault/policies:/vault/policies
-      - ./vault/scripts:/vault/scripts
+      - ../vault/config:/vault/config
+      - ../vault/policies:/vault/policies
+      - ../vault/scripts:/vault/scripts
       - vault_file:/vault/file
       - vault_logs:/vault/logs
     command: server -config=/vault/config/vault-config.json
