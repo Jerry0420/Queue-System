@@ -155,20 +155,6 @@ func unseal() {
 
 	fmt.Println("\n=========================Role id====================================")
 	fmt.Println(appRoleResults["data"].(map[string]interface{})["role_id"])
-	fmt.Println()
-
-	cmd = fmt.Sprintf(
-		"vault write -force -wrap-ttl=%s auth/approle/role/%s/secret-id -format=json", 
-		"30m", // wrap-ttl of wrapped token
-		roleName,
-	)
-	out, _ = exec.Command("sh", "-c", cmd).Output()
-	var wrappedTokenResults map[string]interface{}
-	json.Unmarshal(out, &wrappedTokenResults)
-
-	fmt.Println("\n=========================Wrapped Token====================================")
-	fmt.Println(wrappedTokenResults["wrap_info"].(map[string]interface{})["token"])
-	fmt.Println()
 }
 
 func doUnseal(fn func()) {

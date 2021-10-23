@@ -79,6 +79,11 @@ func (config Config) VAULT_SERVER() string {
 	return content
 }
 
+func (config Config) VAULT_WRAPPED_TOKEN_SERVER() string {
+	content := config.validate(os.Getenv("VAULT_WRAPPED_TOKEN_SERVER"))
+	return content
+}
+
 func (config Config) VAULT_CRED_NAME() string {
 	content := config.validate(os.Getenv("VAULT_CRED_NAME"))
 	return content
@@ -86,10 +91,5 @@ func (config Config) VAULT_CRED_NAME() string {
 
 func (config Config) VAULT_ROLE_ID() string {
 	content := config.validate(os.Getenv("VAULT_ROLE_ID"))
-	return content
-}
-
-func (config Config) VAULT_WRAPPED_TOKEN() string {
-	content := config.validate(os.Getenv("VAULT_WRAPPED_TOKEN"))
 	return content
 }

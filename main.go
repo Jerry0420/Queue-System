@@ -36,8 +36,9 @@ func main() {
     if serverConfig.ENV() == "prod" {
         logical, token, sys := config.NewVaultConnection(
             serverConfig.VAULT_SERVER(), 
+            serverConfig.VAULT_WRAPPED_TOKEN_SERVER(),
             serverConfig.VAULT_ROLE_ID(),
-            serverConfig.VAULT_WRAPPED_TOKEN(), 
+            serverConfig.VAULT_CRED_NAME(),
             logger,
         )
         vaultWrapper := config.NewVaultWrapper(

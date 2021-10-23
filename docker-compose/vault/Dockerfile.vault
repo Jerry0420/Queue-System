@@ -1,7 +1,9 @@
 FROM golang:1.17.1-alpine AS builder
 WORKDIR /vault
-COPY ./config/unseal.go /vault/unseal.go
-RUN go build -o unseal /vault/unseal.go
+COPY ./scripts/unseal.go /vault/scripts/unseal.go
+COPY ./scripts/wrappingToken.go /vault/scripts/wrappingToken.go
+RUN go build -o unseal /vault/scripts/unseal.go
+RUN go build -o wrappingToken /vault/scripts/wrappingToken.go
 
 FROM alpine:3.14
 ENV VAULT_VERSION 1.5.9
@@ -11,10 +13,12 @@ RUN mkdir /vault && \
     rm -f /tmp/vault.zip && \
     chmod +x /vault && \
     mv /vault/vault /usr/bin/
-COPY --from=builder /vault/unseal /vault/unseal
+RUN apk add --no-cache tmux
 
-ENV PATH="PATH=$PATH:$PWD/vault"
+COPY --from=builder /vault/unseal /vault/scripts/unseal
+COPY --from=builder /vault/wrappingToken /vault/scripts/wrappingToken
 COPY ./config/vault-config.json /vault/config/vault-config.json
+ENV PATH="PATH=$PATH:$PWD/vault"
 WORKDIR /vault
 EXPOSE 8200
 ENTRYPOINT ["vault"]

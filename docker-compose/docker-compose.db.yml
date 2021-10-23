@@ -5,6 +5,8 @@ services:
     image: postgres:14.0-alpine
     container_name: db
     restart: always
+    ports:
+      - "5432:5432"
     networks:
       - queue_system
     env_file: 
@@ -23,6 +25,7 @@ services:
     restart: always
     ports:
       - "8200:8200"
+      - "8300:8300"
     networks:
       - queue_system
     env_file: 
@@ -35,6 +38,7 @@ services:
     volumes:
       - ./vault/config:/vault/config
       - ./vault/policies:/vault/policies
+      - ./vault/scripts:/vault/scripts
       - vault_file:/vault/file
       - vault_logs:/vault/logs
     command: server -config=/vault/config/vault-config.json

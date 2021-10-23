@@ -3,19 +3,36 @@ package config
 import (
 	"fmt"
 	"time"
+	"net/http"
+	"bytes"
+    "encoding/json"
 
 	"github.com/hashicorp/vault/api"
 	"github.com/jerry0420/queue-system/backend/logging"
 )
 
-func NewVaultConnection(address string, roleID string, wrappedToken string, logger logging.LoggerTool) (*api.Logical, *api.TokenAuth, *api.Sys) {
+func NewVaultConnection(vaultAddress string, vaultWrappedTokenAddress string, roleID string, credName string, logger logging.LoggerTool) (*api.Logical, *api.TokenAuth, *api.Sys) {
 	config := api.DefaultConfig()
-	config.Address = address
+	config.Address = vaultAddress
 
 	client, err := api.NewClient(config)
 	if err != nil {
 		logger.FATALf("Fail to create connection with vault server.")
 	}
+
+	params := map[string]string{"roleName": credName}
+	json_params, _ := json.Marshal(params)
+	httpClient := http.Client{Timeout: 10 * time.Second}
+	
+	// Everytime, when server start up, get wrapped token from vault server.
+	response, err := httpClient.Post(vaultWrappedTokenAddress + "/wrappedToken", "application/json", bytes.NewBuffer(json_params))
+	if err != nil || response.StatusCode != http.StatusOK{
+        logger.FATALf("Fail to get wrapped token.")
+    }
+
+	var decodedResponse map[string]interface{}
+    json.NewDecoder(response.Body).Decode(&decodedResponse)
+	wrappedToken := decodedResponse["wrappedToken"].(string)
 
 	logical := client.Logical()
 	unwrappedToken, err := logical.Unwrap(wrappedToken)
