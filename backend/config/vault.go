@@ -87,15 +87,18 @@ func (vault *vaultWrapper) checkAndRenewToken() {
 		tokenInfo, err = vault.token.LookupSelf()
 		if err != nil {
 			vault.logger.ERRORf("Fail to lookup token info. %v", err)
+			continue
 		}
 		ttl, err = tokenInfo.TokenTTL()
 		if err != nil {
 			vault.logger.ERRORf("Fail to get token ttl. %v", err)
+			continue
 		}
 		if ttl <= time.Minute * 30 {
 			tokenInfo, err = vault.token.RenewSelf(3600)
 			if err != nil {
 				vault.logger.ERRORf("Fail to renew token. %v", err)
+				continue
 			}
 		} else {
 			// May be some delay after the server running long period of time.
@@ -113,15 +116,18 @@ func (vault *vaultWrapper) checkAndRenewCred() {
 		credInfo, err = vault.sys.Lookup(vault.leaseID)
 		if err != nil {
 			vault.logger.ERRORf("Fail to lookup cred info. %v", err)
+			continue
 		}
 		ttl, err = credInfo.TokenTTL()
 		if err != nil {
 			vault.logger.ERRORf("Fail to get cred ttl. %v", err)
+			continue
 		}
 		if ttl <= time.Minute * 30 {
 			credInfo, err = vault.sys.Renew(vault.leaseID, 3600)
 			if err != nil {
 				vault.logger.ERRORf("Fail to renew cred %s %v", vault.leaseID, err)
+				continue
 			}
 		} else {
 			// May be some delay after the server running long period of time.
