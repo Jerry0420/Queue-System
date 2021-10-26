@@ -61,24 +61,29 @@ func NewVaultConnection(vaultAddress string, vaultWrappedTokenAddress string, ro
 	return logical, token, sys
 }
 
-type vaultWrapper struct {
+type VaultWrapper struct {
 	logical *api.Logical
 	token *api.TokenAuth
 	sys *api.Sys
-	leaseID string
+	credName string
 	logger logging.LoggerTool
 }
 
-func NewVaultWrapper(logical *api.Logical, token *api.TokenAuth, sys *api.Sys, logger logging.LoggerTool) *vaultWrapper {
-	return &vaultWrapper{
+func NewVaultWrapper(credName string, logical *api.Logical, token *api.TokenAuth, sys *api.Sys, logger logging.LoggerTool) *VaultWrapper {
+	vault := &VaultWrapper{
+		credName: credName,
 		logical: logical,
 		token: token,
 		sys: sys,
 		logger: logger,
 	}
+	
+	go vault.checkAndRenewToken()
+
+	return vault 
 }
 
-func (vault *vaultWrapper) checkAndRenewToken() {
+func (vault *VaultWrapper) checkAndRenewToken() {
 	var tokenInfo *api.Secret
 	var err error
 	var ttl time.Duration
@@ -92,13 +97,11 @@ func (vault *vaultWrapper) checkAndRenewToken() {
 		ttl, err = tokenInfo.TokenTTL()
 		if err != nil {
 			vault.logger.ERRORf("Fail to get token ttl. %v", err)
-			continue
 		}
 		if ttl <= time.Minute * 30 {
 			tokenInfo, err = vault.token.RenewSelf(3600)
 			if err != nil {
 				vault.logger.ERRORf("Fail to renew token. %v", err)
-				continue
 			}
 		} else {
 			// May be some delay after the server running long period of time.
@@ -107,36 +110,36 @@ func (vault *vaultWrapper) checkAndRenewToken() {
 	}
 }
 
-func (vault *vaultWrapper) checkAndRenewCred() {
+func (vault *VaultWrapper) checkAndRenewCred(leaseID string) {
 	var credInfo *api.Secret
 	var err error
 	var ttl time.Duration
 
 	for {
-		credInfo, err = vault.sys.Lookup(vault.leaseID)
+		credInfo, err = vault.sys.Lookup(leaseID)
 		if err != nil {
-			vault.logger.ERRORf("Fail to lookup cred info. %v", err)
-			continue
+			vault.logger.FATALf("Fail to lookup cred info. %v", err)
+			break
 		}
 		ttl, err = credInfo.TokenTTL()
 		if err != nil {
 			vault.logger.ERRORf("Fail to get cred ttl. %v", err)
-			continue
+			break
 		}
-		if ttl <= time.Minute * 30 {
-			credInfo, err = vault.sys.Renew(vault.leaseID, 3600)
+		if ttl <= time.Second * 30 {
+			credInfo, err = vault.sys.Renew(leaseID, 60)
 			if err != nil {
-				vault.logger.ERRORf("Fail to renew cred %s %v", vault.leaseID, err)
-				continue
+				vault.logger.ERRORf("Fail to renew cred %s %v", leaseID, err)
+				break
 			}
 		} else {
 			// May be some delay after the server running long period of time.
-			time.Sleep(ttl - time.Minute * 30)
+			time.Sleep(ttl - time.Second * 30)
 		}
 	}
 }
 
-func (vault *vaultWrapper) GetDbCred(credName string) (string, string) {
+func (vault *VaultWrapper) GetDbCred(credName string) (string, string, string) {
 	credPath := fmt.Sprintf("database/creds/%s", credName)
 	cred, err := vault.logical.Read(credPath)
 	if err != nil {
@@ -153,21 +156,17 @@ func (vault *vaultWrapper) GetDbCred(credName string) (string, string) {
 		vault.logger.FATALf("Fail to get password in vault.")
 	}
 
-	vault.leaseID = cred.LeaseID
-
-	go vault.checkAndRenewToken()
-	go vault.checkAndRenewCred()
-
-	return username, password
+	return username, password, cred.LeaseID
 }
 
-func (vault *vaultWrapper) RevokeLeaseAndToken() {
-	err := vault.sys.Revoke(vault.leaseID)
+func (vault *VaultWrapper) RevokeLease(leaseID string) {
+	err := vault.sys.Revoke(leaseID)
 	if err != nil {
-		vault.logger.WARNf("Fail to revoke lease id %s %v", vault.leaseID, err)
+		vault.logger.WARNf("Fail to revoke lease id %s %v", leaseID, err)
 	}
-	err = vault.token.RevokeSelf("whatever it is.")
-	if err != nil {
-		vault.logger.WARNf("Fail to revoke token. %v", err)
-	}
+}
+
+func (vault *VaultWrapper) RevokeToken() error {
+	err := vault.token.RevokeSelf("whatever it is.")
+	return err
 }

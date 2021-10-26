@@ -30,9 +30,13 @@ func main() {
     
     serverConfig := config.NewConfig(logger)
 
-    var username string
-    var password string
-
+    var db *sql.DB
+    dbLocation := fmt.Sprintf("%s:%d/%s?sslmode=%s", 
+        serverConfig.POSTGRES_HOST(), 
+        serverConfig.POSTGRES_PORT(), 
+        serverConfig.POSTGRES_DB(),
+        serverConfig.POSTGRES_SSL(),
+    )
     if serverConfig.ENV() == "prod" {
         logical, token, sys := config.NewVaultConnection(
             serverConfig.VAULT_SERVER(), 
@@ -42,43 +46,35 @@ func main() {
             logger,
         )
         vaultWrapper := config.NewVaultWrapper(
+            serverConfig.VAULT_CRED_NAME(),
             logical, 
             token, 
             sys,
             logger,
         )
-        username, password = vaultWrapper.GetDbCred(serverConfig.VAULT_CRED_NAME())
-        defer vaultWrapper.RevokeLeaseAndToken()
+        dbWrapper := repository.NewDbWrapper(vaultWrapper, dbLocation, logger)
+        db = dbWrapper.GetDb()
+        go func() {
+            err := dbWrapper.ClosdAllDbConns()
+            if err != nil {
+                logger.ERRORf("db connection close fail %v", err)
+            }
+        }()
+        go func() {
+            err := vaultWrapper.RevokeToken()
+            if err != nil {
+                logger.WARNf("Fail to revoke token. %v", err)
+            }
+        }()
     } else {
-        username = serverConfig.POSTGRES_DEV_USER()
-        password = serverConfig.POSTGRES_DEV_PASSWORD()
+        db = repository.GetDevDb(serverConfig.POSTGRES_DEV_USER(), serverConfig.POSTGRES_DEV_PASSWORD(), dbLocation, logger)
+        go func() {
+            err := db.Close()
+            if err != nil {
+                logger.ERRORf("dev db connection close fail %v", err)
+            }
+        }()
     }
-
-    dbConnectionString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", 
-		username, 
-		password, 
-		serverConfig.POSTGRES_HOST(), 
-		serverConfig.POSTGRES_PORT(), 
-		serverConfig.POSTGRES_DB(),
-		serverConfig.POSTGRES_SSL(),
-    )
-    
-    db, err := sql.Open("postgres", dbConnectionString)
-    if err != nil {
-        logger.FATALf("db connection fail %v", err)
-    }
-    
-    err = db.Ping()
-    if err != nil {
-        logger.FATALf("db ping fail %v", err)
-    }
-    
-    defer func() {
-		err := db.Close()
-		if err != nil {
-			logger.ERRORf("db connection close fail %v", err)
-		}
-	}()
 
     router := mux.NewRouter()
 
