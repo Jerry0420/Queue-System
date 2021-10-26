@@ -110,14 +110,13 @@ func unseal() {
 	exec.Command("sh", "-c", cmd).Output()
 
 	cmd = fmt.Sprintf(
-		"vault write auth/approle/role/%s token_policies=\"%s\" token_ttl=%s token_max_ttl=%s token_num_uses=%d secret_id_ttl=%s secret_id_num_uses=%d", 
+		"vault write auth/approle/role/%s token_policies=\"%s\" secret_id_ttl=%s secret_id_num_uses=%d token_num_uses=%d token_period=%s",
 		roleName, 
 		policyName,
-		"1h", // token_ttl 
-		"24h", // token_max_ttl
-		0, // token_num_uses
 		"30m", // secret_id_ttl
 		1, // secret_id_num_uses
+		0, // token_num_uses
+		"1h", //token_period
 	)
 	exec.Command("sh", "-c", cmd).Output()
 
