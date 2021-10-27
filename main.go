@@ -37,7 +37,7 @@ func main() {
         serverConfig.POSTGRES_DB(),
         serverConfig.POSTGRES_SSL(),
     )
-    if serverConfig.ENV() == "prod" {
+    if serverConfig.ENV() == "dev" {
         logical, token, sys := config.NewVaultConnection(
             serverConfig.VAULT_SERVER(), 
             serverConfig.VAULT_WRAPPED_TOKEN_SERVER(),
@@ -54,21 +54,20 @@ func main() {
         )
         dbWrapper := repository.NewDbWrapper(vaultWrapper, dbLocation, logger)
         db = dbWrapper.GetDb()
-        go func() {
-            err := dbWrapper.ClosdAllDbConns()
-            if err != nil {
-                logger.ERRORf("db connection close fail %v", err)
-            }
-        }()
-        go func() {
-            err := vaultWrapper.RevokeToken()
-            if err != nil {
-                logger.WARNf("Fail to revoke token. %v", err)
+        
+        defer func() {
+            dbCloseErr := db.Close()
+			if dbCloseErr != nil {
+				logger.ERRORf("db connection close fail %v", dbCloseErr)
+			}
+            revokeTokenErr := vaultWrapper.RevokeToken()
+            if revokeTokenErr != nil {
+                logger.WARNf("Fail to revoke token. %v", revokeTokenErr)
             }
         }()
     } else {
         db = repository.GetDevDb(serverConfig.POSTGRES_DEV_USER(), serverConfig.POSTGRES_DEV_PASSWORD(), dbLocation, logger)
-        go func() {
+        defer func() {
             err := db.Close()
             if err != nil {
                 logger.ERRORf("dev db connection close fail %v", err)
