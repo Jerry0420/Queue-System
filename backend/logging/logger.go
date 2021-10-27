@@ -163,4 +163,5 @@ func (lt *loggerTool) FATALf(message ...interface{}) {
 	lt.receiveMessage <- true
 	content := lt.generateLogContent("[FATAL] ", message)
 	lt.logger.Fatalln(content...)
+	// TODO: (Prod env) Send an email to the admin user.
 }

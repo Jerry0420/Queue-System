@@ -19,12 +19,13 @@ services:
   
   vault:
     build:
-      context: ./vault
+      context: ../vault
       dockerfile: Dockerfile.vault
     container_name: vault
     restart: always
     ports:
       - "8200:8200"
+      - "8300:8300"
     networks:
       - queue_system
     env_file: 
@@ -35,8 +36,9 @@ services:
     cap_add:
       - IPC_LOCK
     volumes:
-      - ./vault/config:/vault/config
-      - ./vault/policies:/vault/policies
+      - ../vault/config:/vault/config
+      - ../vault/policies:/vault/policies
+      - ../vault/scripts:/vault/scripts
       - vault_file:/vault/file
       - vault_logs:/vault/logs
     command: server -config=/vault/config/vault-config.json

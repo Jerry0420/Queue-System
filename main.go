@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
+    "fmt"
     "embed"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
@@ -27,32 +27,53 @@ var files embed.FS
 
 func main() {
     logger := logging.NewLogger([]string{"method", "url", "code", "sep", "requestID", "duration"}, false)
-    serverConfig := config.NewConfig()
-    dbConnectionString := fmt.Sprintf("postgres://%s:%s@%s:%d/%s?sslmode=%s", 
-        serverConfig.POSTGRES_USER(), 
-        serverConfig.POSTGRES_PASSWORD(), 
+    
+    serverConfig := config.NewConfig(logger)
+
+    var db *sql.DB
+    dbLocation := fmt.Sprintf("%s:%d/%s?sslmode=%s", 
         serverConfig.POSTGRES_HOST(), 
         serverConfig.POSTGRES_PORT(), 
         serverConfig.POSTGRES_DB(),
         serverConfig.POSTGRES_SSL(),
     )
-    
-    db, err := sql.Open("postgres", dbConnectionString)
-    if err != nil {
-        logger.FATALf("db connection fail %v", err)
+    if serverConfig.ENV() == "prod" {
+        logical, token, sys := config.NewVaultConnection(
+            serverConfig.VAULT_SERVER(), 
+            serverConfig.VAULT_WRAPPED_TOKEN_SERVER(),
+            serverConfig.VAULT_ROLE_ID(),
+            serverConfig.VAULT_CRED_NAME(),
+            logger,
+        )
+        vaultWrapper := config.NewVaultWrapper(
+            serverConfig.VAULT_CRED_NAME(),
+            logical, 
+            token, 
+            sys,
+            logger,
+        )
+        dbWrapper := repository.NewDbWrapper(vaultWrapper, dbLocation, logger)
+        db = dbWrapper.GetDb()
+        
+        defer func() {
+            dbCloseErr := db.Close()
+			if dbCloseErr != nil {
+				logger.ERRORf("db connection close fail %v", dbCloseErr)
+			}
+            revokeTokenErr := vaultWrapper.RevokeToken()
+            if revokeTokenErr != nil {
+                logger.WARNf("Fail to revoke token. %v", revokeTokenErr)
+            }
+        }()
+    } else {
+        db = repository.GetDevDb(serverConfig.POSTGRES_DEV_USER(), serverConfig.POSTGRES_DEV_PASSWORD(), dbLocation, logger)
+        defer func() {
+            err := db.Close()
+            if err != nil {
+                logger.ERRORf("dev db connection close fail %v", err)
+            }
+        }()
     }
-    
-    err = db.Ping()
-    if err != nil {
-        logger.FATALf("db ping fail %v", err)
-    }
-    
-    defer func() {
-		err := db.Close()
-		if err != nil {
-			logger.FATALf("db connection close fail %v", err)
-		}
-	}()
 
     router := mux.NewRouter()
 
@@ -86,8 +107,9 @@ func main() {
     }
 
     go func() {
+        logger.INFOf("Server Start!")
         if err := server.ListenAndServe(); err != nil {
-            logger.FATALf("ListenAndServe http fail %v", err)
+            logger.ERRORf("ListenAndServe http fail %v", err)
         }
     }()
     
@@ -101,5 +123,4 @@ func main() {
     defer cancel()
     server.Shutdown(ctx)
     logger.INFOf("shutting down")
-    os.Exit(0)
 }
