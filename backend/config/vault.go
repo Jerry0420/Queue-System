@@ -13,6 +13,7 @@ import (
 
 func NewVaultConnection(vaultAddress string, vaultWrappedTokenAddress string, roleID string, credName string, logger logging.LoggerTool) (*api.Logical, *api.TokenAuth, *api.Sys) {
 	config := api.DefaultConfig()
+	config.MaxRetries = 5
 	config.Address = vaultAddress
 
 	client, err := api.NewClient(config)
@@ -91,17 +92,13 @@ func (vault *VaultWrapper) checkAndRenewToken() {
 	for {
 		tokenInfo, err = vault.token.LookupSelf()
 		if err != nil {
-			vault.logger.ERRORf("Fail to lookup token info. %v", err)
-			continue
+			vault.logger.FATALf("Fail to lookup token info. %v", err)
 		}
-		ttl, err = tokenInfo.TokenTTL()
-		if err != nil {
-			vault.logger.ERRORf("Fail to get token ttl. %v", err)
-		}
+		ttl, _ = tokenInfo.TokenTTL()
 		if ttl <= time.Minute * 30 {
-			tokenInfo, err = vault.token.RenewSelf(3600)
+			_, err = vault.token.RenewSelf(3600)
 			if err != nil {
-				vault.logger.ERRORf("Fail to renew token. %v", err)
+				vault.logger.FATALf("Fail to renew token. %v", err)
 			}
 		} else {
 			// May be some delay after the server running long period of time.
@@ -110,7 +107,7 @@ func (vault *VaultWrapper) checkAndRenewToken() {
 	}
 }
 
-func (vault *VaultWrapper) checkAndRenewCred(leaseID string, credExpireChan chan bool) {
+func (vault *VaultWrapper) checkAndRenewCred(leaseID string, credExpireChan chan bool, leaseRevocableChan chan bool) {
 	var credInfo *api.Secret
 	var currentExpireTime time.Time
 	var renewExpireTime time.Time
@@ -120,24 +117,26 @@ func (vault *VaultWrapper) checkAndRenewCred(leaseID string, credExpireChan chan
 	for {
 		credInfo, err = vault.sys.Lookup(leaseID)
 		if err != nil {
-			vault.logger.ERRORf("Fail to lookup cred info. %v", err)
-			continue
+			vault.logger.FATALf("Fail to lookup cred info. %v", err)
 		}
 		currentExpireTime, _ = time.Parse(time.RFC3339Nano, credInfo.Data["expire_time"].(string))
 		ttl, _ = credInfo.TokenTTL()
 		
 		if ttl <= time.Minute * 30 {
-			_, err = vault.sys.Renew(leaseID, 3560)
+			_, err = vault.sys.Renew(leaseID, 3600)
 			if err != nil {
-				vault.logger.ERRORf("Fail to renew cred %s %v", leaseID, err)
+				vault.logger.FATALf("Fail to renew cred %s %v", leaseID, err)
 			}
 			credInfo, err = vault.sys.Lookup(leaseID)
 			if err != nil {
-				vault.logger.ERRORf("Fail to lookup cred info. %v", err)
+				vault.logger.FATALf("Fail to lookup cred info. %v", err)
 			}
 			renewExpireTime, _ = time.Parse(time.RFC3339Nano, credInfo.Data["expire_time"].(string))
-			if renewExpireTime.Sub(currentExpireTime) <= time.Minute * 2 {
+			// when renewExpireTime and currentExpireTime are approximately the same, mark this cred as expired!
+			if renewExpireTime.Sub(currentExpireTime) <= time.Minute * 1 {
 				credExpireChan <- true
+				<- leaseRevocableChan
+				vault.revokeLease(leaseID)
 				return
 			}
 		} else {
@@ -147,7 +146,7 @@ func (vault *VaultWrapper) checkAndRenewCred(leaseID string, credExpireChan chan
 	}
 }
 
-func (vault *VaultWrapper) GetDbCred() (string, string, string, chan bool) {
+func (vault *VaultWrapper) GetDbCred(leaseRevocableChan chan bool) (string, string, chan bool) {
 	credExpireChan := make(chan bool, 1)
 	credPath := fmt.Sprintf("database/creds/%s", vault.credName)
 	cred, err := vault.logical.Read(credPath)
@@ -165,12 +164,12 @@ func (vault *VaultWrapper) GetDbCred() (string, string, string, chan bool) {
 		vault.logger.FATALf("Fail to get password in vault.")
 	}
 
-	go vault.checkAndRenewCred(cred.LeaseID, credExpireChan)
+	go vault.checkAndRenewCred(cred.LeaseID, credExpireChan, leaseRevocableChan)
 
-	return username, password, cred.LeaseID, credExpireChan
+	return username, password, credExpireChan
 }
 
-func (vault *VaultWrapper) RevokeLease(leaseID string) {
+func (vault *VaultWrapper) revokeLease(leaseID string) {
 	err := vault.sys.Revoke(leaseID)
 	if err != nil {
 		vault.logger.WARNf("Fail to revoke lease id %s %v", leaseID, err)

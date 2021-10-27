@@ -37,7 +37,7 @@ func main() {
         serverConfig.POSTGRES_DB(),
         serverConfig.POSTGRES_SSL(),
     )
-    if serverConfig.ENV() == "dev" {
+    if serverConfig.ENV() == "prod" {
         logical, token, sys := config.NewVaultConnection(
             serverConfig.VAULT_SERVER(), 
             serverConfig.VAULT_WRAPPED_TOKEN_SERVER(),
