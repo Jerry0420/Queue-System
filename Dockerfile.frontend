@@ -1,0 +1,14 @@
+FROM node:16.11.1-alpine AS base
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY ./src ./src
+COPY ./public ./public
+
+FROM base AS builder
+RUN npm install && npm run build
+
+FROM nginx:1.21.3-alpine
+EXPOSE 80
+COPY ./scripts/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=builder /app/build /usr/share/nginx/html
+CMD ["nginx", "-g", "daemon off;"]

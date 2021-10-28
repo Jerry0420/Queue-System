@@ -1,10 +1,27 @@
 version: "3.5"
 
 services: 
+  frontend:
+    build:
+      context: ../
+      dockerfile: Dockerfile.frontend
+    restart: always
+    container_name: frontend
+    networks:
+      - queue_system
+    env_file: 
+      - .env.frontend
+    ports:
+      - "80:80"
+    volumes:
+      - frontend_log_dir:/var/log/nginx:rw
+    logging:
+      driver: "none"
+
   backend:
     build:
       context: ../
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.backend
     restart: always
     container_name: backend
     networks:
@@ -14,12 +31,13 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - log_dir:/app/logs:rw
+      - backend_log_dir:/app/logs:rw
     logging:
       driver: "none"
 
 volumes: 
-  log_dir: {}
+  backend_log_dir: {}
+  frontend_log_dir: {}
 
 networks: 
   queue_system:

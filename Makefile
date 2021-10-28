@@ -49,5 +49,8 @@ kind_loadimage:
 
 # ==========================================================
 
-docker_build:
-	docker build -f Dockerfile -t jerry0420/queue-system:v$(ver) .
+docker_build_backend:
+	docker build -f Dockerfile.backend -t jerry0420/queue-system-backend:v$(ver) .
+
+docker_build_frontend:
+	docker build -f Dockerfile.frontend -t jerry0420/queue-system-frontend:v$(ver) .
