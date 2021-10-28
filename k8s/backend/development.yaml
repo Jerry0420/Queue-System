@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: queue-system
+  name: backend-development
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        app.kubernetes.io/name: backend
+        app.kubernetes.io/instance: backend
+    spec:
+      containers:
+      - name: backend
+        image: jerry0420/queue-system:v0.0.1
+        imagePullPolicy: IfNotPresent 
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "0.25"
+          limits:
+            memory: "256Mi"
+            cpu: "0.5"
+        ports:
+          - name: backend-port
+            containerPort: 8000
+        volumeMounts:
+          - mountPath: /app/logs
+            name: node-hostpath
+        envFrom:
+          - configMapRef:
+               name: backend-env
+        env:  
+          - name: VAULT_CRED_NAME
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: VAULT_CRED_NAME
+          - name: VAULT_ROLE_ID
+            valueFrom:
+              secretKeyRef:
+                name: backend-secret
+                key: VAULT_ROLE_ID
+      restartPolicy: Always
+      volumes:
+        - name: node-hostpath
+          hostPath:
+            path: /app/logs
+            type: DirectoryOrCreate
