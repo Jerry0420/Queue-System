@@ -39,6 +39,7 @@ yarn-error.log*
 .vscode
 .env
 .env.db
+.env.frontend
 
 config.json
 

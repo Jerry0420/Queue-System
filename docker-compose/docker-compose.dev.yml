@@ -4,18 +4,15 @@ services:
   frontend:
     build:
       context: ../
-      dockerfile: Dockerfile
-      target: builder-frontend
+      dockerfile: Dockerfile.frontend
+      target: base
     container_name: frontend
     networks:
       - queue_system
-    command: >
-      sh -c "npm run build && 
-      tail -f /dev/null"
-    stop_signal: SIGINT # set sotp signal from sigterm to sigint, because this container is running by "command", which won't receive sigterm to stop theemself.
-    stop_grace_period: 1s
+    stdin_open: true
+    tty: true
     env_file: 
-      - .env
+      - .env.frontend
     ports:
       - "3000:3000"
     volumes:
@@ -28,13 +25,11 @@ services:
   backend:
     build:
       context: ../
-      dockerfile: Dockerfile
-      target: builder
+      dockerfile: Dockerfile.backend
+      target: base
     container_name: backend
     networks:
       - queue_system
-    depends_on:
-      - frontend
     stdin_open: true
     tty: true
     env_file: 

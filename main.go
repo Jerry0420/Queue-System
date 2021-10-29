@@ -8,7 +8,6 @@ import (
 	"os/signal"
 	"time"
     "fmt"
-    "embed"
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 
@@ -19,11 +18,7 @@ import (
 	"github.com/jerry0420/queue-system/backend/presenter"
 	"github.com/jerry0420/queue-system/backend/repository/db"
 	"github.com/jerry0420/queue-system/backend/usecase"
-	"github.com/jerry0420/queue-system/backend/utils"
 )
-
-//go:embed build
-var files embed.FS
 
 func main() {
     logger := logging.NewLogger([]string{"method", "url", "code", "sep", "requestID", "duration"}, false)
@@ -94,9 +89,6 @@ func main() {
     router.HandleFunc("/hello", func (w http.ResponseWriter, r *http.Request)  {
         presenter.JsonResponseOK(w, map[string]string{"hello": "world"})
     })
-
-    frontendFiles := utils.GetFrontendFiles(files, "build")
-    delivery.NewFrontendDelivery(router, logger, frontendFiles)
 
     server := &http.Server{
         Addr:         "0.0.0.0:8000",

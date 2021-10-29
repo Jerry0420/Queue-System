@@ -44,10 +44,29 @@ kind_create:
 kind_delete:
 	kind delete cluster
 
-kind_loadimage:
-	kind load docker-image jerry0420/queue-system:v$(ver)
+kind_backend_loadimage:
+	kind load docker-image jerry0420/queue-system-backend:v$(ver)
+
+kind_frontend_loadimage:
+	kind load docker-image jerry0420/queue-system-frontend:v$(ver)
 
 # ==========================================================
 
-docker_build:
-	docker build -f Dockerfile -t jerry0420/queue-system:v$(ver) .
+docker_build_backend:
+	mkdir backend_temp
+	cp -r ./backend ./backend_temp/backend
+	cp ./main.go ./backend_temp/main.go
+	cp ./go.mod ./backend_temp/go.mod
+	cp ./go.sum ./backend_temp/go.sum
+	docker build -f Dockerfile.backend -t jerry0420/queue-system-backend:v$(ver) --no-cache ./backend_temp
+	rm -r backend_temp
+
+docker_build_frontend:
+	mkdir frontend_temp frontend_temp/scripts frontend_temp/scripts/nginx
+	cp -r ./src ./frontend_temp/src
+	cp -r ./public ./frontend_temp/public
+	cp ./package.json ./frontend_temp/package.json
+	cp ./package-lock.json ./frontend_temp/package-lock.json
+	cp ./scripts/nginx/nginx.conf ./frontend_temp/scripts/nginx/nginx.conf
+	docker build -f Dockerfile.frontend -t jerry0420/queue-system-frontend:v$(ver) --no-cache ./frontend_temp
+	rm -r frontend_temp
