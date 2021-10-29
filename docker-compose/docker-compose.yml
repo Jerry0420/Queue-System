@@ -11,8 +11,9 @@ services:
       - queue_system
     env_file: 
       - .env.frontend
+    user: 1000:1001
     ports:
-      - "80:80"
+      - "80:3000"
     volumes:
       - frontend_log_dir:/var/log/nginx:rw
     logging:
@@ -28,6 +29,7 @@ services:
       - queue_system
     env_file: 
       - .env
+    user: 1000:1001
     ports:
       - "8000:8000"
     volumes:

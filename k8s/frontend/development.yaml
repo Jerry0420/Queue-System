@@ -2,32 +2,32 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: queue-system
-  name: backend-development
+  name: frontend-development
   labels:
-    app: backend
+    app: frontend
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: backend
+      app: frontend
   template:
     metadata:
       labels:
-        app: backend
-        app.kubernetes.io/name: backend
-        app.kubernetes.io/instance: backend
+        app: frontend
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/instance: frontend
     spec:
       restartPolicy: Always
       initContainers:
       - name: volume-chown
         image: busybox
-        command: ["sh", "-c", "chown -R 1000:1001 /app/logs"]
+        command: ["sh", "-c", "chown -R 1000:1001 /var/log/nginx"]
         volumeMounts:
-          - mountPath: /app/logs
+          - mountPath: /var/log/nginx
             name: log-dir
       containers:
-      - name: backend
-        image: jerry0420/queue-system-backend:v0.0.1
+      - name: frontend
+        image: jerry0420/queue-system-frontend:v0.0.1
         imagePullPolicy: IfNotPresent 
         resources:
           requests:
@@ -40,27 +40,16 @@ spec:
           runAsUser: 1000
           runAsGroup: 1001
         ports:
-          - name: backend-port
-            containerPort: 8000
+          - name: frontend-port
+            containerPort: 3000
         volumeMounts:
-          - mountPath: /app/logs
+          - mountPath: /var/log/nginx
             name: log-dir
         envFrom:
           - configMapRef:
-               name: backend-env
-        env:  
-          - name: VAULT_CRED_NAME
-            valueFrom:
-              secretKeyRef:
-                name: backend-secret
-                key: VAULT_CRED_NAME
-          - name: VAULT_ROLE_ID
-            valueFrom:
-              secretKeyRef:
-                name: backend-secret
-                key: VAULT_ROLE_ID
+               name: frontend-env
       volumes:
         - name: log-dir
           hostPath:
-            path: /app/logs
+            path: /var/log/nginx
             type: DirectoryOrCreate
