@@ -1,8 +1,10 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
+
 	"github.com/jerry0420/queue-system/backend/logging"
 )
 
@@ -72,6 +74,15 @@ func (config Config) POSTGRES_DEV_USER() string {
 func (config Config) POSTGRES_DEV_PASSWORD() string {
 	content := config.validate(os.Getenv("POSTGRES_DEV_PASSWORD"))
 	return content
+}
+
+func (config Config) POSTGRES_LOCATION() string {
+	return fmt.Sprintf("%s:%d/%s?sslmode=%s", 
+		config.POSTGRES_HOST(), 
+		config.POSTGRES_PORT(), 
+		config.POSTGRES_DB(),
+		config.POSTGRES_SSL(),
+    )
 }
 
 func (config Config) VAULT_SERVER() string {

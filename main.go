@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,10 +13,8 @@ import (
 
 	"github.com/jerry0420/queue-system/backend/config"
 	"github.com/jerry0420/queue-system/backend/delivery/http"
-	"github.com/jerry0420/queue-system/backend/domain"
 	"github.com/jerry0420/queue-system/backend/logging"
 	"github.com/jerry0420/queue-system/backend/middleware"
-	"github.com/jerry0420/queue-system/backend/presenter"
 	"github.com/jerry0420/queue-system/backend/repository/db"
 	"github.com/jerry0420/queue-system/backend/usecase"
 )
@@ -28,12 +25,8 @@ func main() {
     serverConfig := config.NewConfig(logger)
 
     var db *sql.DB
-    dbLocation := fmt.Sprintf("%s:%d/%s?sslmode=%s", 
-        serverConfig.POSTGRES_HOST(), 
-        serverConfig.POSTGRES_PORT(), 
-        serverConfig.POSTGRES_DB(),
-        serverConfig.POSTGRES_SSL(),
-    )
+    dbLocation := serverConfig.POSTGRES_LOCATION()
+    
     if serverConfig.ENV() == "prod" {
         logical, token, sys := config.NewVaultConnection(
             serverConfig.VAULT_SERVER(), 
@@ -88,10 +81,7 @@ func main() {
     delivery.NewStoreDelivery(router, logger, storeUsecase)
     delivery.NewQueueDelivery(router, logger, queueUsecase)
     delivery.NewCustomerDelivery(router, logger, customerUsecase)
-
-    router.HandleFunc("/{non_exist_route}", func (w http.ResponseWriter, r *http.Request)  {
-        presenter.JsonResponse(w, nil, domain.ServerError40401)
-    })
+    delivery.NewBaseDelivery(router, logger)
 
     server := &http.Server{
         Addr:         "0.0.0.0:8000",

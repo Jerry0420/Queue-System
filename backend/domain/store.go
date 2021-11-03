@@ -1,6 +1,9 @@
 package domain
 
-import "time"
+import (
+	"context"
+	"time"
+)
 
 type Store struct {
 	ID int `json:"id"`
@@ -14,11 +17,11 @@ type Store struct {
 }
 
 type StoreRepositoryInterface interface {
-
+	Create(ctx context.Context, store *Store) error
 }
 
 type StoreUsecaseInterface interface {
-
+	Create(ctx context.Context, store *Store) error
 }
 
 // query := `INSERT INTO stores (email, password, name, description, status) VALUES ($1, $2, $3, $4, $5) `
