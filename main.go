@@ -3,16 +3,18 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
 	"time"
-    "fmt"
+
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 
 	"github.com/jerry0420/queue-system/backend/config"
 	"github.com/jerry0420/queue-system/backend/delivery/http"
+	"github.com/jerry0420/queue-system/backend/domain"
 	"github.com/jerry0420/queue-system/backend/logging"
 	"github.com/jerry0420/queue-system/backend/middleware"
 	"github.com/jerry0420/queue-system/backend/presenter"
@@ -71,6 +73,7 @@ func main() {
     }
 
     router := mux.NewRouter()
+    router = router.PathPrefix("/api").Subrouter()
 
     storeReposotory := repository.NewStoreRepository(db, logger)
     queueReposotory := repository.NewQueueRepository(db, logger)
@@ -86,8 +89,8 @@ func main() {
     delivery.NewQueueDelivery(router, logger, queueUsecase)
     delivery.NewCustomerDelivery(router, logger, customerUsecase)
 
-    router.HandleFunc("/hello", func (w http.ResponseWriter, r *http.Request)  {
-        presenter.JsonResponseOK(w, map[string]string{"hello": "world"})
+    router.HandleFunc("/{non_exist_route}", func (w http.ResponseWriter, r *http.Request)  {
+        presenter.JsonResponse(w, nil, domain.ServerError40401)
     })
 
     server := &http.Server{
@@ -115,4 +118,5 @@ func main() {
     defer cancel()
     server.Shutdown(ctx)
     logger.INFOf("shutting down")
+    os.Exit(0)
 }
