@@ -5,6 +5,9 @@ import (
 	"time"
 )
 
+type storeStatus struct {OPEN, CLOSE string}
+var StoreStatus storeStatus = storeStatus{OPEN: "open", CLOSE: "close"}
+
 type Store struct {
 	ID int `json:"id"`
 	Email string `json:"email"`
@@ -18,10 +21,12 @@ type Store struct {
 
 type StoreRepositoryInterface interface {
 	Create(ctx context.Context, store *Store) error
+	GetByEmail(ctx context.Context, email string) (Store, error)
 }
 
 type StoreUsecaseInterface interface {
 	Create(ctx context.Context, store *Store) error
+	GetByEmail(ctx context.Context, email string) (Store, error)
 }
 
 // query := `INSERT INTO stores (email, password, name, description, status) VALUES ($1, $2, $3, $4, $5) `

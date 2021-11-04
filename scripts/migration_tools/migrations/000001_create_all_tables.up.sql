@@ -7,9 +7,9 @@ CREATE TYPE store_status AS ENUM ('open', 'close');
 CREATE TABLE IF NOT EXISTS stores(
    id serial PRIMARY KEY,
    email varchar(512) NOT NULL,
-   password varchar(15) NOT NULL,
+   password varchar(64) NOT NULL,
    name varchar(64) NOT NULL,
-   description text,
+   description text DEFAULT '',
    created_at timestamp NOT NULL DEFAULT clock_timestamp(),
    status store_status NOT NULL,
    session_id uuid NOT NULL DEFAULT uuid_generate_v4()

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/jerry0420/queue-system/backend/logging"
 )
@@ -31,14 +32,14 @@ func (config Config) ENV() string {
 	return content
 }
 
-func (config Config) CONTEXT_TIMEOUT() int {
+func (config Config) CONTEXT_TIMEOUT() time.Duration {
 	content := config.validate(os.Getenv("CONTEXT_TIMEOUT"))
 	CONTEXT_TIMEOUT, err := strconv.Atoi(content)
 	if err != nil {
 		// if env variable not being set properly, just exit the whole program.
 		config.logger.FATALf("fail to get env variable of context_timeout.")
 	}
-	return CONTEXT_TIMEOUT
+	return time.Duration(CONTEXT_TIMEOUT) * time.Second
 }
 
 func (config Config) POSTGRES_HOST() string {
