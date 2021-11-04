@@ -6,7 +6,7 @@ CREATE TYPE store_status AS ENUM ('open', 'close');
 
 CREATE TABLE IF NOT EXISTS stores(
    id serial PRIMARY KEY,
-   email varchar(512) NOT NULL,
+   email varchar(512) NOT NULL UNIQUE,
    password varchar(64) NOT NULL,
    name varchar(64) NOT NULL,
    description text DEFAULT '',
