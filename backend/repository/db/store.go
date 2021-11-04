@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"time"
 
 	"github.com/jerry0420/queue-system/backend/domain"
