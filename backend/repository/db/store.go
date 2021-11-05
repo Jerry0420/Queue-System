@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/jerry0420/queue-system/backend/domain"
@@ -28,7 +29,7 @@ func (sr *storeRepository) GetByEmail(ctx context.Context, email string) (domain
 	row := sr.db.QueryRowContext(ctx, query, email)
 	err := row.Scan(&store.ID, &store.Email, &store.Password, &store.Name, &store.Description, &store.CreatedAt, &store.Status, &store.SessionID)
 	switch {
-	case err == sql.ErrNoRows:
+	case errors.Is(err, sql.ErrNoRows):
 		return store, nil
 	case err != nil:
 		return store, domain.ServerError50002
@@ -47,7 +48,8 @@ func (sr *storeRepository) Create(ctx context.Context, store *domain.Store) erro
 	}
 	_, err = stmt.ExecContext(ctx, store.Name, store.Email, store.Password, store.Status)
 	if err != nil {
-		return domain.ServerError50002
+		sr.logger.ERRORf("error %v", err)
+		return domain.ServerError40901
 	}
 	return nil
 }
