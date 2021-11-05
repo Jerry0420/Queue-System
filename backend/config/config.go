@@ -105,3 +105,12 @@ func (config Config) VAULT_ROLE_ID() string {
 	content := config.validate(os.Getenv("VAULT_ROLE_ID"))
 	return content
 }
+
+func (config Config) VAULT_CONNECTION_CONFIG() VaultConnectionConfig {
+	return VaultConnectionConfig{
+		Address: config.VAULT_SERVER(),
+		WrappedTokenAddress: config.VAULT_WRAPPED_TOKEN_SERVER(),
+		RoleID: config.VAULT_ROLE_ID(),
+		CredName: config.VAULT_CRED_NAME(),
+	}
+}

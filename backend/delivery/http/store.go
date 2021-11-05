@@ -19,6 +19,7 @@ type storeDelivery struct {
 func NewStoreDelivery(router *mux.Router, logger logging.LoggerTool, storeUsecase domain.StoreUsecaseInterface) {
 	sd := &storeDelivery{storeUsecase, logger}
 	router.HandleFunc("/stores", sd.create).Methods(http.MethodPost).Headers("Content-Type", "application/json")
+	router.HandleFunc("/stores/signin", sd.signin).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 }
 
 func (sd *storeDelivery) create(w http.ResponseWriter, r *http.Request) {
@@ -41,4 +42,20 @@ func (sd *storeDelivery) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	presenter.JsonResponseOK(w, map[string]interface{}{"id": store.ID})
+}
+
+func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
+	var store domain.Store
+	err := json.NewDecoder(r.Body).Decode(&store)
+	if err != nil || store.Email == "" || store.Password == "" {
+		presenter.JsonResponse(w, nil, domain.ServerError40001)
+		return
+	}
+	
+	token, err := sd.storeUsecase.Signin(r.Context(), &store)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+	presenter.JsonResponseOK(w, map[string]interface{}{"token": token})
 }

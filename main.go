@@ -28,13 +28,8 @@ func main() {
     dbLocation := serverConfig.POSTGRES_LOCATION()
     
     if serverConfig.ENV() == "prod" {
-        logical, token, sys := config.NewVaultConnection(
-            serverConfig.VAULT_SERVER(), 
-            serverConfig.VAULT_WRAPPED_TOKEN_SERVER(),
-            serverConfig.VAULT_ROLE_ID(),
-            serverConfig.VAULT_CRED_NAME(),
-            logger,
-        )
+        vaultConnectionConfig := serverConfig.VAULT_CONNECTION_CONFIG()
+        logical, token, sys := config.NewVaultConnection(logger, &vaultConnectionConfig)
         vaultWrapper := config.NewVaultWrapper(
             serverConfig.VAULT_CRED_NAME(),
             logical, 
