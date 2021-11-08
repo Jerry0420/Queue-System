@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
-
 	"github.com/gorilla/mux"
+	"github.com/google/uuid"
+
 	"github.com/jerry0420/queue-system/backend/logging"
 	"github.com/jerry0420/queue-system/backend/presenter"
 )
@@ -24,7 +25,8 @@ func NewMiddleware(router *mux.Router, logger logging.LoggerTool, env string) {
 
 func (mw *middleware) loggingMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        ctx := context.WithValue(r.Context(), "requestID", "aaaaaaaaaa")
+		randomUUID := uuid.New().String()
+        ctx := context.WithValue(r.Context(), "requestID", randomUUID)
         r = r.WithContext(ctx)
         
         responseWrapper := &presenter.ResponseWrapper{ResponseWriter: w, Buffer: &bytes.Buffer{}}
@@ -42,6 +44,6 @@ func (mw *middleware) loggingMiddleware(next http.Handler) http.Handler {
         io.Copy(w, responseWrapper.Buffer)
         r = r.WithContext(ctx)
         
-        mw.logger.INFOf(r.Context(), "hello world %d", 1234)
+        mw.logger.INFOf(r.Context(), "response")
     })
 }
