@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/jerry0420/queue-system/backend/config"
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
@@ -18,8 +19,9 @@ func (responseWrapper *ResponseWrapper) Write(p []byte) (int, error) {
 }
 
 type ResponseFormat struct {
-	Code interface{} `json:"code"`
-	Data interface{} `json:"data"`
+	Code        int         `json:"code"`
+	Data        interface{} `json:"data"`
+	Description string      `json:"description,omitempty"`
 }
 
 func JsonResponseOK(w http.ResponseWriter, response interface{}) {
@@ -31,6 +33,7 @@ func JsonResponse(w http.ResponseWriter, response interface{}, err error) {
 
 	var code int
 	var statusCode int
+	var description string
 
 	if err == nil {
 		code = 20001
@@ -42,15 +45,16 @@ func JsonResponse(w http.ResponseWriter, response interface{}, err error) {
 			panic("err must be ServerError")
 		}
 		code = serverError.Code
+		description = serverError.Description
 	}
 
 	statusCode = code / 100 //http sattus code is the first two digits of code.
 	w.WriteHeader(statusCode)
 
-	json.NewEncoder(w).Encode(
-		&ResponseFormat{
-			Code: code,
-			Data: response,
-		},
-	)
+	responseFormat := ResponseFormat{Code: code, Data: response}
+	if config.ServerConfig.ENV() != config.EnvStatus.PROD {
+		responseFormat.Description = description
+	}
+
+	json.NewEncoder(w).Encode(&responseFormat)
 }

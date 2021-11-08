@@ -21,17 +21,15 @@ import (
 
 func main() {
     logger := logging.NewLogger([]string{"method", "url", "code", "sep", "requestID", "duration"}, false)
-    
-    serverConfig := config.NewConfig(logger)
 
     var db *sql.DB
-    dbLocation := serverConfig.POSTGRES_LOCATION()
+    dbLocation := config.ServerConfig.POSTGRES_LOCATION()
     
-    if serverConfig.ENV() == config.EnvStatus.PROD {
-        vaultConnectionConfig := serverConfig.VAULT_CONNECTION_CONFIG()
+    if config.ServerConfig.ENV() == config.EnvStatus.PROD {
+        vaultConnectionConfig := config.ServerConfig.VAULT_CONNECTION_CONFIG()
         logical, token, sys := config.NewVaultConnection(logger, &vaultConnectionConfig)
         vaultWrapper := config.NewVaultWrapper(
-            serverConfig.VAULT_CRED_NAME(),
+            config.ServerConfig.VAULT_CRED_NAME(),
             logical, 
             token, 
             sys,
@@ -51,7 +49,7 @@ func main() {
             }
         }()
     } else {
-        db = repository.GetDevDb(serverConfig.POSTGRES_DEV_USER(), serverConfig.POSTGRES_DEV_PASSWORD(), dbLocation, logger)
+        db = repository.GetDevDb(config.ServerConfig.POSTGRES_DEV_USER(), config.ServerConfig.POSTGRES_DEV_PASSWORD(), dbLocation, logger)
         defer func() {
             err := db.Close()
             if err != nil {
@@ -63,16 +61,16 @@ func main() {
     router := mux.NewRouter()
     router = router.PathPrefix("/api").Subrouter()
 
-    signKeyReposotory := repository.NewSignKeyRepository(db, logger, serverConfig.CONTEXT_TIMEOUT())
-    storeReposotory := repository.NewStoreRepository(db, logger, serverConfig.CONTEXT_TIMEOUT())
-    queueReposotory := repository.NewQueueRepository(db, logger, serverConfig.CONTEXT_TIMEOUT())
-    customerReposotory := repository.NewCustomerRepository(db, logger, serverConfig.CONTEXT_TIMEOUT())
+    signKeyReposotory := repository.NewSignKeyRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+    storeReposotory := repository.NewStoreRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+    queueReposotory := repository.NewQueueRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+    customerReposotory := repository.NewCustomerRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
 
     storeUsecase := usecase.NewStoreUsecase(storeReposotory, signKeyReposotory, logger)
     queueUsecase := usecase.NewQueueUsecase(queueReposotory, logger)
     customerUsecase := usecase.NewCustomerUsecase(customerReposotory, logger)
 
-    middleware.NewMiddleware(router, logger, serverConfig.ENV())
+    middleware.NewMiddleware(router, logger)
 
     delivery.NewStoreDelivery(router, logger, storeUsecase)
     delivery.NewQueueDelivery(router, logger, queueUsecase)
