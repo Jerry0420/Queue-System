@@ -13,6 +13,7 @@ import (
 	"sync"
 	"time"
 )
+
 type LoggerTool interface {
 	parseContextValue(context context.Context) []interface{}
 	generateLogContent(level string, message []interface{}) []interface{}
@@ -24,41 +25,41 @@ type LoggerTool interface {
 
 type loggerTool struct {
 	sync.Mutex
-	logger *log.Logger
-	logFile *os.File
-	contextKeys []string
+	logger         *log.Logger
+	logFile        *os.File
+	contextKeys    []string
 	receiveMessage chan bool
 }
 
-func getLogFilePathOfToday() string{
+func getLogFilePathOfToday() string {
 	// save log file inside "logs" dir.
 	executableFilePath, _ := os.Executable()
 	executableFileDir := filepath.Dir(executableFilePath)
 	logBaseDir := filepath.Join(executableFileDir, "logs")
-	
+
 	err := os.MkdirAll(logBaseDir, 0777)
-    if err != nil {
+	if err != nil {
 		log.Fatalf("Fail to getLogFilePath :%v", err)
-    }
+	}
 	return fmt.Sprintf("%s/%s.log", logBaseDir, time.Now().Format("20060102"))
 }
 
 func rotateLogFile(lt *loggerTool) {
 	for {
 		select {
-		case <- lt.receiveMessage:
+		case <-lt.receiveMessage:
 			// daily rotate the log file.
 			today := fmt.Sprint(time.Now().Format("20060102"))
 			if !strings.Contains(lt.logFile.Name(), today) {
 				lt.Lock()
 				logFilePath := getLogFilePathOfToday()
-				newlogFile, err := os.OpenFile(logFilePath, os.O_APPEND | os.O_CREATE | os.O_WRONLY, 0644)
+				newlogFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 				if err != nil {
 					log.Fatalf("Fail to open log file :%v", err)
 				}
-		
+
 				lt.logger.SetOutput(io.MultiWriter(os.Stdout, newlogFile))
-				
+
 				err = lt.logFile.Close()
 				if err != nil {
 					log.Fatalf("Fail to close old log file :%v", err)
@@ -75,22 +76,22 @@ func NewLogger(contextKeys []string, disable bool) *loggerTool {
 	var lt *loggerTool
 
 	logFilePath := getLogFilePathOfToday()
-	logFile, err := os.OpenFile(logFilePath, os.O_APPEND | os.O_CREATE | os.O_WRONLY, 0644)
+	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		log.Fatalf("Fail to open log file :%v", err)
-    }
+	}
 
 	lt = &loggerTool{
-		logger: log.New(io.MultiWriter(os.Stdout, logFile), "", log.Ldate|log.Ltime),
-		logFile: logFile,
-		contextKeys: contextKeys,
+		logger:         log.New(io.MultiWriter(os.Stdout, logFile), "", log.Ldate|log.Ltime),
+		logFile:        logFile,
+		contextKeys:    contextKeys,
 		receiveMessage: make(chan bool, 10000),
 	}
 
 	if disable == true {
 		lt.logger = log.New(ioutil.Discard, "", log.Ldate)
 	}
-	
+
 	go rotateLogFile(lt)
 
 	return lt

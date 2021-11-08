@@ -14,10 +14,11 @@ import (
 
 type middleware struct {
 	logger logging.LoggerTool
+	env string
 }
 
-func NewMiddleware(router *mux.Router, logger logging.LoggerTool) {
-	mw := &middleware{logger}
+func NewMiddleware(router *mux.Router, logger logging.LoggerTool, env string) {
+	mw := &middleware{logger, env}
 	router.Use(mw.loggingMiddleware)
 }
 

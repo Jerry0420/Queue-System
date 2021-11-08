@@ -19,7 +19,7 @@ func NewSignKeyRepository(db *sql.DB, logger logging.LoggerTool, contextTimeOut 
 	return &signKeyRepository{db, logger, contextTimeOut}
 }
 
-func (skr *signKeyRepository) Create(ctx context.Context, signKey *domain.SignKey) (signKeyID int, err error) {
+func (skr *signKeyRepository) Create(ctx context.Context, signKey domain.SignKey) (signKeyID int, err error) {
 	ctx, cancel := context.WithTimeout(ctx, skr.contextTimeOut)
 	defer cancel()
 

@@ -20,7 +20,7 @@ var (
 	// length of password is not appropriate.
 	ServerError40002 = &ServerError{Code: 40002, Description: "length of password is not appropriate."}
 	// the incoming password is not equal to the original password.
-	ServerError40003 = &ServerError{Code: 40003, Description: "the incoming password is not equal to the original password."}
+	ServerError40003 = &ServerError{Code: 40003, Description: "password mismatch."}
 
 	// ============================================================
 

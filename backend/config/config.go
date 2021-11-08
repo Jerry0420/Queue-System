@@ -26,6 +26,9 @@ func (config Config) validate(content string) string {
 	return content
 }
 
+type envStatus struct {DEV, PROD, TESTING string}
+var EnvStatus envStatus = envStatus{DEV: "dev", PROD: "prod", TESTING: "testing"}
+
 // read only
 func (config Config) ENV() string {
 	content := config.validate(os.Getenv("ENV"))

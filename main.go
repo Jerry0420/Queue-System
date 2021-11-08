@@ -27,7 +27,7 @@ func main() {
     var db *sql.DB
     dbLocation := serverConfig.POSTGRES_LOCATION()
     
-    if serverConfig.ENV() == "prod" {
+    if serverConfig.ENV() == config.EnvStatus.PROD {
         vaultConnectionConfig := serverConfig.VAULT_CONNECTION_CONFIG()
         logical, token, sys := config.NewVaultConnection(logger, &vaultConnectionConfig)
         vaultWrapper := config.NewVaultWrapper(
@@ -72,7 +72,7 @@ func main() {
     queueUsecase := usecase.NewQueueUsecase(queueReposotory, logger)
     customerUsecase := usecase.NewCustomerUsecase(customerReposotory, logger)
 
-    middleware.NewMiddleware(router, logger)
+    middleware.NewMiddleware(router, logger, serverConfig.ENV())
 
     delivery.NewStoreDelivery(router, logger, storeUsecase)
     delivery.NewQueueDelivery(router, logger, queueUsecase)

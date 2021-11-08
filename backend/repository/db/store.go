@@ -37,7 +37,7 @@ func (sr *storeRepository) GetByEmail(ctx context.Context, email string) (domain
 	return store, nil
 }
 
-func (sr *storeRepository) Create(ctx context.Context, store *domain.Store) error {
+func (sr *storeRepository) Create(ctx context.Context, store domain.Store) error {
 	ctx, cancel := context.WithTimeout(ctx, sr.contextTimeOut)
 	defer cancel()
 
