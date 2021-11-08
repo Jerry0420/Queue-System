@@ -30,7 +30,7 @@ func (sr *storeRepository) GetByEmail(ctx context.Context, email string) (domain
 	err := row.Scan(&store.ID, &store.Email, &store.Password, &store.Name, &store.Description, &store.CreatedAt, &store.Status, &store.SessionID)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
-		return store, nil
+		return store, domain.ServerError40402
 	case err != nil:
 		return store, domain.ServerError50002
 	}

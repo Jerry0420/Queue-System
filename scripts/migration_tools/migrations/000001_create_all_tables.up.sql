@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS stores(
 CREATE TYPE sign_key_types AS ENUM ('signin', 'email');
 
 CREATE TABLE IF NOT EXISTS sign_keys(
+   id serial PRIMARY KEY,
    store_id integer REFERENCES stores ON DELETE CASCADE,
    sign_key varchar(64) NOT NULL,
    type sign_key_types NOT NULL,

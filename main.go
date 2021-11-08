@@ -63,11 +63,12 @@ func main() {
     router := mux.NewRouter()
     router = router.PathPrefix("/api").Subrouter()
 
+    signKeyReposotory := repository.NewSignKeyRepository(db, logger, serverConfig.CONTEXT_TIMEOUT())
     storeReposotory := repository.NewStoreRepository(db, logger, serverConfig.CONTEXT_TIMEOUT())
     queueReposotory := repository.NewQueueRepository(db, logger, serverConfig.CONTEXT_TIMEOUT())
     customerReposotory := repository.NewCustomerRepository(db, logger, serverConfig.CONTEXT_TIMEOUT())
 
-    storeUsecase := usecase.NewStoreUsecase(storeReposotory, logger)
+    storeUsecase := usecase.NewStoreUsecase(storeReposotory, signKeyReposotory, logger)
     queueUsecase := usecase.NewQueueUsecase(queueReposotory, logger)
     customerUsecase := usecase.NewCustomerUsecase(customerReposotory, logger)
 

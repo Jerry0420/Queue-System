@@ -41,7 +41,7 @@ func (sd *storeDelivery) create(w http.ResponseWriter, r *http.Request) {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	presenter.JsonResponseOK(w, map[string]interface{}{"id": store.ID})
+	presenter.JsonResponseOK(w, nil)
 }
 
 func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {

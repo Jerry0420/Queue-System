@@ -3,22 +3,23 @@ package usecase
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
-	"golang.org/x/crypto/bcrypt"
+
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/jerry0420/queue-system/backend/domain"
 	"github.com/jerry0420/queue-system/backend/logging"
+	"golang.org/x/crypto/bcrypt"
 )
 
 type storeUsecase struct {
-	storeRepository domain.StoreRepositoryInterface
-	logger          logging.LoggerTool
+	storeRepository   domain.StoreRepositoryInterface
+	signKeyRepository domain.SignKeyRepositoryInterface
+	logger            logging.LoggerTool
 }
 
-func NewStoreUsecase(storeRepository domain.StoreRepositoryInterface, logger logging.LoggerTool) domain.StoreUsecaseInterface {
-	return &storeUsecase{storeRepository, logger}
+func NewStoreUsecase(storeRepository domain.StoreRepositoryInterface, signKeyRepository domain.SignKeyRepositoryInterface, logger logging.LoggerTool) domain.StoreUsecaseInterface {
+	return &storeUsecase{storeRepository, signKeyRepository, logger}
 }
 
 func (su *storeUsecase) GetByEmail(ctx context.Context, email string) (domain.Store, error) {
@@ -41,10 +42,7 @@ func (su *storeUsecase) Signin(ctx context.Context, store *domain.Store) (string
 	var token string
 	storeFromDb, err := su.GetByEmail(ctx, store.Email)
 	if err != nil {
-		return token, domain.ServerError50002
-	}
-	if storeFromDb == (domain.Store{}) {
-		return token, domain.ServerError40402
+		return token, err
 	}
 	err = bcrypt.CompareHashAndPassword([]byte(storeFromDb.Password), []byte(store.Password))
 	switch {
@@ -53,40 +51,53 @@ func (su *storeUsecase) Signin(ctx context.Context, store *domain.Store) (string
 	case err != nil:
 		return token, domain.ServerError50001
 	}
-	token, salt, err := su.generateToken(&storeFromDb)
+	signKey, err := su.generateSalt(ctx, storeFromDb.ID)
 	if err != nil {
-		return token, domain.ServerError50001
+		return token, err
 	}
-	fmt.Println(salt)
-	return token, nil
+	token, err = su.generateToken(store, signKey)
+	return token, err
 }
 
-type TokenClaims struct {
-	ID    int    `json:"id"`
-	Email string `json:"email"`
-	Name  string `json:"name"`
-	jwt.StandardClaims
-}
-
-func (su *storeUsecase) generateToken(store *domain.Store) (encryptToken string, salt string, err error) {
-	now := time.Now()
-	claims := TokenClaims{
-		store.ID,
-		store.Email,
-		store.Name,
-		jwt.StandardClaims{
-			IssuedAt:  now.Unix(),
-			// ExpiresAt: now.Add(24 * 30 * time.Hour).Unix(),
-		},
-	}
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	
+func (su *storeUsecase) generateSalt(ctx context.Context, storeId int) (signKey *domain.SignKey, err error) {
 	randomUUID := uuid.New().String()
 	saltBytes, err := bcrypt.GenerateFromPassword([]byte(randomUUID), bcrypt.DefaultCost)
 	if err != nil {
-		return encryptToken, salt, domain.ServerError50001
+		return &domain.SignKey{}, domain.ServerError50001
 	}
-	
-	encryptToken, err = token.SignedString(saltBytes)
-	return encryptToken, string(saltBytes), err
+	signKey = &domain.SignKey{StoreId: storeId, SignKey: string(saltBytes), SignKeyType: domain.SignKeyTypes.SIGNIN}
+	signKeyID, err := su.signKeyRepository.Create(ctx, signKey)
+	if err != nil {
+		return &domain.SignKey{}, err
+	}
+	signKey.ID = signKeyID
+	return signKey, nil
+}
+
+type tokenClaims struct {
+	ID        int    `json:"id"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	SignKeyID int    `json:"signkey_id"`
+	jwt.StandardClaims
+}
+
+func (su *storeUsecase) generateToken(store *domain.Store, signKey *domain.SignKey) (encryptToken string, err error) {
+	now := time.Now()
+	claims := tokenClaims{
+		store.ID,
+		store.Email,
+		store.Name,
+		signKey.ID,
+		jwt.StandardClaims{
+			IssuedAt: now.Unix(),
+			ExpiresAt: now.Add(24 * 30 * time.Hour).Unix(),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	encryptToken, err = token.SignedString([]byte(signKey.SignKey))
+	if err != nil {
+		return encryptToken, domain.ServerError50001
+	}
+	return encryptToken, err
 }
