@@ -70,7 +70,7 @@ func main() {
     queueUsecase := usecase.NewQueueUsecase(queueReposotory, logger)
     customerUsecase := usecase.NewCustomerUsecase(customerReposotory, logger)
 
-    middleware.NewMiddleware(router, logger)
+    middleware.NewMiddleware(router, logger, storeUsecase)
 
     delivery.NewStoreDelivery(router, logger, storeUsecase)
     delivery.NewQueueDelivery(router, logger, queueUsecase)

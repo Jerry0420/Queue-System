@@ -53,6 +53,11 @@ func (su *storeUsecase) Signin(ctx context.Context, store domain.Store) (domain.
 	return storeFromDb, nil
 }
 
+func (su *storeUsecase) CreateSignKey(ctx context.Context, signKey *domain.SignKey) error {
+	err := su.signKeyRepository.Create(ctx, signKey)
+	return err
+}
+
 type tokenClaims struct {
 	ID        int    `json:"id"`
 	Email     string `json:"email"`
@@ -67,12 +72,11 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store) (
 	if err != nil {
 		return "", domain.ServerError50001
 	}
-	signKey := domain.SignKey{StoreId: store.ID, SignKey: string(saltBytes), SignKeyType: domain.SignKeyTypes.SIGNIN}
-	signKeyID, err := su.signKeyRepository.Create(ctx, signKey)
+	signKey := &domain.SignKey{StoreId: store.ID, SignKey: string(saltBytes), SignKeyType: domain.SignKeyTypes.SIGNIN}
+	err = su.CreateSignKey(ctx, signKey)
 	if err != nil {
 		return "", err
 	}
-	signKey.ID = signKeyID
 
 	now := time.Now()
 	claims := tokenClaims{

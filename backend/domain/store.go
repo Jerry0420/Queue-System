@@ -28,6 +28,7 @@ type StoreUsecaseInterface interface {
 	Create(ctx context.Context, store Store) error
 	GetByEmail(ctx context.Context, email string) (Store, error)
 	Signin(ctx context.Context, store Store) (Store, error)
+	CreateSignKey(ctx context.Context, signKey *SignKey) error
 	GenerateToken(ctx context.Context, store Store) (string, error)
 }
 
