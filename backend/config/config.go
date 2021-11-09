@@ -1,27 +1,46 @@
 package config
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"time"
 )
 
-type Config struct{}
+type Config struct{
+	secretData map[string]interface{}
+}
 
 var ServerConfig Config
 
 func init() {
-	ServerConfig = Config{}
+	rawData, err := ioutil.ReadFile("/run/secrets/backend-secret/backend-secret")
+	if err != nil {
+		log.Fatalf("fail to read secret file.")
+	}
+	var secretData map[string]interface{}
+	json.Unmarshal(rawData, &secretData)
+	ServerConfig = Config{secretData: secretData}
 }
 
-func (config Config) validate(content string) string {
+func (config Config) getFromEnvVariable(key string) string {
+	content := os.Getenv(key)
 	if content == "" {
 		// if env variable not being set properly, just exit the whole program.
-		log.Fatalf("fail to validate env variable.")
+		log.Fatalf("fail to validate env variable %s.", key)
 	}
 	return content
+}
+
+func (config Config) getFromSecretFile(key string) string {
+	content, ok := config.secretData[key]
+	if !ok {
+		log.Fatalf("fail to get %s from secret file", key)
+	}
+	return content.(string)
 }
 
 type envStatus struct{ DEV, PROD, TESTING string }
@@ -30,12 +49,12 @@ var EnvStatus envStatus = envStatus{DEV: "dev", PROD: "prod", TESTING: "testing"
 
 // read only
 func (config Config) ENV() string {
-	content := config.validate(os.Getenv("ENV"))
+	content := config.getFromEnvVariable("ENV")
 	return content
 }
 
 func (config Config) CONTEXT_TIMEOUT() time.Duration {
-	content := config.validate(os.Getenv("CONTEXT_TIMEOUT"))
+	content := config.getFromEnvVariable("CONTEXT_TIMEOUT")
 	CONTEXT_TIMEOUT, err := strconv.Atoi(content)
 	if err != nil {
 		// if env variable not being set properly, just exit the whole program.
@@ -45,12 +64,12 @@ func (config Config) CONTEXT_TIMEOUT() time.Duration {
 }
 
 func (config Config) POSTGRES_HOST() string {
-	content := config.validate(os.Getenv("POSTGRES_HOST"))
+	content := config.getFromSecretFile("POSTGRES_HOST")
 	return content
 }
 
 func (config Config) POSTGRES_PORT() int {
-	content := config.validate(os.Getenv("POSTGRES_PORT"))
+	content := config.getFromSecretFile("POSTGRES_PORT")
 	POSTGRES_PORT, err := strconv.Atoi(content)
 	if err != nil {
 		// if not set env variable properly, just exit the whole program.
@@ -60,22 +79,22 @@ func (config Config) POSTGRES_PORT() int {
 }
 
 func (config Config) POSTGRES_SSL() string {
-	content := config.validate(os.Getenv("POSTGRES_SSL"))
+	content := config.getFromEnvVariable("POSTGRES_SSL")
 	return content
 }
 
 func (config Config) POSTGRES_DB() string {
-	content := config.validate(os.Getenv("POSTGRES_BACKEND_DB"))
+	content := config.getFromSecretFile("POSTGRES_BACKEND_DB")
 	return content
 }
 
 func (config Config) POSTGRES_DEV_USER() string {
-	content := config.validate(os.Getenv("POSTGRES_DEV_USER"))
+	content := config.getFromEnvVariable("POSTGRES_DEV_USER")
 	return content
 }
 
 func (config Config) POSTGRES_DEV_PASSWORD() string {
-	content := config.validate(os.Getenv("POSTGRES_DEV_PASSWORD"))
+	content := config.getFromEnvVariable("POSTGRES_DEV_PASSWORD")
 	return content
 }
 
@@ -89,22 +108,22 @@ func (config Config) POSTGRES_LOCATION() string {
 }
 
 func (config Config) VAULT_SERVER() string {
-	content := config.validate(os.Getenv("VAULT_SERVER"))
+	content := config.getFromEnvVariable("VAULT_SERVER")
 	return content
 }
 
 func (config Config) VAULT_WRAPPED_TOKEN_SERVER() string {
-	content := config.validate(os.Getenv("VAULT_WRAPPED_TOKEN_SERVER"))
+	content := config.getFromEnvVariable("VAULT_WRAPPED_TOKEN_SERVER")
 	return content
 }
 
 func (config Config) VAULT_CRED_NAME() string {
-	content := config.validate(os.Getenv("VAULT_CRED_NAME"))
+	content := config.getFromEnvVariable("VAULT_CRED_NAME")
 	return content
 }
 
 func (config Config) VAULT_ROLE_ID() string {
-	content := config.validate(os.Getenv("VAULT_ROLE_ID"))
+	content := config.getFromEnvVariable("VAULT_ROLE_ID")
 	return content
 }
 

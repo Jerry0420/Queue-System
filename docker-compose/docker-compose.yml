@@ -1,4 +1,4 @@
-version: "3.5"
+version: "3.7"
 
 services: 
   frontend:
@@ -30,6 +30,12 @@ services:
     env_file: 
       - .env
     user: 1000:1001
+    secrets:
+      - source: backend-secret
+        target: /run/secrets/backend-secret/backend-secret
+        uid: '1000'
+        gid: '1001'
+        mode: 0440
     ports:
       - "8000:8000"
     volumes:
@@ -44,3 +50,7 @@ volumes:
 networks: 
   queue_system:
     external: true
+
+secrets:
+  backend-secret:
+    file: ./secret
