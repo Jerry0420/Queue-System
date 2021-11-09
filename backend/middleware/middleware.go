@@ -56,6 +56,8 @@ func (mw *middleware) loggingMiddleware(next http.Handler) http.Handler {
 
 func (mw *middleware) authenticationMiddleware(next http.Handler) http.Handler {
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {		
+		encryptToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NiwiZW1haWwiOiJvaG9oSG9zcGl0YWxAZ21haWwuY29tIiwibmFtZSI6Im9ob2giLCJzaWdua2V5X2lkIjoxMDgsImV4cCI6MTYzOTAzODgwNCwiaWF0IjoxNjM2NDQ2ODA0fQ.NTF0W32G94H-rBkVphbtH4HieY9vq__xP4_aTUkddf8"
+		_, _ = mw.storeUsecase.ValidateToken(r.Context(), encryptToken)
 		next.ServeHTTP(w, r)
     })
 }

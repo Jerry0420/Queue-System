@@ -19,4 +19,5 @@ type SignKey struct {
 
 type SignKeyRepositoryInterface interface {
 	Create(ctx context.Context, signKey *SignKey) error
+	GetByID(ctx context.Context, id int) (signKey SignKey, err error)
 }

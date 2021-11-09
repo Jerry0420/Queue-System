@@ -28,8 +28,8 @@ type StoreUsecaseInterface interface {
 	Create(ctx context.Context, store Store) error
 	GetByEmail(ctx context.Context, email string) (Store, error)
 	Signin(ctx context.Context, store Store) (Store, error)
-	CreateSignKey(ctx context.Context, signKey *SignKey) error
 	GenerateToken(ctx context.Context, store Store) (string, error)
+	ValidateToken(ctx context.Context, encryptToken string) (store Store, err error)
 }
 
 // query := `INSERT INTO stores (email, password, name, description, status) VALUES ($1, $2, $3, $4, $5) `

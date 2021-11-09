@@ -37,3 +37,10 @@ func (skr *signKeyRepository) Create(ctx context.Context, signKey *domain.SignKe
 	}
 	return nil
 }
+
+func (skr *signKeyRepository) GetByID(ctx context.Context, id int) (signKey domain.SignKey, err error) {
+	ctx, cancel := context.WithTimeout(ctx, skr.contextTimeOut)
+	defer cancel()
+
+	return domain.SignKey{}, nil
+}

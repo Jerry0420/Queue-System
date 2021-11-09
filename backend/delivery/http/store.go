@@ -67,4 +67,5 @@ func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sd *storeDelivery) signout(w http.ResponseWriter, r *http.Request) {
+	presenter.JsonResponseOK(w, map[string]interface{}{"hello": "world"})
 }

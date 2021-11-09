@@ -53,11 +53,6 @@ func (su *storeUsecase) Signin(ctx context.Context, store domain.Store) (domain.
 	return storeFromDb, nil
 }
 
-func (su *storeUsecase) CreateSignKey(ctx context.Context, signKey *domain.SignKey) error {
-	err := su.signKeyRepository.Create(ctx, signKey)
-	return err
-}
-
 type tokenClaims struct {
 	ID        int    `json:"id"`
 	Email     string `json:"email"`
@@ -73,7 +68,7 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store) (
 		return "", domain.ServerError50001
 	}
 	signKey := &domain.SignKey{StoreId: store.ID, SignKey: string(saltBytes), SignKeyType: domain.SignKeyTypes.SIGNIN}
-	err = su.CreateSignKey(ctx, signKey)
+	err = su.signKeyRepository.Create(ctx, signKey)
 	if err != nil {
 		return "", err
 	}
@@ -85,7 +80,7 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store) (
 		store.Name,
 		signKey.ID,
 		jwt.StandardClaims{
-			IssuedAt: now.Unix(),
+			IssuedAt:  now.Unix(),
 			ExpiresAt: now.Add(24 * 30 * time.Hour).Unix(),
 		},
 	}
@@ -95,4 +90,32 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store) (
 		return encryptToken, domain.ServerError50001
 	}
 	return encryptToken, err
+}
+
+func (su *storeUsecase) ValidateToken(ctx context.Context, encryptToken string) (store domain.Store, err error) {
+	var claims tokenClaims
+	token, _, err := new(jwt.Parser).ParseUnverified(encryptToken, &claims)
+	if err != nil {
+		return domain.Store{}, domain.ServerError40101
+	}
+	if !token.Valid {
+		return domain.Store{}, domain.ServerError40101
+	}
+
+	claims = tokenClaims{}
+	token, err = jwt.ParseWithClaims(encryptToken, &claims, func(token *jwt.Token) (interface{}, error) {
+		signKey, err := su.signKeyRepository.GetByID(ctx, claims.SignKeyID)
+		if err != nil {
+			return nil, err
+		}
+		return []byte(signKey.SignKey), nil
+	})
+	if err != nil {
+		return domain.Store{}, domain.ServerError40101
+	}
+	if !token.Valid {
+		return domain.Store{}, domain.ServerError40101
+	}
+	store = domain.Store{ID: claims.ID, Email: claims.Email, Name: claims.Name}
+	return store, nil
 }

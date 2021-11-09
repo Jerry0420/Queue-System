@@ -24,6 +24,11 @@ var (
 
 	// ============================================================
 
+	// fail to parse jwt token
+	ServerError40101 = &ServerError{Code: 40101, Description: "fail to parse jwt token"}
+
+	// ============================================================
+
 	// unsupported url route
 	ServerError40401 = &ServerError{Code: 40401, Description: "unsupported url route"}
 	// store not exist.
