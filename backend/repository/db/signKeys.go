@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/jerry0420/queue-system/backend/domain"
@@ -42,5 +43,14 @@ func (skr *signKeyRepository) GetByID(ctx context.Context, id int) (signKey doma
 	ctx, cancel := context.WithTimeout(ctx, skr.contextTimeOut)
 	defer cancel()
 
-	return domain.SignKey{}, nil
+	query := `SELECT sign_key FROM sign_keys WHERE id=$1`
+	row := skr.db.QueryRowContext(ctx, query, id)
+	err = row.Scan(&signKey.SignKey)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		return signKey, domain.ServerError40403
+	case err != nil:
+		return signKey, domain.ServerError50002
+	}
+	return signKey, nil
 }

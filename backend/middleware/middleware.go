@@ -18,7 +18,7 @@ import (
 
 type middleware struct {
 	storeUsecase domain.StoreUsecaseInterface
-	logger logging.LoggerTool
+	logger       logging.LoggerTool
 }
 
 func NewMiddleware(router *mux.Router, logger logging.LoggerTool, storeUsecase domain.StoreUsecaseInterface) {
@@ -28,37 +28,46 @@ func NewMiddleware(router *mux.Router, logger logging.LoggerTool, storeUsecase d
 }
 
 func (mw *middleware) loggingMiddleware(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
 		randomUUID := uuid.New().String()
-        ctx := context.WithValue(r.Context(), "requestID", randomUUID)
-        
-        responseWrapper := &presenter.ResponseWrapper{ResponseWriter: w, Buffer: &bytes.Buffer{}}
+		ctx := context.WithValue(r.Context(), "requestID", randomUUID)
 
 		r = r.WithContext(ctx)
+		responseWrapper := &presenter.ResponseWrapper{ResponseWriter: w, Buffer: &bytes.Buffer{}}
 		next.ServeHTTP(responseWrapper, r)
-        
-        var wrappedResponse *presenter.ResponseFormat
-        json.Unmarshal(responseWrapper.Buffer.Bytes(), &wrappedResponse)
+
+		var wrappedResponse *presenter.ResponseFormat
+		json.Unmarshal(responseWrapper.Buffer.Bytes(), &wrappedResponse)
 		io.Copy(w, responseWrapper.Buffer)
+
+		ctx = context.WithValue(r.Context(), "duration", time.Since(start).Truncate(1*time.Millisecond))
 
 		if wrappedResponse != nil {
 			// api routes will go here.
-			ctx = context.WithValue(r.Context(), "code", wrappedResponse.Code)
+			ctx = context.WithValue(ctx, "code", wrappedResponse.Code)
 		}
-        ctx = context.WithValue(ctx, "duration", time.Since(start).Truncate(1 * time.Millisecond))
-        
+
 		r = r.WithContext(ctx)
-        mw.logger.INFOf(r.Context(), "response")
-    })
+		mw.logger.INFOf(r.Context(), "response")
+	})
 }
 
 func (mw *middleware) authenticationMiddleware(next http.Handler) http.Handler {
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {		
-		encryptToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6NiwiZW1haWwiOiJvaG9oSG9zcGl0YWxAZ21haWwuY29tIiwibmFtZSI6Im9ob2giLCJzaWdua2V5X2lkIjoxMDgsImV4cCI6MTYzOTAzODgwNCwiaWF0IjoxNjM2NDQ2ODA0fQ.NTF0W32G94H-rBkVphbtH4HieY9vq__xP4_aTUkddf8"
-		_, _ = mw.storeUsecase.ValidateToken(r.Context(), encryptToken)
-		next.ServeHTTP(w, r)
-    })
-}
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		encryptToken := r.Header.Get("Authorization")
+		if len(encryptToken) > 0 {
+			store, err := mw.storeUsecase.ValidateToken(r.Context(), encryptToken)
+			if err != nil {
+				presenter.JsonResponse(w, nil, domain.ServerError40101)
+				return
+			}
+			ctx := context.WithValue(r.Context(), "store", store)
+			ctx = context.WithValue(ctx, "storeID", store.ID)
 
+			r = r.WithContext(ctx)
+		}
+		next.ServeHTTP(w, r)
+	})
+}

@@ -94,16 +94,13 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store) (
 
 func (su *storeUsecase) ValidateToken(ctx context.Context, encryptToken string) (store domain.Store, err error) {
 	var claims tokenClaims
-	token, _, err := new(jwt.Parser).ParseUnverified(encryptToken, &claims)
+	_, _, err = new(jwt.Parser).ParseUnverified(encryptToken, &claims)
 	if err != nil {
-		return domain.Store{}, domain.ServerError40101
-	}
-	if !token.Valid {
 		return domain.Store{}, domain.ServerError40101
 	}
 
 	claims = tokenClaims{}
-	token, err = jwt.ParseWithClaims(encryptToken, &claims, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(encryptToken, &claims, func(token *jwt.Token) (interface{}, error) {
 		signKey, err := su.signKeyRepository.GetByID(ctx, claims.SignKeyID)
 		if err != nil {
 			return nil, err

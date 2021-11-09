@@ -32,7 +32,7 @@ func (sd *storeDelivery) signup(w http.ResponseWriter, r *http.Request) {
 	}
 	decodedPassword, err := base64.StdEncoding.DecodeString(store.Password)
 	rawPassword := string(decodedPassword)
-	// length of password must between 8 and 15. 
+	// length of password must between 8 and 15.
 	if err != nil || len(rawPassword) < 8 || len(rawPassword) > 15 {
 		presenter.JsonResponse(w, nil, domain.ServerError40002)
 		return
@@ -52,7 +52,7 @@ func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
 		presenter.JsonResponse(w, nil, domain.ServerError40001)
 		return
 	}
-	
+
 	store, err = sd.storeUsecase.Signin(r.Context(), store)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)

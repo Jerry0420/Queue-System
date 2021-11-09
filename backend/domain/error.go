@@ -33,6 +33,8 @@ var (
 	ServerError40401 = &ServerError{Code: 40401, Description: "unsupported url route"}
 	// store not exist.
 	ServerError40402 = &ServerError{Code: 40402, Description: "store not exist."}
+	// sign_key not exist.
+	ServerError40403 = &ServerError{Code: 40403, Description: "sign_key not exist."}
 
 	// ============================================================
 
