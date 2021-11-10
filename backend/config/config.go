@@ -19,8 +19,8 @@ var ServerConfig Config
 
 func init() {
 	path := "/run/secrets/backend-secret/backend-secret"
-	if os.Getenv("CONFIG_PATH") != "" {
-		path = os.Getenv("CONFIG_PATH")
+	if os.Getenv("SECRET_PATH") != "" {
+		path = os.Getenv("SECRET_PATH")
 	}
 	rawData, err := ioutil.ReadFile(path)
 	if err != nil {
