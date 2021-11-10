@@ -8,6 +8,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jerry0420/queue-system/backend/domain"
 	"github.com/jerry0420/queue-system/backend/logging"
+	"github.com/jerry0420/queue-system/backend/middleware"
 	"github.com/jerry0420/queue-system/backend/presenter"
 )
 
@@ -16,11 +17,22 @@ type storeDelivery struct {
 	logger       logging.LoggerTool
 }
 
-func NewStoreDelivery(router *mux.Router, logger logging.LoggerTool, storeUsecase domain.StoreUsecaseInterface) {
+func NewStoreDelivery(router *mux.Router, mw *middleware.Middleware, logger logging.LoggerTool, storeUsecase domain.StoreUsecaseInterface) {
 	sd := &storeDelivery{storeUsecase, logger}
-	router.HandleFunc("/stores/signup", sd.signup).Methods(http.MethodPost).Headers("Content-Type", "application/json")
-	router.HandleFunc("/stores/signin", sd.signin).Methods(http.MethodPost).Headers("Content-Type", "application/json")
-	router.HandleFunc("/stores/signout", sd.signout).Methods(http.MethodPost).Headers("Content-Type", "application/json")
+	router.HandleFunc(
+		"/stores/signup",
+		sd.signup,
+	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
+
+	router.HandleFunc(
+		"/stores/signin",
+		sd.signin,
+	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
+
+	router.Handle(
+		"/stores/signout",
+		mw.AuthenticationMiddleware(http.HandlerFunc(sd.signout)),
+	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 }
 
 func (sd *storeDelivery) signup(w http.ResponseWriter, r *http.Request) {
@@ -67,5 +79,19 @@ func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sd *storeDelivery) signout(w http.ResponseWriter, r *http.Request) {
-	presenter.JsonResponseOK(w, map[string]interface{}{"hello": "world"})
+	token := r.Context().Value("token").(domain.TokenClaims)
+
+	var jsonBody map[string]int
+	err := json.NewDecoder(r.Body).Decode(&jsonBody)
+	if err != nil || jsonBody["storeID"] != token.StoreID || jsonBody["signKeyID"] != token.SignKeyID {
+		presenter.JsonResponse(w, nil, domain.ServerError40004)
+		return
+	}
+
+	err = sd.storeUsecase.RemoveSignKeyByID(r.Context(), token.SignKeyID)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+	presenter.JsonResponseOK(w, nil)
 }

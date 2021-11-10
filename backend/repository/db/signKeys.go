@@ -34,7 +34,7 @@ func (skr *signKeyRepository) Create(ctx context.Context, signKey *domain.SignKe
 	err = row.Scan(&signKey.ID)
 	if err != nil {
 		skr.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
+		return domain.ServerError40902
 	}
 	return nil
 }
@@ -53,4 +53,24 @@ func (skr *signKeyRepository) GetByID(ctx context.Context, id int) (signKey doma
 		return signKey, domain.ServerError50002
 	}
 	return signKey, nil
+}
+
+func (skr *signKeyRepository) RemoveByID(ctx context.Context, id int) error {
+	ctx, cancel := context.WithTimeout(ctx, skr.contextTimeOut)
+	defer cancel()
+
+	var deletedID int
+	query := `DELETE FROM sign_keys WHERE id=$1 RETURNING id`
+	stmt, err := skr.db.PrepareContext(ctx, query)
+	if err != nil {
+		skr.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
+	row := stmt.QueryRowContext(ctx, id)
+	err = row.Scan(&deletedID)
+	if err != nil || deletedID != id {
+		skr.logger.ERRORf("error %v", err)
+		return domain.ServerError40403
+	}
+	return nil
 }

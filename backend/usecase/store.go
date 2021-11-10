@@ -53,14 +53,6 @@ func (su *storeUsecase) Signin(ctx context.Context, store domain.Store) (domain.
 	return storeFromDb, nil
 }
 
-type tokenClaims struct {
-	ID        int    `json:"id"`
-	Email     string `json:"email"`
-	Name      string `json:"name"`
-	SignKeyID int    `json:"signkey_id"`
-	jwt.StandardClaims
-}
-
 func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store) (encryptToken string, err error) {
 	randomUUID := uuid.New().String()
 	saltBytes, err := bcrypt.GenerateFromPassword([]byte(randomUUID), bcrypt.DefaultCost)
@@ -74,7 +66,7 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store) (
 	}
 
 	now := time.Now()
-	claims := tokenClaims{
+	claims := domain.TokenClaims {
 		store.ID,
 		store.Email,
 		store.Name,
@@ -92,27 +84,32 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store) (
 	return encryptToken, err
 }
 
-func (su *storeUsecase) ValidateToken(ctx context.Context, encryptToken string) (store domain.Store, err error) {
-	var claims tokenClaims
-	_, _, err = new(jwt.Parser).ParseUnverified(encryptToken, &claims)
+func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string) (tokenClaims domain.TokenClaims, err error) {
+	_, _, err = new(jwt.Parser).ParseUnverified(encryptToken, &tokenClaims)
 	if err != nil {
-		return domain.Store{}, domain.ServerError40101
+		return domain.TokenClaims{}, domain.ServerError40101
 	}
 
-	claims = tokenClaims{}
-	token, err := jwt.ParseWithClaims(encryptToken, &claims, func(token *jwt.Token) (interface{}, error) {
-		signKey, err := su.signKeyRepository.GetByID(ctx, claims.SignKeyID)
+	tokenClaims = domain.TokenClaims{}
+	token, err := jwt.ParseWithClaims(encryptToken, &tokenClaims, func(token *jwt.Token) (interface{}, error) {
+		signKey, err := su.signKeyRepository.GetByID(ctx, tokenClaims.SignKeyID)
 		if err != nil {
 			return nil, err
 		}
 		return []byte(signKey.SignKey), nil
 	})
 	if err != nil {
-		return domain.Store{}, domain.ServerError40101
+		su.logger.ERRORf("%v", err)
+		return domain.TokenClaims{}, domain.ServerError40403
 	}
 	if !token.Valid {
-		return domain.Store{}, domain.ServerError40101
+		su.logger.ERRORf("unvalid token")
+		return domain.TokenClaims{}, domain.ServerError40101
 	}
-	store = domain.Store{ID: claims.ID, Email: claims.Email, Name: claims.Name}
-	return store, nil
+	return tokenClaims, nil
+}
+
+func (su *storeUsecase) RemoveSignKeyByID(ctx context.Context, signKeyID int) error {
+	err := su.signKeyRepository.RemoveByID(ctx, signKeyID)
+	return err
 }

@@ -3,20 +3,31 @@ package domain
 import (
 	"context"
 	"time"
+
+	"github.com/golang-jwt/jwt"
 )
 
-type storeStatus struct {OPEN, CLOSE string}
+type storeStatus struct{ OPEN, CLOSE string }
+
 var StoreStatus storeStatus = storeStatus{OPEN: "open", CLOSE: "close"}
 
 type Store struct {
-	ID int `json:"id"`
-	Email string `json:"email"`
-	Password string `json:"password"`
-	Name string `json:"name"`
-	Description string `json:"description"`
-	CreatedAt time.Time `json:"created_at"`
-	Status string `json:"status"`
-	SessionID string `json:"session_id"`
+	ID          int       `json:"id"`
+	Email       string    `json:"email"`
+	Password    string    `json:"password"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"created_at"`
+	Status      string    `json:"status"`
+	SessionID   string    `json:"session_id"`
+}
+
+type TokenClaims struct {
+	StoreID        int    `json:"id"`
+	Email     string `json:"email"`
+	Name      string `json:"name"`
+	SignKeyID int    `json:"signkey_id"`
+	jwt.StandardClaims
 }
 
 type StoreRepositoryInterface interface {
@@ -29,7 +40,8 @@ type StoreUsecaseInterface interface {
 	GetByEmail(ctx context.Context, email string) (Store, error)
 	Signin(ctx context.Context, store Store) (Store, error)
 	GenerateToken(ctx context.Context, store Store) (string, error)
-	ValidateToken(ctx context.Context, encryptToken string) (store Store, err error)
+	VerifyToken(ctx context.Context, encryptToken string) (tokenClaims TokenClaims, err error)
+	RemoveSignKeyByID(ctx context.Context, signKeyID int) error
 }
 
 // query := `INSERT INTO stores (email, password, name, description, status) VALUES ($1, $2, $3, $4, $5) `

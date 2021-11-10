@@ -16,18 +16,18 @@ import (
 	"github.com/jerry0420/queue-system/backend/presenter"
 )
 
-type middleware struct {
+type Middleware struct {
 	storeUsecase domain.StoreUsecaseInterface
 	logger       logging.LoggerTool
 }
 
-func NewMiddleware(router *mux.Router, logger logging.LoggerTool, storeUsecase domain.StoreUsecaseInterface) {
-	mw := &middleware{storeUsecase, logger}
-	router.Use(mw.loggingMiddleware)
-	router.Use(mw.authenticationMiddleware)
+func NewMiddleware(router *mux.Router, logger logging.LoggerTool, storeUsecase domain.StoreUsecaseInterface) *Middleware {
+	mw := &Middleware{storeUsecase, logger}
+	router.Use(mw.LoggingMiddleware)
+	return mw
 }
 
-func (mw *middleware) loggingMiddleware(next http.Handler) http.Handler {
+func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
 
@@ -54,19 +54,22 @@ func (mw *middleware) loggingMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func (mw *middleware) authenticationMiddleware(next http.Handler) http.Handler {
+func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		encryptToken := r.Header.Get("Authorization")
 		if len(encryptToken) > 0 {
-			store, err := mw.storeUsecase.ValidateToken(r.Context(), encryptToken)
+			tokenClaims, err := mw.storeUsecase.VerifyToken(r.Context(), encryptToken)
 			if err != nil {
-				presenter.JsonResponse(w, nil, domain.ServerError40101)
+				presenter.JsonResponse(w, nil, err)
 				return
 			}
-			ctx := context.WithValue(r.Context(), "store", store)
-			ctx = context.WithValue(ctx, "storeID", store.ID)
-
+			ctx := context.WithValue(r.Context(), "token", tokenClaims)
+			mw.logger.INFOf(ctx, "storeID: %d", tokenClaims.StoreID)
 			r = r.WithContext(ctx)
+
+		} else {
+			presenter.JsonResponse(w, nil, domain.ServerError40102)
+			return
 		}
 		next.ServeHTTP(w, r)
 	})

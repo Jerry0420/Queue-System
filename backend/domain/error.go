@@ -21,11 +21,15 @@ var (
 	ServerError40002 = &ServerError{Code: 40002, Description: "length of password is not appropriate."}
 	// the incoming password is not equal to the original password.
 	ServerError40003 = &ServerError{Code: 40003, Description: "password mismatch."}
+	// wrong params
+	ServerError40004 = &ServerError{Code: 40004, Description: "wrong params"}
 
 	// ============================================================
 
 	// fail to parse jwt token
 	ServerError40101 = &ServerError{Code: 40101, Description: "fail to parse jwt token"}
+	// lack of jwt token
+	ServerError40102 = &ServerError{Code: 40102, Description: "lack of jwt token"}
 
 	// ============================================================
 
@@ -45,6 +49,8 @@ var (
 
 	// store already exist.
 	ServerError40901 = &ServerError{Code: 40901, Description: "store already exist."}
+	// sign_key not exist.
+	ServerError40902 = &ServerError{Code: 40902, Description: "sign_key not exist."}
 
 	// ============================================================
 

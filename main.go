@@ -20,7 +20,7 @@ import (
 )
 
 func main() {
-	logger := logging.NewLogger([]string{"method", "url", "code", "sep", "requestID", "duration", "storeID"}, false)
+	logger := logging.NewLogger([]string{"method", "url", "code", "sep", "requestID", "duration"}, false)
 
 	var db *sql.DB
 	dbLocation := config.ServerConfig.POSTGRES_LOCATION()
@@ -70,9 +70,9 @@ func main() {
 	queueUsecase := usecase.NewQueueUsecase(queueReposotory, logger)
 	customerUsecase := usecase.NewCustomerUsecase(customerReposotory, logger)
 
-	middleware.NewMiddleware(router, logger, storeUsecase)
+	mw := middleware.NewMiddleware(router, logger, storeUsecase)
 
-	delivery.NewStoreDelivery(router, logger, storeUsecase)
+	delivery.NewStoreDelivery(router, mw, logger, storeUsecase)
 	delivery.NewQueueDelivery(router, logger, queueUsecase)
 	delivery.NewCustomerDelivery(router, logger, customerUsecase)
 	delivery.NewBaseDelivery(router, logger)
