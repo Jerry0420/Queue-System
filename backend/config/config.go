@@ -7,40 +7,42 @@ import (
 	"log"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
-type Config struct{
-	secretData map[string]interface{}
+type Config struct {
+	data map[string]string
 }
 
 var ServerConfig Config
 
 func init() {
-	rawData, err := ioutil.ReadFile("/run/secrets/backend-secret/backend-secret")
+	path := "/run/secrets/backend-secret/backend-secret"
+	if os.Getenv("CONFIG_PATH") != "" {
+		path = os.Getenv("CONFIG_PATH")
+	}
+	rawData, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatalf("fail to read secret file.")
 	}
-	var secretData map[string]interface{}
+	var secretData map[string]string
 	json.Unmarshal(rawData, &secretData)
-	ServerConfig = Config{secretData: secretData}
+	ServerConfig = Config{data: secretData}
+
+	var pairs []string
+	for _, value := range os.Environ() {
+		pairs = strings.Split(value, "=")
+		ServerConfig.data[pairs[0]] = pairs[1]
+	}
 }
 
-func (config Config) getFromEnvVariable(key string) string {
-	content := os.Getenv(key)
-	if content == "" {
-		// if env variable not being set properly, just exit the whole program.
-		log.Fatalf("fail to validate env variable %s.", key)
+func (config Config) get(key string) string {
+	content, ok := config.data[key]
+	if !ok {
+		log.Fatalf("fail to get %s from config", key)
 	}
 	return content
-}
-
-func (config Config) getFromSecretFile(key string) string {
-	content, ok := config.secretData[key]
-	if !ok {
-		log.Fatalf("fail to get %s from secret file", key)
-	}
-	return content.(string)
 }
 
 type envStatus struct{ DEV, PROD, TESTING string }
@@ -49,12 +51,12 @@ var EnvStatus envStatus = envStatus{DEV: "dev", PROD: "prod", TESTING: "testing"
 
 // read only
 func (config Config) ENV() string {
-	content := config.getFromEnvVariable("ENV")
+	content := config.get("ENV")
 	return content
 }
 
 func (config Config) CONTEXT_TIMEOUT() time.Duration {
-	content := config.getFromEnvVariable("CONTEXT_TIMEOUT")
+	content := config.get("CONTEXT_TIMEOUT")
 	CONTEXT_TIMEOUT, err := strconv.Atoi(content)
 	if err != nil {
 		// if env variable not being set properly, just exit the whole program.
@@ -64,12 +66,12 @@ func (config Config) CONTEXT_TIMEOUT() time.Duration {
 }
 
 func (config Config) POSTGRES_HOST() string {
-	content := config.getFromSecretFile("POSTGRES_HOST")
+	content := config.get("POSTGRES_HOST")
 	return content
 }
 
 func (config Config) POSTGRES_PORT() int {
-	content := config.getFromSecretFile("POSTGRES_PORT")
+	content := config.get("POSTGRES_PORT")
 	POSTGRES_PORT, err := strconv.Atoi(content)
 	if err != nil {
 		// if not set env variable properly, just exit the whole program.
@@ -79,22 +81,22 @@ func (config Config) POSTGRES_PORT() int {
 }
 
 func (config Config) POSTGRES_SSL() string {
-	content := config.getFromEnvVariable("POSTGRES_SSL")
+	content := config.get("POSTGRES_SSL")
 	return content
 }
 
 func (config Config) POSTGRES_DB() string {
-	content := config.getFromSecretFile("POSTGRES_BACKEND_DB")
+	content := config.get("POSTGRES_BACKEND_DB")
 	return content
 }
 
 func (config Config) POSTGRES_DEV_USER() string {
-	content := config.getFromEnvVariable("POSTGRES_DEV_USER")
+	content := config.get("POSTGRES_DEV_USER")
 	return content
 }
 
 func (config Config) POSTGRES_DEV_PASSWORD() string {
-	content := config.getFromEnvVariable("POSTGRES_DEV_PASSWORD")
+	content := config.get("POSTGRES_DEV_PASSWORD")
 	return content
 }
 
@@ -108,22 +110,22 @@ func (config Config) POSTGRES_LOCATION() string {
 }
 
 func (config Config) VAULT_SERVER() string {
-	content := config.getFromEnvVariable("VAULT_SERVER")
+	content := config.get("VAULT_SERVER")
 	return content
 }
 
 func (config Config) VAULT_WRAPPED_TOKEN_SERVER() string {
-	content := config.getFromEnvVariable("VAULT_WRAPPED_TOKEN_SERVER")
+	content := config.get("VAULT_WRAPPED_TOKEN_SERVER")
 	return content
 }
 
 func (config Config) VAULT_CRED_NAME() string {
-	content := config.getFromEnvVariable("VAULT_CRED_NAME")
+	content := config.get("VAULT_CRED_NAME")
 	return content
 }
 
 func (config Config) VAULT_ROLE_ID() string {
-	content := config.getFromEnvVariable("VAULT_ROLE_ID")
+	content := config.get("VAULT_ROLE_ID")
 	return content
 }
 

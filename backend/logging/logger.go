@@ -33,9 +33,8 @@ type loggerTool struct {
 
 func getLogFilePathOfToday() string {
 	// save log file inside "logs" dir.
-	executableFilePath, _ := os.Executable()
-	executableFileDir := filepath.Dir(executableFilePath)
-	logBaseDir := filepath.Join(executableFileDir, "logs")
+	currentPath, _ := filepath.Abs("./")
+	logBaseDir := filepath.Join(currentPath, "logs")
 
 	err := os.MkdirAll(logBaseDir, 0777)
 	if err != nil {
