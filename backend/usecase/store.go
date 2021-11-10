@@ -106,6 +106,9 @@ func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string) (t
 		su.logger.ERRORf("unvalid token")
 		return domain.TokenClaims{}, domain.ServerError40101
 	}
+	if tokenClaims.ExpiresAt <= time.Now().Add(24 * time.Hour).Unix() {
+		return tokenClaims, domain.ServerError40103
+	}
 	return tokenClaims, nil
 }
 
