@@ -55,6 +55,11 @@ func (config Config) ENV() string {
 	return content
 }
 
+func (config Config) DOMAIN() string {
+	content := config.get("DOMAIN")
+	return content
+}
+
 func (config Config) CONTEXT_TIMEOUT() time.Duration {
 	content := config.get("CONTEXT_TIMEOUT")
 	CONTEXT_TIMEOUT, err := strconv.Atoi(content)

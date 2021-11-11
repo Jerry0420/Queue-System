@@ -33,34 +33,19 @@ type TokenClaims struct {
 type StoreRepositoryInterface interface {
 	Create(ctx context.Context, store Store) error
 	GetByEmail(ctx context.Context, email string) (Store, error)
+	Update(ctx context.Context, store *Store, fieldName string, newFieldValue string) error
 }
 
 type StoreUsecaseInterface interface {
 	Create(ctx context.Context, store Store) error
 	GetByEmail(ctx context.Context, email string) (Store, error)
-	Signin(ctx context.Context, store Store) (Store, error)
-	GenerateToken(ctx context.Context, store Store) (string, error)
+	VerifyPasswordLength(password string) error
+	EncryptPassword(store *Store) error
+	Signin(ctx context.Context, store *Store) error
+	GenerateToken(ctx context.Context, store Store, signKeyType string, expiresDuration time.Duration) (string, error)
 	VerifyToken(ctx context.Context, encryptToken string) (tokenClaims TokenClaims, err error)
+	VerifyTokenRenewable(tokenClaims TokenClaims) bool
 	RemoveSignKeyByID(ctx context.Context, signKeyID int) error
+	GenerateEmailContentOfForgetPassword(emailToken string, store Store) (subject string, content string)
+	Update(ctx context.Context, store *Store, fieldName string, newFieldValue string) error
 }
-
-// query := `INSERT INTO stores (email, password, name, description, status) VALUES ($1, $2, $3, $4, $5) `
-// stmt, err := db.PrepareContext(r.Context(), query)
-// _, err = stmt.ExecContext(r.Context(), "jeerywa@gmail.com", "im password", "jerry", "im description", "open")
-// utils.JsonResponseOK(w, nil)
-
-// query := `UPDATE stores SET name=$1,session_id=uuid_generate_v4()`
-// stmt, err := db.PrepareContext(r.Context(), query)
-// _, err = stmt.ExecContext(r.Context(), "new_jerry")
-
-// query = `SELECT id,name,created_at,status,session_id FROM stores`
-// rows, err := db.QueryContext(r.Context(), query)
-// defer func() {
-// 	errRow := rows.Close()
-// }()
-// result := make([]domain.Store, 0)
-// for rows.Next() {
-// 	store := domain.Store{}
-// 	err = rows.Scan(&store.ID, &store.Name, &store.CreatedAt, &store.Status, &store.SessionID)
-// 	result = append(result, store)
-// }

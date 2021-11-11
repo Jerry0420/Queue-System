@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/jerry0420/queue-system/backend/domain"
@@ -50,6 +51,25 @@ func (sr *storeRepository) Create(ctx context.Context, store domain.Store) error
 	if err != nil {
 		sr.logger.ERRORf("error %v", err)
 		return domain.ServerError40901
+	}
+	return nil
+}
+
+func (sr *storeRepository) Update(ctx context.Context, store *domain.Store, fieldName string, newFieldValue string) error {
+	ctx, cancel := context.WithTimeout(ctx, sr.contextTimeOut)
+	defer cancel()
+
+	query := fmt.Sprintf("UPDATE stores SET %s=$1 WHERE id=$2 RETURNING description,created_at,status,session_id", fieldName)
+	stmt, err := sr.db.PrepareContext(ctx, query)
+	if err != nil {
+		sr.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
+	row := stmt.QueryRowContext(ctx, newFieldValue, store.ID)
+	err = row.Scan(&store.Description, &store.CreatedAt, &store.Status, &store.SessionID)
+	if err != nil {
+		sr.logger.ERRORf("error %v", err)
+		return domain.ServerError40402
 	}
 	return nil
 }

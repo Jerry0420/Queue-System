@@ -63,6 +63,10 @@ func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 				presenter.JsonResponse(w, nil, err)
 				return
 			}
+			if mw.storeUsecase.VerifyTokenRenewable(tokenClaims) == true {
+				presenter.JsonResponse(w, nil, domain.ServerError40103)
+				return
+			}
 			ctx := context.WithValue(r.Context(), "token", tokenClaims)
 			mw.logger.INFOf(ctx, "storeID: %d", tokenClaims.StoreID)
 			r = r.WithContext(ctx)

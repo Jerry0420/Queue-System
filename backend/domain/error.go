@@ -51,8 +51,8 @@ var (
 
 	// store already exist.
 	ServerError40901 = &ServerError{Code: 40901, Description: "store already exist."}
-	// sign_key not exist.
-	ServerError40902 = &ServerError{Code: 40902, Description: "sign_key not exist."}
+	// sign_key already exist.
+	ServerError40902 = &ServerError{Code: 40902, Description: "sign_key already exist."}
 
 	// ============================================================
 
