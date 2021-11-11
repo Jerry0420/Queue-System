@@ -53,13 +53,8 @@ func (su *storeUsecase) EncryptPassword(store *domain.Store) error {
 }
 
 func (su *storeUsecase) Create(ctx context.Context, store domain.Store) error {
-	cryptedPassword, err := bcrypt.GenerateFromPassword([]byte(store.Password), bcrypt.DefaultCost)
-	if err != nil {
-		return domain.ServerError50001
-	}
-	store.Password = string(cryptedPassword)
 	store.Status = domain.StoreStatus.OPEN
-	err = su.storeRepository.Create(ctx, store)
+	err := su.storeRepository.Create(ctx, store)
 	return err
 }
 

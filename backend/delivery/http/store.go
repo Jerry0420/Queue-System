@@ -176,14 +176,14 @@ func (sd *storeDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) 
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	
+
 	store := domain.Store{ID: tokenClaims.StoreID, Email: tokenClaims.Email, Name: tokenClaims.Name}
 	err = sd.storeUsecase.EncryptPassword(&store)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	
+
 	err = sd.storeUsecase.Update(r.Context(), &store, "password", store.Password)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
