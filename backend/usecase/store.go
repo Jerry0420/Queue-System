@@ -33,6 +33,7 @@ func (su *storeUsecase) GetByEmail(ctx context.Context, email string) (domain.St
 func (su *storeUsecase) VerifyPasswordLength(password string) error {
 	decodedPassword, err := base64.StdEncoding.DecodeString(password)
 	if err != nil {
+		su.logger.ERRORf("%v", err)
 		return domain.ServerError50001
 	}
 	rawPassword := string(decodedPassword)
@@ -43,13 +44,13 @@ func (su *storeUsecase) VerifyPasswordLength(password string) error {
 	return nil
 }
 
-func (su *storeUsecase) EncryptPassword(store *domain.Store) error {
-	cryptedPassword, err := bcrypt.GenerateFromPassword([]byte(store.Password), bcrypt.DefaultCost)
+func (su *storeUsecase) EncryptPassword(password string) (string, error) {
+	cryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return domain.ServerError50001
+		su.logger.ERRORf("%v", err)
+		return "", domain.ServerError50001
 	}
-	store.Password = string(cryptedPassword)
-	return nil
+	return string(cryptedPassword), nil
 }
 
 func (su *storeUsecase) Create(ctx context.Context, store domain.Store) error {
@@ -58,19 +59,16 @@ func (su *storeUsecase) Create(ctx context.Context, store domain.Store) error {
 	return err
 }
 
-func (su *storeUsecase) Signin(ctx context.Context, store *domain.Store) error {
-	storeFromDb, err := su.GetByEmail(ctx, store.Email)
-	if err != nil {
-		return err
-	}
-	err = bcrypt.CompareHashAndPassword([]byte(storeFromDb.Password), []byte(store.Password))
+func (su *storeUsecase) ValidatePassword(ctx context.Context, passwordInDb string, incomingPassword string) error {
+	err := bcrypt.CompareHashAndPassword([]byte(passwordInDb), []byte(incomingPassword))
 	switch {
 	case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
+		su.logger.ERRORf("%v", err)
 		return domain.ServerError40003
 	case err != nil:
+		su.logger.ERRORf("%v", err)
 		return domain.ServerError50001
 	}
-	store = &storeFromDb
 	return nil
 }
 
@@ -78,6 +76,7 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store, s
 	randomUUID := uuid.New().String()
 	saltBytes, err := bcrypt.GenerateFromPassword([]byte(randomUUID), bcrypt.DefaultCost)
 	if err != nil {
+		su.logger.ERRORf("%v", err)
 		return "", domain.ServerError50001
 	}
 	signKey := &domain.SignKey{StoreId: store.ID, SignKey: string(saltBytes), SignKeyType: signKeyType}
@@ -100,6 +99,7 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store, s
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	encryptToken, err = token.SignedString([]byte(signKey.SignKey))
 	if err != nil {
+		su.logger.ERRORf("%v", err)
 		return encryptToken, domain.ServerError50001
 	}
 	return encryptToken, err
@@ -108,6 +108,7 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store, s
 func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string) (tokenClaims domain.TokenClaims, err error) {
 	_, _, err = new(jwt.Parser).ParseUnverified(encryptToken, &tokenClaims)
 	if err != nil {
+		su.logger.ERRORf("%v", err)
 		return domain.TokenClaims{}, domain.ServerError40101
 	}
 

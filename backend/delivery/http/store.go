@@ -62,11 +62,13 @@ func (sd *storeDelivery) signup(w http.ResponseWriter, r *http.Request) {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	err = sd.storeUsecase.EncryptPassword(&store)
+	encryptedPassword, err := sd.storeUsecase.EncryptPassword(store.Password)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
+	store.Password = encryptedPassword
+
 	err = sd.storeUsecase.Create(r.Context(), store)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -76,19 +78,25 @@ func (sd *storeDelivery) signup(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
-	var store domain.Store
-	err := json.NewDecoder(r.Body).Decode(&store)
-	if err != nil || store.Email == "" || store.Password == "" {
+	var incomingStore domain.Store
+	err := json.NewDecoder(r.Body).Decode(&incomingStore)
+	if err != nil || incomingStore.Email == "" || incomingStore.Password == "" {
 		presenter.JsonResponse(w, nil, domain.ServerError40001)
 		return
 	}
-
-	err = sd.storeUsecase.Signin(r.Context(), &store)
+	storeInDb, err := sd.storeUsecase.GetByEmail(r.Context(), incomingStore.Email)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	token, err := sd.storeUsecase.GenerateToken(r.Context(), store, domain.SignKeyTypes.SIGNIN, 24*30*time.Hour)
+	err = sd.storeUsecase.ValidatePassword(r.Context(), storeInDb.Password, incomingStore.Password)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+	incomingStore = storeInDb
+
+	token, err := sd.storeUsecase.GenerateToken(r.Context(), incomingStore, domain.SignKeyTypes.SIGNIN, 24*30*time.Hour)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -178,11 +186,12 @@ func (sd *storeDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) 
 	}
 
 	store := domain.Store{ID: tokenClaims.StoreID, Email: tokenClaims.Email, Name: tokenClaims.Name}
-	err = sd.storeUsecase.EncryptPassword(&store)
+	encryptedPassword, err := sd.storeUsecase.EncryptPassword(store.Password)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
+	store.Password = encryptedPassword
 
 	err = sd.storeUsecase.Update(r.Context(), &store, "password", store.Password)
 	if err != nil {

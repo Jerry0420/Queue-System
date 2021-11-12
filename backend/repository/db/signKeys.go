@@ -48,8 +48,10 @@ func (skr *signKeyRepository) GetByID(ctx context.Context, id int) (signKey doma
 	err = row.Scan(&signKey.SignKey)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
+		skr.logger.ERRORf("error %v", err)
 		return signKey, domain.ServerError40403
 	case err != nil:
+		skr.logger.ERRORf("error %v", err)
 		return signKey, domain.ServerError50002
 	}
 	return signKey, nil

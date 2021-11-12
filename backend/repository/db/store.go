@@ -31,8 +31,10 @@ func (sr *storeRepository) GetByEmail(ctx context.Context, email string) (domain
 	err := row.Scan(&store.ID, &store.Email, &store.Password, &store.Name, &store.Description, &store.CreatedAt, &store.Status, &store.SessionID)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
+		sr.logger.ERRORf("error %v", err)
 		return store, domain.ServerError40402
 	case err != nil:
+		sr.logger.ERRORf("error %v", err)
 		return store, domain.ServerError50002
 	}
 	return store, nil
@@ -45,6 +47,7 @@ func (sr *storeRepository) Create(ctx context.Context, store domain.Store) error
 	query := `INSERT INTO stores (name, email, password, status) VALUES ($1, $2, $3, $4)`
 	stmt, err := sr.db.PrepareContext(ctx, query)
 	if err != nil {
+		sr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
 	}
 	_, err = stmt.ExecContext(ctx, store.Name, store.Email, store.Password, store.Status)

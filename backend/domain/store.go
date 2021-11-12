@@ -40,8 +40,8 @@ type StoreUsecaseInterface interface {
 	Create(ctx context.Context, store Store) error
 	GetByEmail(ctx context.Context, email string) (Store, error)
 	VerifyPasswordLength(password string) error
-	EncryptPassword(store *Store) error
-	Signin(ctx context.Context, store *Store) error
+	EncryptPassword(password string) (string, error)
+	ValidatePassword(ctx context.Context, incomingPassword string, password string) error
 	GenerateToken(ctx context.Context, store Store, signKeyType string, expiresDuration time.Duration) (string, error)
 	VerifyToken(ctx context.Context, encryptToken string) (tokenClaims TokenClaims, err error)
 	VerifyTokenRenewable(tokenClaims TokenClaims) bool
