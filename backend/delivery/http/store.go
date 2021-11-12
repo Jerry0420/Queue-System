@@ -67,6 +67,7 @@ func (sd *storeDelivery) signup(w http.ResponseWriter, r *http.Request) {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
+	sd.logger.ERRORf(encryptedPassword)
 	store.Password = encryptedPassword
 
 	err = sd.storeUsecase.Create(r.Context(), store)
@@ -89,6 +90,7 @@ func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
+	
 	err = sd.storeUsecase.ValidatePassword(r.Context(), storeInDb.Password, incomingStore.Password)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -185,7 +187,7 @@ func (sd *storeDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	store := domain.Store{ID: tokenClaims.StoreID, Email: tokenClaims.Email, Name: tokenClaims.Name}
+	store := domain.Store{ID: tokenClaims.StoreID, Email: tokenClaims.Email, Name: tokenClaims.Name, Password: jsonBody["password"]}
 	encryptedPassword, err := sd.storeUsecase.EncryptPassword(store.Password)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
