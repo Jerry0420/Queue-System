@@ -11,22 +11,29 @@ import (
 	"github.com/jerry0420/queue-system/backend/logging"
 )
 
-func NewVaultConnection(vaultAddress string, vaultWrappedTokenAddress string, roleID string, credName string, logger logging.LoggerTool) (*api.Logical, *api.TokenAuth, *api.Sys) {
+type VaultConnectionConfig struct {
+	Address string
+	WrappedTokenAddress string
+	RoleID string
+	CredName string
+}
+
+func NewVaultConnection(logger logging.LoggerTool, vaultConnectionConfig *VaultConnectionConfig) (*api.Logical, *api.TokenAuth, *api.Sys) {
 	config := api.DefaultConfig()
 	config.MaxRetries = 5
-	config.Address = vaultAddress
+	config.Address = vaultConnectionConfig.Address
 
 	client, err := api.NewClient(config)
 	if err != nil {
 		logger.FATALf("Fail to create connection with vault server.")
 	}
 
-	params := map[string]string{"roleName": credName}
+	params := map[string]string{"roleName": vaultConnectionConfig.CredName}
 	json_params, _ := json.Marshal(params)
 	httpClient := http.Client{Timeout: 10 * time.Second}
 	
 	// Everytime, when server start up, get wrapped token from vault server.
-	response, err := httpClient.Post(vaultWrappedTokenAddress + "/wrappedToken", "application/json", bytes.NewBuffer(json_params))
+	response, err := httpClient.Post(vaultConnectionConfig.WrappedTokenAddress + "/wrappedToken", "application/json", bytes.NewBuffer(json_params))
 	if err != nil || response.StatusCode != http.StatusOK{
         logger.FATALf("Fail to get wrapped token.")
     }
@@ -43,7 +50,7 @@ func NewVaultConnection(vaultAddress string, vaultWrappedTokenAddress string, ro
 	secretID := unwrappedToken.Data["secret_id"]
 
 	vaulrRoleLoginParams := map[string]interface{}{
-		"role_id":   roleID,
+		"role_id":   vaultConnectionConfig.RoleID,
 		"secret_id": secretID,
 	}
 	loginResponse, err := logical.Write("auth/approle/login", vaulrRoleLoginParams)

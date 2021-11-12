@@ -46,3 +46,4 @@ config.json
 gin-bin
 logs
 todo.txt
+secret
