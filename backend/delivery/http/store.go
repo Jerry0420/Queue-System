@@ -2,6 +2,7 @@ package delivery
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -20,8 +21,8 @@ type storeDelivery struct {
 func NewStoreDelivery(router *mux.Router, mw *middleware.Middleware, logger logging.LoggerTool, storeUsecase domain.StoreUsecaseInterface) {
 	sd := &storeDelivery{storeUsecase, logger}
 	router.HandleFunc(
-		"/stores/signup",
-		sd.signup,
+		"/stores/open",
+		sd.open,
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
@@ -30,8 +31,8 @@ func NewStoreDelivery(router *mux.Router, mw *middleware.Middleware, logger logg
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.Handle(
-		"/stores/signout",
-		mw.AuthenticationMiddleware(http.HandlerFunc(sd.signout)),
+		"/stores/close",
+		mw.AuthenticationMiddleware(http.HandlerFunc(sd.close)),
 	).Methods(http.MethodDelete).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
@@ -45,7 +46,7 @@ func NewStoreDelivery(router *mux.Router, mw *middleware.Middleware, logger logg
 	).Methods(http.MethodPatch).Headers("Content-Type", "application/json")
 }
 
-func (sd *storeDelivery) signup(w http.ResponseWriter, r *http.Request) {
+func (sd *storeDelivery) open(w http.ResponseWriter, r *http.Request) {
 	var store domain.Store
 	err := json.NewDecoder(r.Body).Decode(&store)
 	if err != nil || store.Name == "" || store.Email == "" || store.Password == "" {
@@ -62,8 +63,13 @@ func (sd *storeDelivery) signup(w http.ResponseWriter, r *http.Request) {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	sd.logger.ERRORf(encryptedPassword)
 	store.Password = encryptedPassword
+
+	_, err = sd.storeUsecase.GetByEmail(r.Context(), store.Email)
+	if !errors.Is(err, domain.ServerError40402) {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
 
 	err = sd.storeUsecase.Create(r.Context(), store)
 	if err != nil {
@@ -81,11 +87,11 @@ func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	storeInDb, err := sd.storeUsecase.GetByEmail(r.Context(), incomingStore.Email)
-	if err != nil {
+	if !errors.Is(err, domain.ServerError40901) {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	
+
 	err = sd.storeUsecase.ValidatePassword(r.Context(), storeInDb.Password, incomingStore.Password)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -101,7 +107,7 @@ func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
 	presenter.JsonResponseOK(w, map[string]interface{}{"token": token})
 }
 
-func (sd *storeDelivery) signout(w http.ResponseWriter, r *http.Request) {
+func (sd *storeDelivery) close(w http.ResponseWriter, r *http.Request) {
 	tokenClaims := r.Context().Value("token").(domain.TokenClaims)
 	var jsonBody map[string]int
 	err := json.NewDecoder(r.Body).Decode(&jsonBody)
@@ -110,7 +116,9 @@ func (sd *storeDelivery) signout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = sd.storeUsecase.RemoveSignKeyByID(r.Context(), tokenClaims.SignKeyID)
+	// TODO: send report to the store.
+
+	err = sd.storeUsecase.RemoveByID(r.Context(), tokenClaims.StoreID)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return

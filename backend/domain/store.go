@@ -18,7 +18,7 @@ type Store struct {
 }
 
 type TokenClaims struct {
-	StoreID        int    `json:"id"`
+	StoreID   int    `json:"id"`
 	Email     string `json:"email"`
 	Name      string `json:"name"`
 	SignKeyID int    `json:"signkey_id"`
@@ -29,6 +29,7 @@ type StoreRepositoryInterface interface {
 	Create(ctx context.Context, store Store) error
 	GetByEmail(ctx context.Context, email string) (Store, error)
 	Update(ctx context.Context, store *Store, fieldName string, newFieldValue string) error
+	RemoveByID(ctx context.Context, id int) error
 }
 
 type StoreUsecaseInterface interface {
@@ -40,6 +41,7 @@ type StoreUsecaseInterface interface {
 	GenerateToken(ctx context.Context, store Store, signKeyType string, expiresDuration time.Duration) (string, error)
 	VerifyToken(ctx context.Context, encryptToken string) (tokenClaims TokenClaims, err error)
 	RemoveSignKeyByID(ctx context.Context, signKeyID int) error
+	RemoveByID(ctx context.Context, id int) error
 	GenerateEmailContentOfForgetPassword(emailToken string, store Store) (subject string, content string)
 	Update(ctx context.Context, store *Store, fieldName string, newFieldValue string) error
 }

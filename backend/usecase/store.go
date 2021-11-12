@@ -27,7 +27,13 @@ func NewStoreUsecase(storeRepository domain.StoreRepositoryInterface, signKeyRep
 
 func (su *storeUsecase) GetByEmail(ctx context.Context, email string) (domain.Store, error) {
 	store, err := su.storeRepository.GetByEmail(ctx, email)
-	return store, err
+	switch {
+	case err == nil && (time.Now().Sub(store.CreatedAt) < time.Hour*24):
+		return store, domain.ServerError40901
+	case err == nil && (time.Now().Sub(store.CreatedAt) >= time.Hour*24):
+		return store, domain.ServerError40903
+	}
+	return domain.Store{}, err
 }
 
 func (su *storeUsecase) VerifyPasswordLength(password string) error {
@@ -132,6 +138,11 @@ func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string) (t
 
 func (su *storeUsecase) RemoveSignKeyByID(ctx context.Context, signKeyID int) error {
 	err := su.signKeyRepository.RemoveByID(ctx, signKeyID)
+	return err
+}
+
+func (su *storeUsecase) RemoveByID(ctx context.Context, id int) error {
+	err := su.storeRepository.RemoveByID(ctx, id)
 	return err
 }
 

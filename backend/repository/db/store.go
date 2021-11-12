@@ -76,3 +76,23 @@ func (sr *storeRepository) Update(ctx context.Context, store *domain.Store, fiel
 	}
 	return nil
 }
+
+func (sr *storeRepository) RemoveByID(ctx context.Context, id int) error {
+	ctx, cancel := context.WithTimeout(ctx, sr.contextTimeOut)
+	defer cancel()
+
+	var deletedID int
+	query := `DELETE FROM stores WHERE id=$1 RETURNING id`
+	stmt, err := sr.db.PrepareContext(ctx, query)
+	if err != nil {
+		sr.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
+	row := stmt.QueryRowContext(ctx, id)
+	err = row.Scan(&deletedID)
+	if err != nil || deletedID != id {
+		sr.logger.ERRORf("error %v", err)
+		return domain.ServerError40403
+	}
+	return nil
+}

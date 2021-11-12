@@ -47,10 +47,12 @@ var (
 
 	// ============================================================
 
-	// store already exist.
-	ServerError40901 = &ServerError{Code: 40901, Description: "store already exist."}
+	// store already exist. (not exceed 24 hrs)
+	ServerError40901 = &ServerError{Code: 40901, Description: "store already exist. (not exceed 24 hrs)"}
 	// sign_key already exist.
 	ServerError40902 = &ServerError{Code: 40902, Description: "sign_key already exist."}
+	// store already exist. (but exceed 24 hrs)
+	ServerError40903 = &ServerError{Code: 40903, Description: "store already exist. (but exceed 24 hrs)"}
 
 	// ============================================================
 
