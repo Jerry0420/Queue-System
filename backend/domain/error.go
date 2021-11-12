@@ -30,9 +30,7 @@ var (
 	ServerError40101 = &ServerError{Code: 40101, Description: "fail to parse jwt token"}
 	// lack of jwt token
 	ServerError40102 = &ServerError{Code: 40102, Description: "lack of jwt token"}
-	// need to renew jwt token within one day
-	ServerError40103 = &ServerError{Code: 40103, Description: "need to renew jwt token within one day"}
-
+	
 	// ============================================================
 
 	// unsupported url route

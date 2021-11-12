@@ -54,7 +54,6 @@ func (su *storeUsecase) EncryptPassword(password string) (string, error) {
 }
 
 func (su *storeUsecase) Create(ctx context.Context, store domain.Store) error {
-	store.Status = domain.StoreStatus.OPEN
 	err := su.storeRepository.Create(ctx, store)
 	return err
 }
@@ -129,13 +128,6 @@ func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string) (t
 		return domain.TokenClaims{}, domain.ServerError40101
 	}
 	return tokenClaims, nil
-}
-
-func (su *storeUsecase) VerifyTokenRenewable(tokenClaims domain.TokenClaims) bool {
-	if tokenClaims.ExpiresAt <= time.Now().Add(24*time.Hour).Unix() {
-		return true
-	}
-	return false
 }
 
 func (su *storeUsecase) RemoveSignKeyByID(ctx context.Context, signKeyID int) error {

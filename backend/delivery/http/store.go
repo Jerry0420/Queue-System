@@ -34,11 +34,6 @@ func NewStoreDelivery(router *mux.Router, mw *middleware.Middleware, logger logg
 		mw.AuthenticationMiddleware(http.HandlerFunc(sd.signout)),
 	).Methods(http.MethodDelete).Headers("Content-Type", "application/json")
 
-	router.Handle(
-		"/stores/token/renew",
-		mw.AuthenticationMiddleware(http.HandlerFunc(sd.tokenRenew)),
-	).Methods(http.MethodPatch).Headers("Content-Type", "application/json")
-
 	router.HandleFunc(
 		"/stores/password/forget",
 		sd.passwordForget,
@@ -98,7 +93,7 @@ func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
 	}
 	incomingStore = storeInDb
 
-	token, err := sd.storeUsecase.GenerateToken(r.Context(), incomingStore, domain.SignKeyTypes.SIGNIN, 24*30*time.Hour)
+	token, err := sd.storeUsecase.GenerateToken(r.Context(), incomingStore, domain.SignKeyTypes.SIGNIN, 24*time.Hour)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -121,28 +116,6 @@ func (sd *storeDelivery) signout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	presenter.JsonResponseOK(w, nil)
-}
-
-func (sd *storeDelivery) tokenRenew(w http.ResponseWriter, r *http.Request) {
-	tokenClaims := r.Context().Value("token").(domain.TokenClaims)
-	var jsonBody map[string]int
-	err := json.NewDecoder(r.Body).Decode(&jsonBody)
-	if err != nil || jsonBody["id"] != tokenClaims.StoreID {
-		presenter.JsonResponse(w, nil, domain.ServerError40004)
-		return
-	}
-	err = sd.storeUsecase.RemoveSignKeyByID(r.Context(), tokenClaims.SignKeyID)
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-	store := domain.Store{ID: tokenClaims.StoreID, Email: tokenClaims.Email, Name: tokenClaims.Name}
-	token, err := sd.storeUsecase.GenerateToken(r.Context(), store, domain.SignKeyTypes.SIGNIN, 24*30*time.Hour)
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-	presenter.JsonResponseOK(w, map[string]interface{}{"token": token})
 }
 
 func (sd *storeDelivery) passwordForget(w http.ResponseWriter, r *http.Request) {

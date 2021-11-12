@@ -26,9 +26,9 @@ func (sr *storeRepository) GetByEmail(ctx context.Context, email string) (domain
 	defer cancel()
 
 	var store domain.Store
-	query := `SELECT id,email,password,name,description,created_at,status,session_id FROM stores WHERE email=$1`
+	query := `SELECT id,email,password,name,description,created_at,session_id FROM stores WHERE email=$1`
 	row := sr.db.QueryRowContext(ctx, query, email)
-	err := row.Scan(&store.ID, &store.Email, &store.Password, &store.Name, &store.Description, &store.CreatedAt, &store.Status, &store.SessionID)
+	err := row.Scan(&store.ID, &store.Email, &store.Password, &store.Name, &store.Description, &store.CreatedAt, &store.SessionID)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		sr.logger.ERRORf("error %v", err)
@@ -44,13 +44,13 @@ func (sr *storeRepository) Create(ctx context.Context, store domain.Store) error
 	ctx, cancel := context.WithTimeout(ctx, sr.contextTimeOut)
 	defer cancel()
 
-	query := `INSERT INTO stores (name, email, password, status) VALUES ($1, $2, $3, $4)`
+	query := `INSERT INTO stores (name, email, password) VALUES ($1, $2, $3)`
 	stmt, err := sr.db.PrepareContext(ctx, query)
 	if err != nil {
 		sr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
 	}
-	_, err = stmt.ExecContext(ctx, store.Name, store.Email, store.Password, store.Status)
+	_, err = stmt.ExecContext(ctx, store.Name, store.Email, store.Password)
 	if err != nil {
 		sr.logger.ERRORf("error %v", err)
 		return domain.ServerError40901
@@ -62,14 +62,14 @@ func (sr *storeRepository) Update(ctx context.Context, store *domain.Store, fiel
 	ctx, cancel := context.WithTimeout(ctx, sr.contextTimeOut)
 	defer cancel()
 
-	query := fmt.Sprintf("UPDATE stores SET %s=$1 WHERE id=$2 RETURNING description,created_at,status,session_id", fieldName)
+	query := fmt.Sprintf("UPDATE stores SET %s=$1 WHERE id=$2 RETURNING description,created_at,session_id", fieldName)
 	stmt, err := sr.db.PrepareContext(ctx, query)
 	if err != nil {
 		sr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
 	}
 	row := stmt.QueryRowContext(ctx, newFieldValue, store.ID)
-	err = row.Scan(&store.Description, &store.CreatedAt, &store.Status, &store.SessionID)
+	err = row.Scan(&store.Description, &store.CreatedAt, &store.SessionID)
 	if err != nil {
 		sr.logger.ERRORf("error %v", err)
 		return domain.ServerError40402
