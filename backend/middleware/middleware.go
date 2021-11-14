@@ -39,15 +39,17 @@ func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 		responseWrapper := &presenter.ResponseWrapper{ResponseWriter: w, Buffer: &bytes.Buffer{}}
 		next.ServeHTTP(responseWrapper, r)
 
-		var wrappedResponse *presenter.ResponseFormat
+		var wrappedResponse map[string]interface{}
 		json.Unmarshal(responseWrapper.Buffer.Bytes(), &wrappedResponse)
 		io.Copy(w, responseWrapper.Buffer)
 
 		ctx = context.WithValue(r.Context(), "duration", time.Since(start).Truncate(1*time.Millisecond))
 
-		if wrappedResponse != nil {
+		if errorCode, ok := wrappedResponse["error_code"]; ok {
 			// api routes will go here.
-			ctx = context.WithValue(ctx, "code", wrappedResponse.Code)
+			ctx = context.WithValue(ctx, "code", errorCode)
+		} else {
+			ctx = context.WithValue(ctx, "code", 200)
 		}
 
 		r = r.WithContext(ctx)
