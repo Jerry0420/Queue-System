@@ -26,22 +26,23 @@ type TokenClaims struct {
 }
 
 type StoreRepositoryInterface interface {
-	Create(ctx context.Context, store Store) error
+	Create(ctx context.Context, store *Store) error
 	GetByEmail(ctx context.Context, email string) (Store, error)
 	Update(ctx context.Context, store *Store, fieldName string, newFieldValue string) error
 	RemoveByID(ctx context.Context, id int) error
 }
 
 type StoreUsecaseInterface interface {
-	Create(ctx context.Context, store Store) error
+	Create(ctx context.Context, store *Store) error
 	GetByEmail(ctx context.Context, email string) (Store, error)
 	VerifyPasswordLength(password string) error
 	EncryptPassword(password string) (string, error)
 	ValidatePassword(ctx context.Context, incomingPassword string, password string) error
+	Close(ctx context.Context, store Store) error
 	GenerateToken(ctx context.Context, store Store, signKeyType string, expiresDuration time.Duration) (string, error)
-	VerifyToken(ctx context.Context, encryptToken string) (tokenClaims TokenClaims, err error)
-	RemoveSignKeyByID(ctx context.Context, signKeyID int) error
-	RemoveByID(ctx context.Context, id int) error
+	VerifyToken(ctx context.Context, encryptToken string, getSignKey func(context.Context, int) (SignKey, error)) (tokenClaims TokenClaims, err error)
+	GetSignKeyByID(ctx context.Context, signKeyID int) (SignKey, error)
+	RemoveSignKeyByID(ctx context.Context, signKeyID int) (SignKey, error)
 	GenerateEmailContentOfForgetPassword(emailToken string, store Store) (subject string, content string)
 	Update(ctx context.Context, store *Store, fieldName string, newFieldValue string) error
 }

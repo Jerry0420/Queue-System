@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -58,11 +59,18 @@ func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		encryptToken := r.Header.Get("Authorization")
 		if len(encryptToken) > 0 {
-			tokenClaims, err := mw.storeUsecase.VerifyToken(r.Context(), encryptToken)
-			if err != nil {
+			tokenClaims, err := mw.storeUsecase.VerifyToken(r.Context(), encryptToken, mw.storeUsecase.GetSignKeyByID)
+			switch {
+			case tokenClaims != domain.TokenClaims{} && errors.Is(err, domain.ServerError40104):
+				store := domain.Store{ID: tokenClaims.StoreID, Email: tokenClaims.Email, Name: tokenClaims.Name}
+				err = mw.storeUsecase.Close(r.Context(), store)
+				presenter.JsonResponse(w, nil, domain.ServerError40903)
+				return
+			case err != nil:
 				presenter.JsonResponse(w, nil, err)
 				return
 			}
+
 			ctx := context.WithValue(r.Context(), "token", tokenClaims)
 			mw.logger.INFOf(ctx, "storeID: %d", tokenClaims.StoreID)
 			r = r.WithContext(ctx)

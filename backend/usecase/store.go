@@ -25,12 +25,17 @@ func NewStoreUsecase(storeRepository domain.StoreRepositoryInterface, signKeyRep
 	return &storeUsecase{storeRepository, signKeyRepository, logger, domain}
 }
 
+func (su *storeUsecase) Create(ctx context.Context, store *domain.Store) error {
+	err := su.storeRepository.Create(ctx, store)
+	return err
+}
+
 func (su *storeUsecase) GetByEmail(ctx context.Context, email string) (domain.Store, error) {
 	store, err := su.storeRepository.GetByEmail(ctx, email)
 	switch {
-	case err == nil && (time.Now().Sub(store.CreatedAt) < time.Hour*24):
+	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) < time.Minute*1):
 		return store, domain.ServerError40901
-	case err == nil && (time.Now().Sub(store.CreatedAt) >= time.Hour*24):
+	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) >= time.Minute*1):
 		return store, domain.ServerError40903
 	}
 	return domain.Store{}, err
@@ -59,11 +64,6 @@ func (su *storeUsecase) EncryptPassword(password string) (string, error) {
 	return string(cryptedPassword), nil
 }
 
-func (su *storeUsecase) Create(ctx context.Context, store domain.Store) error {
-	err := su.storeRepository.Create(ctx, store)
-	return err
-}
-
 func (su *storeUsecase) ValidatePassword(ctx context.Context, passwordInDb string, incomingPassword string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(passwordInDb), []byte(incomingPassword))
 	switch {
@@ -75,6 +75,13 @@ func (su *storeUsecase) ValidatePassword(ctx context.Context, passwordInDb strin
 		return domain.ServerError50001
 	}
 	return nil
+}
+
+func (su *storeUsecase) Close(ctx context.Context, store domain.Store) error {
+	// TODO: send report to the store.
+
+	err := su.storeRepository.RemoveByID(ctx, store.ID)
+	return err
 }
 
 func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store, signKeyType string, expiresDuration time.Duration) (encryptToken string, err error) {
@@ -97,7 +104,7 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store, s
 		store.Name,
 		signKey.ID,
 		jwt.StandardClaims{
-			IssuedAt:  now.Unix(),
+			IssuedAt:  store.CreatedAt.Unix(),
 			ExpiresAt: now.Add(expiresDuration).Unix(),
 		},
 	}
@@ -110,7 +117,7 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store, s
 	return encryptToken, err
 }
 
-func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string) (tokenClaims domain.TokenClaims, err error) {
+func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string, getSignKey func(context.Context, int) (domain.SignKey, error)) (tokenClaims domain.TokenClaims, err error) {
 	_, _, err = new(jwt.Parser).ParseUnverified(encryptToken, &tokenClaims)
 	if err != nil {
 		su.logger.ERRORf("%v", err)
@@ -119,7 +126,7 @@ func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string) (t
 
 	tokenClaims = domain.TokenClaims{}
 	token, err := jwt.ParseWithClaims(encryptToken, &tokenClaims, func(token *jwt.Token) (interface{}, error) {
-		signKey, err := su.signKeyRepository.GetByID(ctx, tokenClaims.SignKeyID)
+		signKey, err := getSignKey(ctx, tokenClaims.SignKeyID)
 		if err != nil {
 			return nil, err
 		}
@@ -127,28 +134,35 @@ func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string) (t
 	})
 	if err != nil {
 		su.logger.ERRORf("%v", err)
-		return domain.TokenClaims{}, domain.ServerError40403
+		if err.(*jwt.ValidationError).Errors == jwt.ValidationErrorExpired {
+			return tokenClaims, domain.ServerError40104
+		}
+		if serverError, ok := err.(*jwt.ValidationError).Inner.(*domain.ServerError); ok {
+			return tokenClaims, serverError
+		}
+		return tokenClaims, domain.ServerError40103
 	}
+
 	if !token.Valid {
 		su.logger.ERRORf("unvalid token")
-		return domain.TokenClaims{}, domain.ServerError40101
+		return tokenClaims, domain.ServerError40103
 	}
 	return tokenClaims, nil
 }
 
-func (su *storeUsecase) RemoveSignKeyByID(ctx context.Context, signKeyID int) error {
-	err := su.signKeyRepository.RemoveByID(ctx, signKeyID)
-	return err
+func (su *storeUsecase) RemoveSignKeyByID(ctx context.Context, signKeyID int) (domain.SignKey, error) {
+	signKey, err := su.signKeyRepository.RemoveByID(ctx, signKeyID)
+	return signKey, err
 }
 
-func (su *storeUsecase) RemoveByID(ctx context.Context, id int) error {
-	err := su.storeRepository.RemoveByID(ctx, id)
-	return err
+func (su *storeUsecase) GetSignKeyByID(ctx context.Context, signKeyID int) (domain.SignKey, error) {
+	signKey, err := su.signKeyRepository.GetByID(ctx, signKeyID)
+	return signKey, err
 }
 
 func (su *storeUsecase) GenerateEmailContentOfForgetPassword(emailToken string, store domain.Store) (subject string, content string) {
 	// TODO: update email content to html format.
-	resetPasswordUrl := fmt.Sprintf("%s/api/stores/password/renew?emailToken=%s", su.domain, emailToken)
+	resetPasswordUrl := fmt.Sprintf("%s/stores/password/update?id=%d&emailToken=%s", su.domain, store.ID, emailToken)
 	return "Queue-System Reset Password", fmt.Sprintf("Hello, %s, please click %s", store.Name, resetPasswordUrl)
 }
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -21,27 +22,27 @@ type storeDelivery struct {
 func NewStoreDelivery(router *mux.Router, mw *middleware.Middleware, logger logging.LoggerTool, storeUsecase domain.StoreUsecaseInterface) {
 	sd := &storeDelivery{storeUsecase, logger}
 	router.HandleFunc(
-		"/stores/open",
+		V_1("/stores"),
 		sd.open,
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
-		"/stores/signin",
+		V_1("/stores/signin"),
 		sd.signin,
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.Handle(
-		"/stores/close",
+		V_1("/stores/{id:[0-9]+}"),
 		mw.AuthenticationMiddleware(http.HandlerFunc(sd.close)),
-	).Methods(http.MethodDelete).Headers("Content-Type", "application/json")
+	).Methods(http.MethodDelete)
 
 	router.HandleFunc(
-		"/stores/password/forget",
+		V_1("/stores/password/forget"),
 		sd.passwordForget,
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
-		"/stores/password/update",
+		V_1("/stores/{id:[0-9]+}/password"),
 		sd.passwordUpdate,
 	).Methods(http.MethodPatch).Headers("Content-Type", "application/json")
 }
@@ -65,17 +66,25 @@ func (sd *storeDelivery) open(w http.ResponseWriter, r *http.Request) {
 	}
 	store.Password = encryptedPassword
 
-	_, err = sd.storeUsecase.GetByEmail(r.Context(), store.Email)
-	if !errors.Is(err, domain.ServerError40402) {
+	storeInDb, err := sd.storeUsecase.GetByEmail(r.Context(), store.Email)
+	switch {
+	case storeInDb != domain.Store{} && errors.Is(err, domain.ServerError40903):
+		err = sd.storeUsecase.Close(r.Context(), storeInDb)
+		if err != nil {
+			presenter.JsonResponse(w, nil, err)
+			return	
+		}
+	case storeInDb != domain.Store{} && errors.Is(err, domain.ServerError40901):
 		presenter.JsonResponse(w, nil, err)
-		return
+		return	
 	}
 
-	err = sd.storeUsecase.Create(r.Context(), store)
+	err = sd.storeUsecase.Create(r.Context(), &store)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
+
 	presenter.JsonResponseOK(w, nil)
 }
 
@@ -86,9 +95,15 @@ func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
 		presenter.JsonResponse(w, nil, domain.ServerError40001)
 		return
 	}
+	
 	storeInDb, err := sd.storeUsecase.GetByEmail(r.Context(), incomingStore.Email)
-	if !errors.Is(err, domain.ServerError40901) {
+	switch {
+	case storeInDb == domain.Store{} && err != nil:
 		presenter.JsonResponse(w, nil, err)
+		return
+	case storeInDb != domain.Store{} && errors.Is(err, domain.ServerError40903):
+		_ = sd.storeUsecase.Close(r.Context(), storeInDb)
+		presenter.JsonResponse(w, nil, domain.ServerError40903)
 		return
 	}
 
@@ -97,9 +112,8 @@ func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	incomingStore = storeInDb
 
-	token, err := sd.storeUsecase.GenerateToken(r.Context(), incomingStore, domain.SignKeyTypes.SIGNIN, 24*time.Hour)
+	token, err := sd.storeUsecase.GenerateToken(r.Context(), storeInDb, domain.SignKeyTypes.SIGNIN, 1*time.Minute)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -109,16 +123,15 @@ func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
 
 func (sd *storeDelivery) close(w http.ResponseWriter, r *http.Request) {
 	tokenClaims := r.Context().Value("token").(domain.TokenClaims)
-	var jsonBody map[string]int
-	err := json.NewDecoder(r.Body).Decode(&jsonBody)
-	if err != nil || jsonBody["id"] != tokenClaims.StoreID {
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil || id != tokenClaims.StoreID {
 		presenter.JsonResponse(w, nil, domain.ServerError40004)
 		return
 	}
 
-	// TODO: send report to the store.
-
-	err = sd.storeUsecase.RemoveByID(r.Context(), tokenClaims.StoreID)
+	store := domain.Store{ID: tokenClaims.StoreID, Email: tokenClaims.Email, Name: tokenClaims.Name}
+	err = sd.storeUsecase.Close(r.Context(), store)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -145,9 +158,9 @@ func (sd *storeDelivery) passwordForget(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	// TODO: SendEmail function (grpc)
-	_, content := sd.storeUsecase.GenerateEmailContentOfForgetPassword(emailToken, store)
+	subject, content := sd.storeUsecase.GenerateEmailContentOfForgetPassword(emailToken, store)
 	// TODO: return nil
-	presenter.JsonResponseOK(w, map[string]string{"emailContent": content})
+	presenter.JsonResponseOK(w, map[string]string{"subject": subject, "emailContent": content})
 }
 
 func (sd *storeDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) {
@@ -157,7 +170,7 @@ func (sd *storeDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) 
 		presenter.JsonResponse(w, nil, domain.ServerError40001)
 		return
 	}
-	tokenClaims, err := sd.storeUsecase.VerifyToken(r.Context(), jsonBody["emailToken"])
+	tokenClaims, err := sd.storeUsecase.VerifyToken(r.Context(), jsonBody["emailToken"], sd.storeUsecase.RemoveSignKeyByID)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -165,6 +178,12 @@ func (sd *storeDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) 
 	err = sd.storeUsecase.VerifyPasswordLength(jsonBody["password"])
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
+		return
+	}
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+	if err != nil || id != tokenClaims.StoreID {
+		presenter.JsonResponse(w, nil, domain.ServerError40004)
 		return
 	}
 
@@ -182,10 +201,5 @@ func (sd *storeDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	err = sd.storeUsecase.RemoveSignKeyByID(r.Context(), tokenClaims.SignKeyID)
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
 	presenter.JsonResponseOK(w, nil)
 }
