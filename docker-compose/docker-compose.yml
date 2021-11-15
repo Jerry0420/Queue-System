@@ -35,7 +35,7 @@ services:
         target: /run/secrets/backend-secret/backend-secret
         uid: '1000'
         gid: '1001'
-        mode: 0440
+        mode: 0444
     ports:
       - "8000:8000"
     volumes:

@@ -61,4 +61,4 @@ spec:
             items:
             - key: BACKEND-SECRET
               path: backend-secret
-              mode: 0440
+              mode: 0444

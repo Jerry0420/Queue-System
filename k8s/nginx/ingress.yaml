@@ -22,9 +22,16 @@ metadata:
       gzip_proxied any;
       gzip_buffers 16 8k;
 
-      if ($request_uri ~* \.(js|css|gif|jpe?g|png)) {
-        expires 1M;
-        add_header Cache-Control "public";
+      etag on;
+      
+      add_header Cache-Control "no-cache";
+
+      if ($request_uri ~* \.(css|gif|jpe?g|png|svg|ico)) {
+        add_header Cache-Control "max-age=31536000";
+      }
+
+      if ($request_uri ~* \.(js)) {
+        add_header Cache-Control "private, max-age=31536000";
       }
 
 spec:
