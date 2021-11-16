@@ -142,7 +142,7 @@ func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
 		Secure:   true,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Path:     "/api" + V_1("/stores/token"),
+		Path:     V_1("/stores/token"),
 		MaxAge:   int(refreshTokenExpiresAt.Sub(time.Now())),
 	}
 	http.SetCookie(w, &cookie)

@@ -59,7 +59,6 @@ func main() {
 	}
 
 	router := mux.NewRouter()
-	router = router.PathPrefix("/api").Subrouter()
 
 	signKeyReposotory := repository.NewSignKeyRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
 	storeReposotory := repository.NewStoreRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
