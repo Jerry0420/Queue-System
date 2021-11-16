@@ -97,7 +97,7 @@ func (sd *storeDelivery) open(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	presenter.JsonResponseOK(w, nil)
+	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
 func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
@@ -146,7 +146,7 @@ func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
 		MaxAge:   int(refreshTokenExpiresAt.Sub(time.Now())),
 	}
 	http.SetCookie(w, &cookie)
-	presenter.JsonResponseOK(w, nil)
+	presenter.JsonResponseOK(w, presenter.StoreForResponse(storeInDb))
 }
 
 func (sd *storeDelivery) tokenRefresh(w http.ResponseWriter, r *http.Request) {
@@ -182,7 +182,7 @@ func (sd *storeDelivery) tokenRefresh(w http.ResponseWriter, r *http.Request) {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	presenter.JsonResponseOK(w, map[string]interface{}{"token": token, "token_expires_at": tokenExpiresAt.Unix()})
+	presenter.JsonResponseOK(w, presenter.StoreToken(store, token, tokenExpiresAt))
 }
 
 func (sd *storeDelivery) close(w http.ResponseWriter, r *http.Request) {
@@ -194,13 +194,18 @@ func (sd *storeDelivery) close(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	store := domain.Store{ID: tokenClaims.StoreID, Email: tokenClaims.Email, Name: tokenClaims.Name}
+	store := domain.Store{
+		ID:        tokenClaims.StoreID,
+		Email:     tokenClaims.Email,
+		Name:      tokenClaims.Name,
+		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
+	}
 	err = sd.storeUsecase.Close(r.Context(), store)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	presenter.JsonResponseOK(w, nil)
+	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
 func (sd *storeDelivery) passwordForgot(w http.ResponseWriter, r *http.Request) {
@@ -221,10 +226,10 @@ func (sd *storeDelivery) passwordForgot(w http.ResponseWriter, r *http.Request) 
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
+
+	_, _ = sd.storeUsecase.GenerateEmailContentOfForgetPassword(passwordToken, store)
 	// TODO: SendEmail function (grpc)
-	subject, content := sd.storeUsecase.GenerateEmailContentOfForgetPassword(passwordToken, store)
-	// TODO: return nil
-	presenter.JsonResponseOK(w, map[string]string{"subject": subject, "emailContent": content})
+	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
 func (sd *storeDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) {
@@ -251,7 +256,13 @@ func (sd *storeDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	store := domain.Store{ID: tokenClaims.StoreID, Email: tokenClaims.Email, Name: tokenClaims.Name, Password: jsonBody["password"]}
+	store := domain.Store{
+		ID:        tokenClaims.StoreID,
+		Email:     tokenClaims.Email,
+		Name:      tokenClaims.Name,
+		Password:  jsonBody["password"],
+		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
+	}
 	encryptedPassword, err := sd.storeUsecase.EncryptPassword(store.Password)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -265,5 +276,5 @@ func (sd *storeDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	presenter.JsonResponseOK(w, nil)
+	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
