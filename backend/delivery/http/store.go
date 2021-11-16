@@ -1,10 +1,8 @@
 package delivery
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -12,6 +10,7 @@ import (
 	"github.com/jerry0420/queue-system/backend/logging"
 	"github.com/jerry0420/queue-system/backend/middleware"
 	"github.com/jerry0420/queue-system/backend/presenter"
+	"github.com/jerry0420/queue-system/backend/validator"
 )
 
 type StoreDeliveryConfig struct {
@@ -60,12 +59,12 @@ func NewStoreDelivery(router *mux.Router, logger logging.LoggerTool, mw *middlew
 }
 
 func (sd *storeDelivery) open(w http.ResponseWriter, r *http.Request) {
-	var store domain.Store
-	err := json.NewDecoder(r.Body).Decode(&store)
-	if err != nil || store.Name == "" || store.Email == "" || store.Password == "" {
-		presenter.JsonResponse(w, nil, domain.ServerError40001)
+	store, err := validator.StoreOpen(r)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
 		return
 	}
+
 	err = sd.storeUsecase.VerifyPasswordLength(store.Password)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -101,10 +100,9 @@ func (sd *storeDelivery) open(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
-	var incomingStore domain.Store
-	err := json.NewDecoder(r.Body).Decode(&incomingStore)
-	if err != nil || incomingStore.Email == "" || incomingStore.Password == "" {
-		presenter.JsonResponse(w, nil, domain.ServerError40001)
+	incomingStore, err := validator.StoreSignin(r)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
@@ -150,9 +148,9 @@ func (sd *storeDelivery) signin(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sd *storeDelivery) tokenRefresh(w http.ResponseWriter, r *http.Request) {
-	encryptedRefreshToken, err := r.Cookie(domain.SignKeyTypes.REFRESH)
-	if err != nil || len(encryptedRefreshToken.Value) == 0 {
-		presenter.JsonResponse(w, nil, domain.ServerError40102)
+	encryptedRefreshToken, err := validator.StoreTokenRefresh(r)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
 		return
 	}
 	tokenClaims, err := sd.storeUsecase.VerifyToken(
@@ -186,11 +184,9 @@ func (sd *storeDelivery) tokenRefresh(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sd *storeDelivery) close(w http.ResponseWriter, r *http.Request) {
-	tokenClaims := r.Context().Value(domain.SignKeyTypes.NORMAL).(domain.TokenClaims)
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil || id != tokenClaims.StoreID {
-		presenter.JsonResponse(w, nil, domain.ServerError40004)
+	tokenClaims, err := validator.StoreClose(r)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
@@ -209,10 +205,9 @@ func (sd *storeDelivery) close(w http.ResponseWriter, r *http.Request) {
 }
 
 func (sd *storeDelivery) passwordForgot(w http.ResponseWriter, r *http.Request) {
-	var store domain.Store
-	err := json.NewDecoder(r.Body).Decode(&store)
-	if err != nil || store.Email == "" {
-		presenter.JsonResponse(w, nil, domain.ServerError40001)
+	store, err := validator.StorePasswordForgot(r)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
@@ -233,26 +228,25 @@ func (sd *storeDelivery) passwordForgot(w http.ResponseWriter, r *http.Request) 
 }
 
 func (sd *storeDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) {
-	var jsonBody map[string]string
-	err := json.NewDecoder(r.Body).Decode(&jsonBody)
-	if err != nil || jsonBody["passwordToken"] == "" || jsonBody["password"] == "" {
-		presenter.JsonResponse(w, nil, domain.ServerError40001)
+	jsonBody, id, err := validator.StorePasswordUpdate(r)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
 		return
 	}
+
 	tokenClaims, err := sd.storeUsecase.VerifyToken(r.Context(), jsonBody["passwordToken"], domain.SignKeyTypes.PASSWORD, sd.storeUsecase.RemoveSignKeyByID)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
+	if id != tokenClaims.StoreID {
+		presenter.JsonResponse(w, nil, domain.ServerError40004)
+		return
+	}
+
 	err = sd.storeUsecase.VerifyPasswordLength(jsonBody["password"])
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
-		return
-	}
-	vars := mux.Vars(r)
-	id, err := strconv.Atoi(vars["id"])
-	if err != nil || id != tokenClaims.StoreID {
-		presenter.JsonResponse(w, nil, domain.ServerError40004)
 		return
 	}
 
