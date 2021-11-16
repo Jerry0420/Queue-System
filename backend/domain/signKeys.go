@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-type signKeyTypes struct{ SIGNIN, EMAIL string }
+type signKeyTypes struct{ NORMAL, PASSWORD, REFRESH string }
 
-var SignKeyTypes signKeyTypes = signKeyTypes{SIGNIN: "signin", EMAIL: "email"}
+var SignKeyTypes signKeyTypes = signKeyTypes{NORMAL: "normal", PASSWORD: "password", REFRESH: "refresh"}
 
 type SignKey struct {
 	ID int `json:"id"`
@@ -19,6 +19,6 @@ type SignKey struct {
 
 type SignKeyRepositoryInterface interface {
 	Create(ctx context.Context, signKey *SignKey) error
-	GetByID(ctx context.Context, id int) (signKey SignKey, err error)
-	RemoveByID(ctx context.Context, id int) error
+	GetByID(ctx context.Context, id int, signKeyType string) (signKey SignKey, err error)
+	RemoveByID(ctx context.Context, id int, signKeyType string) (signKey SignKey, err error)
 }

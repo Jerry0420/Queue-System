@@ -30,6 +30,12 @@ var (
 	ServerError40101 = &ServerError{Code: 40101, Description: "fail to parse jwt token"}
 	// lack of jwt token
 	ServerError40102 = &ServerError{Code: 40102, Description: "lack of jwt token"}
+	// other jwt token parse error
+	ServerError40103 = &ServerError{Code: 40103, Description: "other jwt token parse error"}
+	// jwt token expired
+	ServerError40104 = &ServerError{Code: 40104, Description: "jwt token expired"}
+	// store( refresh jwt token) expired
+	ServerError40105 = &ServerError{Code: 40105, Description: "store( refresh jwt token) expired"}
 	
 	// ============================================================
 
@@ -47,10 +53,12 @@ var (
 
 	// ============================================================
 
-	// store already exist.
-	ServerError40901 = &ServerError{Code: 40901, Description: "store already exist."}
+	// store already exist. (not exceed 24 hrs)
+	ServerError40901 = &ServerError{Code: 40901, Description: "store already exist. (not exceed 24 hrs)"}
 	// sign_key already exist.
 	ServerError40902 = &ServerError{Code: 40902, Description: "sign_key already exist."}
+	// store already exist. (but exceed 24 hrs, and already auto close this store.)
+	ServerError40903 = &ServerError{Code: 40903, Description: "store already exist. (but exceed 24 hrs, and already auto close this store.)"}
 
 	// ============================================================
 

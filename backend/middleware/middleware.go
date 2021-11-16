@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -38,15 +39,17 @@ func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 		responseWrapper := &presenter.ResponseWrapper{ResponseWriter: w, Buffer: &bytes.Buffer{}}
 		next.ServeHTTP(responseWrapper, r)
 
-		var wrappedResponse *presenter.ResponseFormat
+		var wrappedResponse map[string]interface{}
 		json.Unmarshal(responseWrapper.Buffer.Bytes(), &wrappedResponse)
 		io.Copy(w, responseWrapper.Buffer)
 
 		ctx = context.WithValue(r.Context(), "duration", time.Since(start).Truncate(1*time.Millisecond))
 
-		if wrappedResponse != nil {
+		if errorCode, ok := wrappedResponse["error_code"]; ok {
 			// api routes will go here.
-			ctx = context.WithValue(ctx, "code", wrappedResponse.Code)
+			ctx = context.WithValue(ctx, "code", errorCode)
+		} else {
+			ctx = context.WithValue(ctx, "code", 200)
 		}
 
 		r = r.WithContext(ctx)
@@ -56,14 +59,15 @@ func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 
 func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		encryptToken := r.Header.Get("Authorization")
-		if len(encryptToken) > 0 {
-			tokenClaims, err := mw.storeUsecase.VerifyToken(r.Context(), encryptToken)
+		encryptToken := strings.Split(r.Header.Get("Authorization"), " ")
+		if len(encryptToken) == 2 && strings.ToLower(encryptToken[0]) == "bearer" {
+			tokenClaims, err := mw.storeUsecase.VerifyToken(r.Context(), encryptToken[1], domain.SignKeyTypes.NORMAL, mw.storeUsecase.GetSignKeyByID)
 			if err != nil {
 				presenter.JsonResponse(w, nil, err)
 				return
 			}
-			ctx := context.WithValue(r.Context(), "token", tokenClaims)
+
+			ctx := context.WithValue(r.Context(), domain.SignKeyTypes.NORMAL, tokenClaims)
 			mw.logger.INFOf(ctx, "storeID: %d", tokenClaims.StoreID)
 			r = r.WithContext(ctx)
 

@@ -47,3 +47,6 @@ gin-bin
 logs
 todo.txt
 secret
+test.sql
+test.sh
+test.go

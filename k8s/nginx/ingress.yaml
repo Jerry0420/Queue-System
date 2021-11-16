@@ -7,9 +7,10 @@ metadata:
     # cert-manager.io/cluster-issuer: "letsencrypt-issuer"
     # cert-manager.io/acme-challenge-type: http01
     nginx.ingress.kubernetes.io/configuration-snippet: |
-      add_header Access-Control-Allow-Origin *;
+      add_header Access-Control-Allow-Origin https://queue.com;
       add_header Access-Control-Allow-Methods 'GET, POST, OPTIONS, PUT, DELETE, PATCH';
       add_header Access-Control-Allow-Headers 'DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Authorization';
+      add_header Access-Control-Allow-Credentials true
 
       proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
       proxy_set_header X-Real-IP $remote_addr;
@@ -22,9 +23,16 @@ metadata:
       gzip_proxied any;
       gzip_buffers 16 8k;
 
-      if ($request_uri ~* \.(js|css|gif|jpe?g|png)) {
-        expires 1M;
-        add_header Cache-Control "public";
+      etag on;
+      
+      add_header Cache-Control "no-cache";
+
+      if ($request_uri ~* \.(css|gif|jpe?g|png|svg|ico)) {
+        add_header Cache-Control "max-age=31536000";
+      }
+
+      if ($request_uri ~* \.(js)) {
+        add_header Cache-Control "private, max-age=31536000";
       }
 
 spec:

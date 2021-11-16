@@ -70,6 +70,18 @@ func (config Config) CONTEXT_TIMEOUT() time.Duration {
 	return time.Duration(CONTEXT_TIMEOUT) * time.Second
 }
 
+func (config Config) STOREDURATION() time.Duration {
+	return 24 * time.Hour
+}
+
+func (config Config) TOKENDURATION() time.Duration {
+	return 6 * time.Hour
+}
+
+func (config Config) PASSWORDTOKENDURATION() time.Duration {
+	return 5 * time.Minute
+}
+
 func (config Config) POSTGRES_HOST() string {
 	content := config.get("POSTGRES_HOST")
 	return content
