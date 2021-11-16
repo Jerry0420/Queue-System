@@ -14,15 +14,25 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type StoreUsecaseConfig struct {
+	Domain        string
+	StoreDuration time.Duration
+}
+
 type storeUsecase struct {
 	storeRepository   domain.StoreRepositoryInterface
 	signKeyRepository domain.SignKeyRepositoryInterface
 	logger            logging.LoggerTool
-	domain            string
+	config            StoreUsecaseConfig
 }
 
-func NewStoreUsecase(storeRepository domain.StoreRepositoryInterface, signKeyRepository domain.SignKeyRepositoryInterface, logger logging.LoggerTool, domain string) domain.StoreUsecaseInterface {
-	return &storeUsecase{storeRepository, signKeyRepository, logger, domain}
+func NewStoreUsecase(
+	logger logging.LoggerTool,
+	storeRepository domain.StoreRepositoryInterface,
+	signKeyRepository domain.SignKeyRepositoryInterface,
+	storeUsecaseConfig StoreUsecaseConfig,
+) domain.StoreUsecaseInterface {
+	return &storeUsecase{storeRepository, signKeyRepository, logger, storeUsecaseConfig}
 }
 
 func (su *storeUsecase) Create(ctx context.Context, store *domain.Store) error {
@@ -33,9 +43,9 @@ func (su *storeUsecase) Create(ctx context.Context, store *domain.Store) error {
 func (su *storeUsecase) GetByEmail(ctx context.Context, email string) (domain.Store, error) {
 	store, err := su.storeRepository.GetByEmail(ctx, email)
 	switch {
-	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) < time.Minute*1):
+	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) < su.config.StoreDuration):
 		return store, domain.ServerError40901
-	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) >= time.Minute*1):
+	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) >= su.config.StoreDuration):
 		return store, domain.ServerError40903
 	}
 	return domain.Store{}, err
@@ -84,7 +94,7 @@ func (su *storeUsecase) Close(ctx context.Context, store domain.Store) error {
 	return err
 }
 
-func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store, signKeyType string, expiresDuration time.Duration) (encryptToken string, err error) {
+func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store, signKeyType string, expireTime time.Time) (encryptToken string, err error) {
 	randomUUID := uuid.New().String()
 	saltBytes, err := bcrypt.GenerateFromPassword([]byte(randomUUID), bcrypt.DefaultCost)
 	if err != nil {
@@ -97,15 +107,15 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store, s
 		return "", err
 	}
 
-	now := time.Now()
 	claims := domain.TokenClaims{
 		store.ID,
 		store.Email,
 		store.Name,
+		store.CreatedAt.Unix(),
 		signKey.ID,
 		jwt.StandardClaims{
-			IssuedAt:  store.CreatedAt.Unix(),
-			ExpiresAt: now.Add(expiresDuration).Unix(),
+			IssuedAt:  time.Now().Unix(),
+			ExpiresAt: expireTime.Unix(),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
@@ -117,7 +127,7 @@ func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store, s
 	return encryptToken, err
 }
 
-func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string, getSignKey func(context.Context, int) (domain.SignKey, error)) (tokenClaims domain.TokenClaims, err error) {
+func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string, signKeyType string, getSignKey func(context.Context, int, string) (domain.SignKey, error)) (tokenClaims domain.TokenClaims, err error) {
 	_, _, err = new(jwt.Parser).ParseUnverified(encryptToken, &tokenClaims)
 	if err != nil {
 		su.logger.ERRORf("%v", err)
@@ -126,7 +136,7 @@ func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string, ge
 
 	tokenClaims = domain.TokenClaims{}
 	token, err := jwt.ParseWithClaims(encryptToken, &tokenClaims, func(token *jwt.Token) (interface{}, error) {
-		signKey, err := getSignKey(ctx, tokenClaims.SignKeyID)
+		signKey, err := getSignKey(ctx, tokenClaims.SignKeyID, signKeyType)
 		if err != nil {
 			return nil, err
 		}
@@ -147,22 +157,28 @@ func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string, ge
 		su.logger.ERRORf("unvalid token")
 		return tokenClaims, domain.ServerError40103
 	}
+
+	// store expired!
+	if time.Now().Sub(time.Unix(tokenClaims.StoreCreatedAt, 0)) >= su.config.StoreDuration {
+		return tokenClaims, domain.ServerError40105
+	}
+
 	return tokenClaims, nil
 }
 
-func (su *storeUsecase) RemoveSignKeyByID(ctx context.Context, signKeyID int) (domain.SignKey, error) {
-	signKey, err := su.signKeyRepository.RemoveByID(ctx, signKeyID)
+func (su *storeUsecase) RemoveSignKeyByID(ctx context.Context, signKeyID int, signKeyType string) (domain.SignKey, error) {
+	signKey, err := su.signKeyRepository.RemoveByID(ctx, signKeyID, signKeyType)
 	return signKey, err
 }
 
-func (su *storeUsecase) GetSignKeyByID(ctx context.Context, signKeyID int) (domain.SignKey, error) {
-	signKey, err := su.signKeyRepository.GetByID(ctx, signKeyID)
+func (su *storeUsecase) GetSignKeyByID(ctx context.Context, signKeyID int, signKeyType string) (domain.SignKey, error) {
+	signKey, err := su.signKeyRepository.GetByID(ctx, signKeyID, signKeyType)
 	return signKey, err
 }
 
-func (su *storeUsecase) GenerateEmailContentOfForgetPassword(emailToken string, store domain.Store) (subject string, content string) {
+func (su *storeUsecase) GenerateEmailContentOfForgetPassword(passwordToken string, store domain.Store) (subject string, content string) {
 	// TODO: update email content to html format.
-	resetPasswordUrl := fmt.Sprintf("%s/stores/password/update?id=%d&emailToken=%s", su.domain, store.ID, emailToken)
+	resetPasswordUrl := fmt.Sprintf("%s/stores/password/update?id=%d&passwordToken=%s", su.config.Domain, store.ID, passwordToken)
 	return "Queue-System Reset Password", fmt.Sprintf("Hello, %s, please click %s", store.Name, resetPasswordUrl)
 }
 

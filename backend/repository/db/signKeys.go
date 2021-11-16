@@ -39,12 +39,12 @@ func (skr *signKeyRepository) Create(ctx context.Context, signKey *domain.SignKe
 	return nil
 }
 
-func (skr *signKeyRepository) GetByID(ctx context.Context, id int) (signKey domain.SignKey, err error) {
+func (skr *signKeyRepository) GetByID(ctx context.Context, id int, signKeyType string) (signKey domain.SignKey, err error) {
 	ctx, cancel := context.WithTimeout(ctx, skr.contextTimeOut)
 	defer cancel()
 
-	query := `SELECT sign_key FROM sign_keys WHERE id=$1`
-	row := skr.db.QueryRowContext(ctx, query, id)
+	query := `SELECT sign_key FROM sign_keys WHERE id=$1,type=$2`
+	row := skr.db.QueryRowContext(ctx, query, id, signKeyType)
 	err = row.Scan(&signKey.SignKey)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
@@ -57,17 +57,17 @@ func (skr *signKeyRepository) GetByID(ctx context.Context, id int) (signKey doma
 	return signKey, nil
 }
 
-func (skr *signKeyRepository) RemoveByID(ctx context.Context, id int)  (signKey domain.SignKey, err error) {
+func (skr *signKeyRepository) RemoveByID(ctx context.Context, id int, signKeyType string)  (signKey domain.SignKey, err error) {
 	ctx, cancel := context.WithTimeout(ctx, skr.contextTimeOut)
 	defer cancel()
 
-	query := `DELETE FROM sign_keys WHERE id=$1 RETURNING id,sign_key`
+	query := `DELETE FROM sign_keys WHERE id=$1,type=$2 RETURNING id,sign_key`
 	stmt, err := skr.db.PrepareContext(ctx, query)
 	if err != nil {
 		skr.logger.ERRORf("error %v", err)
 		return signKey, domain.ServerError50002
 	}
-	row := stmt.QueryRowContext(ctx, id)
+	row := stmt.QueryRowContext(ctx, id, signKeyType)
 	err = row.Scan(&signKey.ID, &signKey.SignKey)
 	if err != nil || signKey.ID != id {
 		skr.logger.ERRORf("error %v", err)

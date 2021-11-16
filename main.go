@@ -66,13 +66,31 @@ func main() {
 	queueReposotory := repository.NewQueueRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
 	customerReposotory := repository.NewCustomerRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
 
-	storeUsecase := usecase.NewStoreUsecase(storeReposotory, signKeyReposotory, logger, config.ServerConfig.DOMAIN())
+	storeUsecase := usecase.NewStoreUsecase(
+		logger, 
+		storeReposotory, 
+		signKeyReposotory,
+		usecase.StoreUsecaseConfig{
+			Domain: config.ServerConfig.DOMAIN(),
+			StoreDuration: config.ServerConfig.STOREDURATION(),
+		},
+	)
 	queueUsecase := usecase.NewQueueUsecase(queueReposotory, logger)
 	customerUsecase := usecase.NewCustomerUsecase(customerReposotory, logger)
 
 	mw := middleware.NewMiddleware(router, logger, storeUsecase)
 
-	delivery.NewStoreDelivery(router, mw, logger, storeUsecase)
+	delivery.NewStoreDelivery(
+		router, 
+		logger, 
+		mw, 
+		storeUsecase, 
+		delivery.StoreDeliveryConfig{
+			StoreDuration: config.ServerConfig.STOREDURATION(), 
+			TokenDuration: config.ServerConfig.TOKENDURATION(), 
+			PasswordTokenDuration: config.ServerConfig.PASSWORDTOKENDURATION(),
+		},
+	)
 	delivery.NewQueueDelivery(router, logger, queueUsecase)
 	delivery.NewCustomerDelivery(router, logger, customerUsecase)
 	delivery.NewBaseDelivery(router, logger)

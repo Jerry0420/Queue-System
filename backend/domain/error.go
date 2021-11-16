@@ -34,6 +34,8 @@ var (
 	ServerError40103 = &ServerError{Code: 40103, Description: "other jwt token parse error"}
 	// jwt token expired
 	ServerError40104 = &ServerError{Code: 40104, Description: "jwt token expired"}
+	// store( refresh jwt token) expired
+	ServerError40105 = &ServerError{Code: 40105, Description: "store( refresh jwt token) expired"}
 	
 	// ============================================================
 
