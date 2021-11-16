@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -58,9 +59,9 @@ func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 
 func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		encryptToken := r.Header.Get("Authorization")
-		if len(encryptToken) > 0 {
-			tokenClaims, err := mw.storeUsecase.VerifyToken(r.Context(), encryptToken, domain.SignKeyTypes.NORMAL, mw.storeUsecase.GetSignKeyByID)
+		encryptToken := strings.Split(r.Header.Get("Authorization"), " ")
+		if len(encryptToken) == 2 && strings.ToLower(encryptToken[0]) == "bearer" {
+			tokenClaims, err := mw.storeUsecase.VerifyToken(r.Context(), encryptToken[1], domain.SignKeyTypes.NORMAL, mw.storeUsecase.GetSignKeyByID)
 			if err != nil {
 				presenter.JsonResponse(w, nil, err)
 				return
