@@ -71,8 +71,7 @@ func (config Config) CONTEXT_TIMEOUT() time.Duration {
 }
 
 func (config Config) STOREDURATION() time.Duration {
-	// return 24 * time.Hour
-	return 1 * time.Minute
+	return 24 * time.Hour
 }
 
 func (config Config) TOKENDURATION() time.Duration {
