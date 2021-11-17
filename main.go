@@ -12,10 +12,10 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/jerry0420/queue-system/backend/config"
-	delivery "github.com/jerry0420/queue-system/backend/delivery/http"
-	middleware "github.com/jerry0420/queue-system/backend/delivery/http/middleware"
+	"github.com/jerry0420/queue-system/backend/delivery/httpAPI"
+	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/middleware"
 	"github.com/jerry0420/queue-system/backend/logging"
-	repository "github.com/jerry0420/queue-system/backend/repository/db"
+	"github.com/jerry0420/queue-system/backend/repository/pgDB"
 	"github.com/jerry0420/queue-system/backend/usecase"
 )
 
@@ -35,7 +35,7 @@ func main() {
 			sys,
 			logger,
 		)
-		dbWrapper := repository.NewDbWrapper(vaultWrapper, dbLocation, logger)
+		dbWrapper := pgDB.NewDbWrapper(vaultWrapper, dbLocation, logger)
 		db = dbWrapper.GetDb()
 
 		defer func() {
@@ -49,7 +49,7 @@ func main() {
 			}
 		}()
 	} else {
-		db = repository.GetDevDb(config.ServerConfig.POSTGRES_DEV_USER(), config.ServerConfig.POSTGRES_DEV_PASSWORD(), dbLocation, logger)
+		db = pgDB.GetDevDb(config.ServerConfig.POSTGRES_DEV_USER(), config.ServerConfig.POSTGRES_DEV_PASSWORD(), dbLocation, logger)
 		defer func() {
 			err := db.Close()
 			if err != nil {
@@ -60,10 +60,10 @@ func main() {
 
 	router := mux.NewRouter()
 
-	signKeyReposotory := repository.NewSignKeyRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
-	storeReposotory := repository.NewStoreRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
-	queueReposotory := repository.NewQueueRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
-	customerReposotory := repository.NewCustomerRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+	signKeyReposotory := pgDB.NewSignKeyRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+	storeReposotory := pgDB.NewStoreRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+	queueReposotory := pgDB.NewQueueRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+	customerReposotory := pgDB.NewCustomerRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
 
 	storeUsecase := usecase.NewStoreUsecase( 
 		storeReposotory, 
@@ -80,20 +80,20 @@ func main() {
 
 	mw := middleware.NewMiddleware(router, logger, storeUsecase)
 	
-	delivery.NewStoreDelivery(
+	httpAPI.NewStoreDelivery(
 		router, 
 		logger, 
 		mw, 
 		storeUsecase, 
-		delivery.StoreDeliveryConfig{
+		httpAPI.StoreDeliveryConfig{
 			StoreDuration: config.ServerConfig.STOREDURATION(), 
 			TokenDuration: config.ServerConfig.TOKENDURATION(), 
 			PasswordTokenDuration: config.ServerConfig.PASSWORDTOKENDURATION(),
 		},
 	)
-	delivery.NewQueueDelivery(router, logger, queueUsecase)
-	delivery.NewCustomerDelivery(router, logger, customerUsecase)
-	delivery.NewBaseDelivery(router, logger)
+	httpAPI.NewQueueDelivery(router, logger, queueUsecase)
+	httpAPI.NewCustomerDelivery(router, logger, customerUsecase)
+	httpAPI.NewBaseDelivery(router, logger)
 
 	server := &http.Server{
 		Addr:         "0.0.0.0:8000",

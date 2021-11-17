@@ -1,4 +1,4 @@
-package delivery
+package httpAPI
 
 import (
 	"errors"
@@ -8,9 +8,9 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/jerry0420/queue-system/backend/domain"
 	"github.com/jerry0420/queue-system/backend/logging"
-	"github.com/jerry0420/queue-system/backend/delivery/http/middleware"
-	"github.com/jerry0420/queue-system/backend/delivery/http/presenter"
-	"github.com/jerry0420/queue-system/backend/delivery/http/validator"
+	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/middleware"
+	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/presenter"
+	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/validator"
 )
 
 type StoreDeliveryConfig struct {

@@ -1,10 +1,10 @@
-package delivery
+package httpAPI
 
 import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/jerry0420/queue-system/backend/delivery/http/presenter"
+	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/presenter"
 	"github.com/jerry0420/queue-system/backend/domain"
 	"github.com/jerry0420/queue-system/backend/logging"
 )

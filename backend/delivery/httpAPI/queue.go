@@ -1,4 +1,4 @@
-package delivery
+package httpAPI
 
 import (
 	"github.com/gorilla/mux"
