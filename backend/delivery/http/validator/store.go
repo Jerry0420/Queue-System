@@ -9,26 +9,38 @@ import (
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-func StoreOpen(r *http.Request) (domain.Store, error) {
+func StoreOpen(r *http.Request) (store domain.Store, queues []domain.Queue, err error) {
 	var jsonBody map[string]interface{}
-	err := json.NewDecoder(r.Body).Decode(&jsonBody)
+	err = json.NewDecoder(r.Body).Decode(&jsonBody)
 	if err != nil {
-		return domain.Store{}, domain.ServerError40001
+		return store, queues, domain.ServerError40001
 	}
 	name, ok := jsonBody["name"].(string)
 	if !ok || name == "" {
-		return domain.Store{}, domain.ServerError40001
+		return store, queues, domain.ServerError40001
 	}
 	email, ok := jsonBody["email"].(string)
 	if !ok || email == "" {
-		return domain.Store{}, domain.ServerError40001
+		return store, queues, domain.ServerError40001
 	}
 	password, ok := jsonBody["password"].(string)
 	if !ok || password == "" {
-		return domain.Store{}, domain.ServerError40001
+		return store, queues, domain.ServerError40001
 	}
-	store := domain.Store{Name: name, Email: email, Password: password}
-	return store, nil
+	store = domain.Store{Name: name, Email: email, Password: password}
+	
+	queueNames, ok := jsonBody["queue_names"].([]interface{})
+	if !ok || len(queueNames) <= 0 {
+		return store, queues, domain.ServerError40001
+	}
+	for _, value := range queueNames {
+		value, ok := value.(string)
+		if !ok || value == "" {
+			return store, queues, domain.ServerError40001
+		}
+		queues = append(queues, domain.Queue{Name: value})
+	}
+	return store, queues, nil
 }
 
 func StoreSignin(r *http.Request) (domain.Store, error) {

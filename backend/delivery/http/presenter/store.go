@@ -13,6 +13,8 @@ func StoreForResponse(store domain.Store) map[string]interface{} {
 	storeJson, _ = json.Marshal(store)
 	json.Unmarshal(storeJson, &storeMap)
 	delete(storeMap, "password")
+	created_at, _ := time.Parse(time.RFC3339, storeMap["created_at"].(string))
+	storeMap["created_at"] = created_at.Unix()
 	return storeMap
 }
 
@@ -24,5 +26,7 @@ func StoreToken(store domain.Store, token string, tokenExpiresAt time.Time) map[
 	delete(storeMap, "password")
 	storeMap["token"] = token
 	storeMap["token_expires_at"] = tokenExpiresAt.Unix()
+	created_at, _ := time.Parse(time.RFC3339, storeMap["created_at"].(string))
+	storeMap["created_at"] = created_at.Unix()
 	return storeMap
 }

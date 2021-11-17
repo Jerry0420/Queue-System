@@ -40,21 +40,35 @@ func (sr *storeRepository) GetByEmail(ctx context.Context, email string) (domain
 	return store, nil
 }
 
-func (sr *storeRepository) Create(ctx context.Context, store *domain.Store) error {
+func (sr *storeRepository) Create(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
 	ctx, cancel := context.WithTimeout(ctx, sr.contextTimeOut)
 	defer cancel()
 	
+	tx, err := sr.db.BeginTx(ctx, nil)
+    if err != nil {
+        sr.logger.ERRORf("error %v", err)
+        return err
+    }
+	defer tx.Rollback()
+	
 	query := `INSERT INTO stores (name, email, password) VALUES ($1, $2, $3) RETURNING id,created_at,session_id`
-	stmt, err := sr.db.PrepareContext(ctx, query)
+	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
 		sr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
 	}
+	defer stmt.Close()
+
 	row := stmt.QueryRowContext(ctx, store.Name, store.Email, store.Password)
 	err = row.Scan(&store.ID, &store.CreatedAt, &store.SessionID)
 	if err != nil {
 		sr.logger.ERRORf("error %v", err)
-		return domain.ServerError40402
+		return domain.ServerError40901
+	}
+	err = tx.Commit()
+	if err != nil {
+		sr.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
 	}
 	return nil
 }
@@ -69,6 +83,8 @@ func (sr *storeRepository) Update(ctx context.Context, store *domain.Store, fiel
 		sr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
 	}
+	defer stmt.Close()
+
 	row := stmt.QueryRowContext(ctx, newFieldValue, store.ID)
 	err = row.Scan(&store.Description, &store.CreatedAt, &store.SessionID)
 	if err != nil {
@@ -89,6 +105,8 @@ func (sr *storeRepository) RemoveByID(ctx context.Context, id int) error {
 		sr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
 	}
+	defer stmt.Close()
+	
 	row := stmt.QueryRowContext(ctx, id)
 	err = row.Scan(&deletedID)
 	if err != nil || deletedID != id {

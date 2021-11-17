@@ -59,7 +59,7 @@ func NewStoreDelivery(router *mux.Router, logger logging.LoggerTool, mw *middlew
 }
 
 func (sd *storeDelivery) open(w http.ResponseWriter, r *http.Request) {
-	store, err := validator.StoreOpen(r)
+	store, queues, err := validator.StoreOpen(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -90,11 +90,13 @@ func (sd *storeDelivery) open(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = sd.storeUsecase.Create(r.Context(), &store)
+	err = sd.storeUsecase.Create(r.Context(), &store, queues)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
+
+	sd.logger.INFOf(queues[0])
 
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }

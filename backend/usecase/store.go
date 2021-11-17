@@ -22,21 +22,23 @@ type StoreUsecaseConfig struct {
 type storeUsecase struct {
 	storeRepository   domain.StoreRepositoryInterface
 	signKeyRepository domain.SignKeyRepositoryInterface
+	queueRepository domain.QueueRepositoryInterface
 	logger            logging.LoggerTool
 	config            StoreUsecaseConfig
 }
 
 func NewStoreUsecase(
-	logger logging.LoggerTool,
 	storeRepository domain.StoreRepositoryInterface,
 	signKeyRepository domain.SignKeyRepositoryInterface,
+	queueRepository domain.QueueRepositoryInterface,
+	logger logging.LoggerTool,
 	storeUsecaseConfig StoreUsecaseConfig,
 ) domain.StoreUsecaseInterface {
-	return &storeUsecase{storeRepository, signKeyRepository, logger, storeUsecaseConfig}
+	return &storeUsecase{storeRepository, signKeyRepository, queueRepository, logger, storeUsecaseConfig}
 }
 
-func (su *storeUsecase) Create(ctx context.Context, store *domain.Store) error {
-	err := su.storeRepository.Create(ctx, store)
+func (su *storeUsecase) Create(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
+	err := su.storeRepository.Create(ctx, store, queues)
 	return err
 }
 

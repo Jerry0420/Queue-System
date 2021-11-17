@@ -30,6 +30,8 @@ func (skr *signKeyRepository) Create(ctx context.Context, signKey *domain.SignKe
 		skr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
 	}
+	defer stmt.Close()
+
 	row := stmt.QueryRowContext(ctx, signKey.StoreId, signKey.SignKey, signKey.SignKeyType)
 	err = row.Scan(&signKey.ID)
 	if err != nil {
@@ -67,6 +69,8 @@ func (skr *signKeyRepository) RemoveByID(ctx context.Context, id int, signKeyTyp
 		skr.logger.ERRORf("error %v", err)
 		return signKey, domain.ServerError50002
 	}
+	defer stmt.Close()
+
 	row := stmt.QueryRowContext(ctx, id, signKeyType)
 	err = row.Scan(&signKey.ID, &signKey.SignKey)
 	if err != nil || signKey.ID != id {

@@ -65,10 +65,11 @@ func main() {
 	queueReposotory := repository.NewQueueRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
 	customerReposotory := repository.NewCustomerRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
 
-	storeUsecase := usecase.NewStoreUsecase(
-		logger, 
+	storeUsecase := usecase.NewStoreUsecase( 
 		storeReposotory, 
 		signKeyReposotory,
+		queueReposotory,
+		logger,
 		usecase.StoreUsecaseConfig{
 			Domain: config.ServerConfig.DOMAIN(),
 			StoreDuration: config.ServerConfig.STOREDURATION(),
