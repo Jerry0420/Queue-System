@@ -178,7 +178,7 @@ func (su *storeUsecase) GetSignKeyByID(ctx context.Context, signKeyID int, signK
 
 func (su *storeUsecase) GenerateEmailContentOfForgetPassword(passwordToken string, store domain.Store) (subject string, content string) {
 	// TODO: update email content to html format.
-	resetPasswordUrl := fmt.Sprintf("%s/stores/password/update?id=%d&passwordToken=%s", su.config.Domain, store.ID, passwordToken)
+	resetPasswordUrl := fmt.Sprintf("%s/stores/password/update?id=%d&password_token=%s", su.config.Domain, store.ID, passwordToken)
 	return "Queue-System Reset Password", fmt.Sprintf("Hello, %s, please click %s", store.Name, resetPasswordUrl)
 }
 

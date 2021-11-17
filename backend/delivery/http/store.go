@@ -234,7 +234,7 @@ func (sd *storeDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	tokenClaims, err := sd.storeUsecase.VerifyToken(r.Context(), jsonBody["passwordToken"], domain.SignKeyTypes.PASSWORD, sd.storeUsecase.RemoveSignKeyByID)
+	tokenClaims, err := sd.storeUsecase.VerifyToken(r.Context(), jsonBody["password_token"], domain.SignKeyTypes.PASSWORD, sd.storeUsecase.RemoveSignKeyByID)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return

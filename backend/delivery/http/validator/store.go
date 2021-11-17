@@ -87,7 +87,7 @@ func StorePasswordUpdate(r *http.Request) (map[string]string, int, error) {
 	if err != nil {
 		return map[string]string{}, -1, domain.ServerError40001
 	}
-	passwordToken, ok := jsonBody["passwordToken"].(string)
+	passwordToken, ok := jsonBody["password_token"].(string)
 	if !ok || passwordToken == "" {
 		return map[string]string{}, -1, domain.ServerError40001
 	}
@@ -102,6 +102,6 @@ func StorePasswordUpdate(r *http.Request) (map[string]string, int, error) {
 		return map[string]string{}, -1, domain.ServerError40001
 	}
 	
-	body := map[string]string{"passwordToken": passwordToken, "password": password} 
+	body := map[string]string{"password_token": passwordToken, "password": password} 
 	return body, id, nil
 }
