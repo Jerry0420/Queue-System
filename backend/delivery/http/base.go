@@ -2,10 +2,11 @@ package delivery
 
 import (
 	"net/http"
+
 	"github.com/gorilla/mux"
-	"github.com/jerry0420/queue-system/backend/logging"
+	"github.com/jerry0420/queue-system/backend/delivery/http/presenter"
 	"github.com/jerry0420/queue-system/backend/domain"
-	"github.com/jerry0420/queue-system/backend/presenter"
+	"github.com/jerry0420/queue-system/backend/logging"
 )
 
 type baseDelivery struct {
@@ -14,7 +15,7 @@ type baseDelivery struct {
 
 func NewBaseDelivery(router *mux.Router, logger logging.LoggerTool) {
 	bd := &baseDelivery{logger}
-	// these two routes will just response to the client directly, and will not go into any middleware. 
+	// these two routes will just response to the client directly, and will not go into any middleware.
 	router.MethodNotAllowedHandler = http.HandlerFunc(bd.methodNotAllow)
 	router.NotFoundHandler = http.HandlerFunc(bd.notFound)
 }

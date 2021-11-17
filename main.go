@@ -13,8 +13,8 @@ import (
 
 	"github.com/jerry0420/queue-system/backend/config"
 	delivery "github.com/jerry0420/queue-system/backend/delivery/http"
+	middleware "github.com/jerry0420/queue-system/backend/delivery/http/middleware"
 	"github.com/jerry0420/queue-system/backend/logging"
-	"github.com/jerry0420/queue-system/backend/middleware"
 	repository "github.com/jerry0420/queue-system/backend/repository/db"
 	"github.com/jerry0420/queue-system/backend/usecase"
 )
@@ -78,7 +78,7 @@ func main() {
 	customerUsecase := usecase.NewCustomerUsecase(customerReposotory, logger)
 
 	mw := middleware.NewMiddleware(router, logger, storeUsecase)
-
+	
 	delivery.NewStoreDelivery(
 		router, 
 		logger, 

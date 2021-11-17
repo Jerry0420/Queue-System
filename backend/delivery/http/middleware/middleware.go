@@ -14,7 +14,7 @@ import (
 
 	"github.com/jerry0420/queue-system/backend/domain"
 	"github.com/jerry0420/queue-system/backend/logging"
-	"github.com/jerry0420/queue-system/backend/presenter"
+	"github.com/jerry0420/queue-system/backend/delivery/http/presenter"
 )
 
 type Middleware struct {
