@@ -22,21 +22,23 @@ type StoreUsecaseConfig struct {
 type storeUsecase struct {
 	storeRepository   domain.StoreRepositoryInterface
 	signKeyRepository domain.SignKeyRepositoryInterface
+	queueRepository domain.QueueRepositoryInterface
 	logger            logging.LoggerTool
 	config            StoreUsecaseConfig
 }
 
 func NewStoreUsecase(
-	logger logging.LoggerTool,
 	storeRepository domain.StoreRepositoryInterface,
 	signKeyRepository domain.SignKeyRepositoryInterface,
+	queueRepository domain.QueueRepositoryInterface,
+	logger logging.LoggerTool,
 	storeUsecaseConfig StoreUsecaseConfig,
 ) domain.StoreUsecaseInterface {
-	return &storeUsecase{storeRepository, signKeyRepository, logger, storeUsecaseConfig}
+	return &storeUsecase{storeRepository, signKeyRepository, queueRepository, logger, storeUsecaseConfig}
 }
 
-func (su *storeUsecase) Create(ctx context.Context, store *domain.Store) error {
-	err := su.storeRepository.Create(ctx, store)
+func (su *storeUsecase) Create(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
+	err := su.storeRepository.Create(ctx, store, queues)
 	return err
 }
 
@@ -178,7 +180,7 @@ func (su *storeUsecase) GetSignKeyByID(ctx context.Context, signKeyID int, signK
 
 func (su *storeUsecase) GenerateEmailContentOfForgetPassword(passwordToken string, store domain.Store) (subject string, content string) {
 	// TODO: update email content to html format.
-	resetPasswordUrl := fmt.Sprintf("%s/stores/password/update?id=%d&passwordToken=%s", su.config.Domain, store.ID, passwordToken)
+	resetPasswordUrl := fmt.Sprintf("%s/stores/password/update?id=%d&password_token=%s", su.config.Domain, store.ID, passwordToken)
 	return "Queue-System Reset Password", fmt.Sprintf("Hello, %s, please click %s", store.Name, resetPasswordUrl)
 }
 

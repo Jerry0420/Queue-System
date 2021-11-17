@@ -27,14 +27,14 @@ type TokenClaims struct {
 }
 
 type StoreRepositoryInterface interface {
-	Create(ctx context.Context, store *Store) error
+	Create(ctx context.Context, store *Store, queues []Queue) error
 	GetByEmail(ctx context.Context, email string) (Store, error)
 	Update(ctx context.Context, store *Store, fieldName string, newFieldValue string) error
 	RemoveByID(ctx context.Context, id int) error
 }
 
 type StoreUsecaseInterface interface {
-	Create(ctx context.Context, store *Store) error
+	Create(ctx context.Context, store *Store, queues []Queue) error
 	GetByEmail(ctx context.Context, email string) (Store, error)
 	VerifyPasswordLength(password string) error
 	EncryptPassword(password string) (string, error)
