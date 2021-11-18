@@ -73,20 +73,17 @@ func main() {
 
 	mw := middleware.NewMiddleware(router, logger, usecase)
 
-	httpAPI.NewStoreDelivery(
+	httpAPI.NewHttpAPIDelivery(
 		router,
 		logger,
 		mw,
 		usecase,
-		httpAPI.StoreDeliveryConfig{
+		httpAPI.HttpAPIDeliveryConfig{
 			StoreDuration:         config.ServerConfig.STOREDURATION(),
 			TokenDuration:         config.ServerConfig.TOKENDURATION(),
 			PasswordTokenDuration: config.ServerConfig.PASSWORDTOKENDURATION(),
 		},
 	)
-	httpAPI.NewQueueDelivery(router, logger, usecase)
-	httpAPI.NewCustomerDelivery(router, logger, usecase)
-	httpAPI.NewBaseDelivery(router, logger)
 
 	server := &http.Server{
 		Addr:         "0.0.0.0:8000",
