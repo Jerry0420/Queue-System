@@ -5,11 +5,3 @@ type Queue struct {
 	Name string `json:"name"`
 	StoreID int `json:"store_id"`
 }
-
-type QueueRepositoryInterface interface {
-
-}
-
-type QueueUsecaseInterface interface {
-	
-}

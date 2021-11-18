@@ -3,14 +3,14 @@ package httpAPI
 import (
 	"github.com/gorilla/mux"
 	"github.com/jerry0420/queue-system/backend/logging"
-	"github.com/jerry0420/queue-system/backend/domain"
+	"github.com/jerry0420/queue-system/backend/usecase"
 )
 
 type queueDelivery struct {
-	queueUsecase domain.QueueUsecaseInterface
-	logger logging.LoggerTool
+	usecase usecase.UseCaseInterface
+	logger  logging.LoggerTool
 }
 
-func NewQueueDelivery(router *mux.Router, logger logging.LoggerTool, queueUsecase domain.QueueUsecaseInterface) {
-	_ = &queueDelivery{queueUsecase, logger}
+func NewQueueDelivery(router *mux.Router, logger logging.LoggerTool, usecase usecase.UseCaseInterface) {
+	_ = &queueDelivery{usecase, logger}
 }

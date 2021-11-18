@@ -60,39 +60,32 @@ func main() {
 
 	router := mux.NewRouter()
 
-	signKeyReposotory := pgDB.NewSignKeyRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
-	storeReposotory := pgDB.NewStoreRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
-	queueReposotory := pgDB.NewQueueRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
-	customerReposotory := pgDB.NewCustomerRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+	pgDBRepository := pgDB.NewPGDBRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
 
-	storeUsecase := usecase.NewStoreUsecase( 
-		storeReposotory, 
-		signKeyReposotory,
-		queueReposotory,
+	usecase := usecase.NewUsecase(
+		pgDBRepository,
 		logger,
-		usecase.StoreUsecaseConfig{
-			Domain: config.ServerConfig.DOMAIN(),
+		usecase.UsecaseConfig{
+			Domain:        config.ServerConfig.DOMAIN(),
 			StoreDuration: config.ServerConfig.STOREDURATION(),
 		},
 	)
-	queueUsecase := usecase.NewQueueUsecase(queueReposotory, logger)
-	customerUsecase := usecase.NewCustomerUsecase(customerReposotory, logger)
 
-	mw := middleware.NewMiddleware(router, logger, storeUsecase)
-	
+	mw := middleware.NewMiddleware(router, logger, usecase)
+
 	httpAPI.NewStoreDelivery(
-		router, 
-		logger, 
-		mw, 
-		storeUsecase, 
+		router,
+		logger,
+		mw,
+		usecase,
 		httpAPI.StoreDeliveryConfig{
-			StoreDuration: config.ServerConfig.STOREDURATION(), 
-			TokenDuration: config.ServerConfig.TOKENDURATION(), 
+			StoreDuration:         config.ServerConfig.STOREDURATION(),
+			TokenDuration:         config.ServerConfig.TOKENDURATION(),
 			PasswordTokenDuration: config.ServerConfig.PASSWORDTOKENDURATION(),
 		},
 	)
-	httpAPI.NewQueueDelivery(router, logger, queueUsecase)
-	httpAPI.NewCustomerDelivery(router, logger, customerUsecase)
+	httpAPI.NewQueueDelivery(router, logger, usecase)
+	httpAPI.NewCustomerDelivery(router, logger, usecase)
 	httpAPI.NewBaseDelivery(router, logger)
 
 	server := &http.Server{

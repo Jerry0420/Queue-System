@@ -12,18 +12,19 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 
+	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/presenter"
 	"github.com/jerry0420/queue-system/backend/domain"
 	"github.com/jerry0420/queue-system/backend/logging"
-	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/presenter"
+	"github.com/jerry0420/queue-system/backend/usecase"
 )
 
 type Middleware struct {
-	storeUsecase domain.StoreUsecaseInterface
-	logger       logging.LoggerTool
+	usecase usecase.UseCaseInterface
+	logger  logging.LoggerTool
 }
 
-func NewMiddleware(router *mux.Router, logger logging.LoggerTool, storeUsecase domain.StoreUsecaseInterface) *Middleware {
-	mw := &Middleware{storeUsecase, logger}
+func NewMiddleware(router *mux.Router, logger logging.LoggerTool, usecase usecase.UseCaseInterface) *Middleware {
+	mw := &Middleware{usecase, logger}
 	router.Use(mw.LoggingMiddleware)
 	return mw
 }
@@ -61,7 +62,7 @@ func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		encryptToken := strings.Split(r.Header.Get("Authorization"), " ")
 		if len(encryptToken) == 2 && strings.ToLower(encryptToken[0]) == "bearer" {
-			tokenClaims, err := mw.storeUsecase.VerifyToken(r.Context(), encryptToken[1], domain.SignKeyTypes.NORMAL, mw.storeUsecase.GetSignKeyByID)
+			tokenClaims, err := mw.usecase.VerifyToken(r.Context(), encryptToken[1], domain.SignKeyTypes.NORMAL, mw.usecase.GetSignKeyByID)
 			if err != nil {
 				presenter.JsonResponse(w, nil, err)
 				return
