@@ -12,10 +12,10 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/jerry0420/queue-system/backend/config"
-	delivery "github.com/jerry0420/queue-system/backend/delivery/http"
-	middleware "github.com/jerry0420/queue-system/backend/delivery/http/middleware"
+	"github.com/jerry0420/queue-system/backend/delivery/httpAPI"
+	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/middleware"
 	"github.com/jerry0420/queue-system/backend/logging"
-	repository "github.com/jerry0420/queue-system/backend/repository/db"
+	"github.com/jerry0420/queue-system/backend/repository/pgDB"
 	"github.com/jerry0420/queue-system/backend/usecase"
 )
 
@@ -35,7 +35,7 @@ func main() {
 			sys,
 			logger,
 		)
-		dbWrapper := repository.NewDbWrapper(vaultWrapper, dbLocation, logger)
+		dbWrapper := pgDB.NewDbWrapper(vaultWrapper, dbLocation, logger)
 		db = dbWrapper.GetDb()
 
 		defer func() {
@@ -49,7 +49,7 @@ func main() {
 			}
 		}()
 	} else {
-		db = repository.GetDevDb(config.ServerConfig.POSTGRES_DEV_USER(), config.ServerConfig.POSTGRES_DEV_PASSWORD(), dbLocation, logger)
+		db = pgDB.GetDevDb(config.ServerConfig.POSTGRES_DEV_USER(), config.ServerConfig.POSTGRES_DEV_PASSWORD(), dbLocation, logger)
 		defer func() {
 			err := db.Close()
 			if err != nil {
@@ -60,40 +60,30 @@ func main() {
 
 	router := mux.NewRouter()
 
-	signKeyReposotory := repository.NewSignKeyRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
-	storeReposotory := repository.NewStoreRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
-	queueReposotory := repository.NewQueueRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
-	customerReposotory := repository.NewCustomerRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+	pgDBRepository := pgDB.NewPGDBRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
 
-	storeUsecase := usecase.NewStoreUsecase( 
-		storeReposotory, 
-		signKeyReposotory,
-		queueReposotory,
+	usecase := usecase.NewUsecase(
+		pgDBRepository,
 		logger,
-		usecase.StoreUsecaseConfig{
-			Domain: config.ServerConfig.DOMAIN(),
+		usecase.UsecaseConfig{
+			Domain:        config.ServerConfig.DOMAIN(),
 			StoreDuration: config.ServerConfig.STOREDURATION(),
 		},
 	)
-	queueUsecase := usecase.NewQueueUsecase(queueReposotory, logger)
-	customerUsecase := usecase.NewCustomerUsecase(customerReposotory, logger)
 
-	mw := middleware.NewMiddleware(router, logger, storeUsecase)
-	
-	delivery.NewStoreDelivery(
-		router, 
-		logger, 
-		mw, 
-		storeUsecase, 
-		delivery.StoreDeliveryConfig{
-			StoreDuration: config.ServerConfig.STOREDURATION(), 
-			TokenDuration: config.ServerConfig.TOKENDURATION(), 
+	mw := middleware.NewMiddleware(router, logger, usecase)
+
+	httpAPI.NewHttpAPIDelivery(
+		router,
+		logger,
+		mw,
+		usecase,
+		httpAPI.HttpAPIDeliveryConfig{
+			StoreDuration:         config.ServerConfig.STOREDURATION(),
+			TokenDuration:         config.ServerConfig.TOKENDURATION(),
 			PasswordTokenDuration: config.ServerConfig.PASSWORDTOKENDURATION(),
 		},
 	)
-	delivery.NewQueueDelivery(router, logger, queueUsecase)
-	delivery.NewCustomerDelivery(router, logger, customerUsecase)
-	delivery.NewBaseDelivery(router, logger)
 
 	server := &http.Server{
 		Addr:         "0.0.0.0:8000",
