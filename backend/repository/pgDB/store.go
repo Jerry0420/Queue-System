@@ -53,6 +53,13 @@ func (repo *pgDBRepository) CreateStore(ctx context.Context, store *domain.Store
 		repo.logger.ERRORf("error %v", err)
 		return domain.ServerError40901
 	}
+
+	err = repo.CreateQueues(ctx, tx, store.ID, queues)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)

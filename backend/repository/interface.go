@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/jerry0420/queue-system/backend/domain"
 )
@@ -19,6 +20,7 @@ type RepositoryInterface interface {
 	RemoveSignKeyByID(ctx context.Context, id int, signKeyType string) (signKey domain.SignKey, err error)
 
 	// queue.go
+	CreateQueues(ctx context.Context, tx *sql.Tx, storeID int, queues []domain.Queue) error
 
 	// customer.go
 }
