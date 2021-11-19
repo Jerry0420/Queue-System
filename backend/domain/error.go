@@ -66,4 +66,6 @@ var (
 	ServerError50001 = &ServerError{Code: 50001, Description: "other internal server error"}
 	// unexpected database error
 	ServerError50002 = &ServerError{Code: 50002, Description: "unexpected database error"}
+	// server not support flushing
+	ServerError50003 = &ServerError{Code: 50003, Description: "server not support flushing"}
 )

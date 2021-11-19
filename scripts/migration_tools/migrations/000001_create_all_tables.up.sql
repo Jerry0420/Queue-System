@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS store_sessions(
 
 -- ----------------------------
 
-CREATE TYPE sign_key_types AS ENUM ('normal', 'password', 'refresh');
+CREATE TYPE sign_key_types AS ENUM ('normal', 'password', 'refresh', 'session');
 
 CREATE TABLE IF NOT EXISTS sign_keys(
    id serial PRIMARY KEY,

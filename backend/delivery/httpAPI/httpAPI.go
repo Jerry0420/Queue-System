@@ -39,7 +39,7 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 	router.HandleFunc(
 		V_1("/stores/token"),
 		had.tokenRefresh,
-	).Methods(http.MethodPut).Headers("Content-Type", "application/json")
+	).Methods(http.MethodPut)
 
 	router.Handle(
 		V_1("/stores/{id:[0-9]+}"),
@@ -58,7 +58,22 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 
 	//queues
 
+	// sessions
+	router.HandleFunc(
+		V_1("/sessions/sse"),
+		had.SessionCreate,
+	).Methods(http.MethodGet) // get method for sse.
+
+	router.HandleFunc(
+		V_1("/sessions/{id}"),
+		had.SessionScan,
+	).Methods(http.MethodPut)
+
 	//customers
+	router.HandleFunc(
+		V_1("/customers"),
+		had.customersCreate,
+	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	// base routes
 	// these two routes will just response to the client directly, and will not go into any middleware.

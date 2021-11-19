@@ -51,3 +51,5 @@ test.sql
 test.sh
 test.go
 test.pgsql
+test.js
+test.html
