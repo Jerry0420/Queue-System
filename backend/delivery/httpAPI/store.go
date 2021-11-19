@@ -48,9 +48,7 @@ func (had *httpAPIDelivery) storeOpen(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	had.logger.INFOf(queues[0])
-
-	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
+	presenter.JsonResponseOK(w, presenter.StoreWithQueuesForResponse(store, queues))
 }
 
 func (had *httpAPIDelivery) storeSignin(w http.ResponseWriter, r *http.Request) {
