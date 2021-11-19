@@ -14,9 +14,9 @@ func (repo *pgDBRepository) GetStoreByEmail(ctx context.Context, email string) (
 	defer cancel()
 
 	var store domain.Store
-	query := `SELECT id,email,password,name,description,created_at,session_id FROM stores WHERE email=$1`
+	query := `SELECT id,email,password,name,description,created_at FROM stores WHERE email=$1`
 	row := repo.db.QueryRowContext(ctx, query, email)
-	err := row.Scan(&store.ID, &store.Email, &store.Password, &store.Name, &store.Description, &store.CreatedAt, &store.SessionID)
+	err := row.Scan(&store.ID, &store.Email, &store.Password, &store.Name, &store.Description, &store.CreatedAt)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		repo.logger.ERRORf("error %v", err)
@@ -39,7 +39,7 @@ func (repo *pgDBRepository) CreateStore(ctx context.Context, store *domain.Store
 	}
 	defer tx.Rollback()
 
-	query := `INSERT INTO stores (name, email, password) VALUES ($1, $2, $3) RETURNING id,created_at,session_id`
+	query := `INSERT INTO stores (name, email, password) VALUES ($1, $2, $3) RETURNING id,created_at`
 	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)
@@ -48,7 +48,7 @@ func (repo *pgDBRepository) CreateStore(ctx context.Context, store *domain.Store
 	defer stmt.Close()
 
 	row := stmt.QueryRowContext(ctx, store.Name, store.Email, store.Password)
-	err = row.Scan(&store.ID, &store.CreatedAt, &store.SessionID)
+	err = row.Scan(&store.ID, &store.CreatedAt)
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)
 		return domain.ServerError40901
@@ -72,7 +72,7 @@ func (repo *pgDBRepository) UpdateStore(ctx context.Context, store *domain.Store
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
-	query := fmt.Sprintf("UPDATE stores SET %s=$1 WHERE id=$2 RETURNING description,created_at,session_id", fieldName)
+	query := fmt.Sprintf("UPDATE stores SET %s=$1 WHERE id=$2 RETURNING description,created_at", fieldName)
 	stmt, err := repo.db.PrepareContext(ctx, query)
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)
@@ -81,7 +81,7 @@ func (repo *pgDBRepository) UpdateStore(ctx context.Context, store *domain.Store
 	defer stmt.Close()
 
 	row := stmt.QueryRowContext(ctx, newFieldValue, store.ID)
-	err = row.Scan(&store.Description, &store.CreatedAt, &store.SessionID)
+	err = row.Scan(&store.Description, &store.CreatedAt)
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)
 		return domain.ServerError40402
