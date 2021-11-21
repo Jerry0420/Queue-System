@@ -1,11 +1,9 @@
 package middleware
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,22 +33,15 @@ func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 
 		randomUUID := uuid.New().String()
 		ctx := context.WithValue(r.Context(), "requestID", randomUUID)
-
 		r = r.WithContext(ctx)
-		responseWrapper := &presenter.ResponseWrapper{ResponseWriter: w, Buffer: &bytes.Buffer{}}
-		next.ServeHTTP(responseWrapper, r)
 
-		var wrappedResponse map[string]interface{}
-		json.Unmarshal(responseWrapper.Buffer.Bytes(), &wrappedResponse)
-		io.Copy(w, responseWrapper.Buffer)
+		next.ServeHTTP(w, r)
 
 		ctx = context.WithValue(r.Context(), "duration", time.Since(start).Truncate(1*time.Millisecond))
-
-		if errorCode, ok := wrappedResponse["error_code"]; ok {
-			// api routes will go here.
+		if errorCode := w.Header().Get("Server-Code"); errorCode != "" {
 			ctx = context.WithValue(ctx, "code", errorCode)
 		} else {
-			ctx = context.WithValue(ctx, "code", 200)
+			ctx = context.WithValue(ctx, "code", strconv.Itoa(200))
 		}
 
 		r = r.WithContext(ctx)

@@ -1,22 +1,13 @@
 package presenter
 
 import (
-	"bytes"
 	"encoding/json"
 	"net/http"
+	"strconv"
 
 	"github.com/jerry0420/queue-system/backend/config"
 	"github.com/jerry0420/queue-system/backend/domain"
 )
-
-type ResponseWrapper struct {
-	http.ResponseWriter
-	Buffer *bytes.Buffer
-}
-
-func (responseWrapper *ResponseWrapper) Write(p []byte) (int, error) {
-	return responseWrapper.Buffer.Write(p)
-}
 
 func JsonResponseOK(w http.ResponseWriter, response interface{}) {
 	JsonResponse(w, response, nil)
@@ -36,8 +27,9 @@ func JsonResponse(w http.ResponseWriter, response interface{}, err error) {
 		if config.ServerConfig.ENV() != config.EnvStatus.PROD {
 			errorResponse["description"] = serverError.Description
 		}
-		
+
 		w.WriteHeader(serverError.Code / 100) //http status code is the first two digits of code.
+		w.Header().Set("Server-Code", strconv.Itoa(serverError.Code))
 		json.NewEncoder(w).Encode(&errorResponse)
 	} else {
 		w.WriteHeader(200)
