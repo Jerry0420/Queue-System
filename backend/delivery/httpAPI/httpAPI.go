@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/jerry0420/queue-system/backend/broker"
 	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/middleware"
 	"github.com/jerry0420/queue-system/backend/logging"
 	"github.com/jerry0420/queue-system/backend/usecase"
@@ -19,11 +20,12 @@ type HttpAPIDeliveryConfig struct {
 type httpAPIDelivery struct {
 	logger  logging.LoggerTool
 	usecase usecase.UseCaseInterface
+	broker  *broker.Broker
 	config  HttpAPIDeliveryConfig
 }
 
-func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middleware.Middleware, usecase usecase.UseCaseInterface, config HttpAPIDeliveryConfig) {
-	had := &httpAPIDelivery{logger, usecase, config}
+func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middleware.Middleware, usecase usecase.UseCaseInterface, broker *broker.Broker, config HttpAPIDeliveryConfig) {
+	had := &httpAPIDelivery{logger, usecase, broker, config}
 
 	// stores
 	router.HandleFunc(

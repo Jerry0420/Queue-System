@@ -23,4 +23,7 @@ type RepositoryInterface interface {
 	CreateQueues(ctx context.Context, tx *sql.Tx, storeID int, queues []domain.Queue) error
 
 	// customer.go
+
+	// session.go
+	CreateSession(ctx context.Context, store domain.Store) (domain.StoreSession, error)
 }

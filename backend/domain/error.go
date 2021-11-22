@@ -59,6 +59,8 @@ var (
 	ServerError40902 = &ServerError{Code: 40902, Description: "sign_key already exist."}
 	// store already exist. (but exceed 24 hrs, and already auto close this store.)
 	ServerError40903 = &ServerError{Code: 40903, Description: "store already exist. (but exceed 24 hrs, and already auto close this store.)"}
+	// store_session already exist.
+	ServerError40904 = &ServerError{Code: 40904, Description: "store_session already exist."}
 
 	// ============================================================
 

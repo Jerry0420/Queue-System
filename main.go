@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
 
+	"github.com/jerry0420/queue-system/backend/broker"
 	"github.com/jerry0420/queue-system/backend/config"
 	"github.com/jerry0420/queue-system/backend/delivery/httpAPI"
 	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/middleware"
@@ -71,6 +72,8 @@ func main() {
 		},
 	)
 
+	broker := broker.NewBroker(logger)
+
 	mw := middleware.NewMiddleware(router, logger, usecase)
 
 	httpAPI.NewHttpAPIDelivery(
@@ -78,6 +81,7 @@ func main() {
 		logger,
 		mw,
 		usecase,
+		broker,
 		httpAPI.HttpAPIDeliveryConfig{
 			StoreDuration:         config.ServerConfig.STOREDURATION(),
 			TokenDuration:         config.ServerConfig.TOKENDURATION(),

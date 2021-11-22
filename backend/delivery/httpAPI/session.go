@@ -16,12 +16,17 @@ var (
 )
 
 func (had *httpAPIDelivery) SessionCreate(w http.ResponseWriter, r *http.Request) {
-	// 1. check session token
-	// 2. flush new session
-	// 3. sse, and flush new session
+	sessionToken := r.URL.Query().Get("session_token")
+	if sessionToken == "" {
+		presenter.JsonResponse(w, nil, domain.ServerError40001)
+		return
+	}
+	tokenClaims, err := had.usecase.VerifyToken(r.Context(), sessionToken, domain.SignKeyTypes.SESSION, had.usecase.GetSignKeyByID)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
 
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "*")
 	w.Header().Set("Content-Type", "text/event-stream")
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -29,6 +34,25 @@ func (had *httpAPIDelivery) SessionCreate(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	store := domain.Store{
+		ID:        tokenClaims.StoreID,
+		Email:     tokenClaims.Email,
+		Name:      tokenClaims.Name,
+		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
+	}
+	
+	session, err := had.usecase.CreateSession(r.Context(), store)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+	var flushedData bytes.Buffer
+	json.NewEncoder(&flushedData).Encode(session)
+	fmt.Fprintf(w, "data: %v\n\n", flushedData.String())
+	flusher.Flush()
+	flushedData.Reset()
+
+	// TODO: sub, flush new session in for loop
 	t := time.NewTicker(2 * time.Second)
 	defer t.Stop()
 	for {
