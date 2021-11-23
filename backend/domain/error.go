@@ -45,6 +45,8 @@ var (
 	ServerError40402 = &ServerError{Code: 40402, Description: "store not exist."}
 	// sign_key not exist.
 	ServerError40403 = &ServerError{Code: 40403, Description: "sign_key not exist."}
+	// store_session not exist.
+	ServerError40404 = &ServerError{Code: 40404, Description: "store_session not exist."}
 
 	// ============================================================
 

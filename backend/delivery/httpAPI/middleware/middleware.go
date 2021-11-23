@@ -38,7 +38,6 @@ func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 		randomUUID := uuid.New().String()
 		ctx := context.WithValue(r.Context(), "requestID", randomUUID)
 		r = r.WithContext(ctx)
-
 		next.ServeHTTP(w, r)
 
 		ctx = context.WithValue(r.Context(), "duration", time.Since(start).Truncate(1*time.Millisecond))

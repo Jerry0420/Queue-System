@@ -26,4 +26,5 @@ type RepositoryInterface interface {
 
 	// session.go
 	CreateSession(ctx context.Context, store domain.Store) (domain.StoreSession, error)
+	UpdateSession(ctx context.Context, session *domain.StoreSession, oldStatus string, newStatus string) error
 }

@@ -73,6 +73,7 @@ func main() {
 	)
 
 	broker := broker.NewBroker(logger)
+	defer broker.CloseAll()
 
 	mw := middleware.NewMiddleware(router, logger, usecase)
 

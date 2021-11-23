@@ -1,8 +1,8 @@
 package domain
 
-type storeSessionStatus struct{ NORMAL, SCANNED string }
+type storeSessionStatus struct{ NORMAL, SCANNED, USED string }
 
-var StoreSessionStatus storeSessionStatus = storeSessionStatus{NORMAL: "normal", SCANNED: "scanned"}
+var StoreSessionStatus storeSessionStatus = storeSessionStatus{NORMAL: "normal", SCANNED: "scanned", USED: "used"}
 
 type StoreSession struct {
 	ID      string `json:"id"`

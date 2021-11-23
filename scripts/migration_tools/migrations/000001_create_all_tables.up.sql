@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS stores(
 
 -- ----------------------------
 
-CREATE TYPE store_session_status AS ENUM ('normal', 'scanned');
+CREATE TYPE store_session_status AS ENUM ('normal', 'scanned', 'used');
 
 CREATE TABLE IF NOT EXISTS store_sessions(
    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
