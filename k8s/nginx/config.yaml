@@ -15,5 +15,5 @@ data:
   upstream-keepalive-timeout: "75"
   upstream-keepalive-requests: "10000"
   proxy-connect-timeout: "75"
-  proxy-read-timeout: "75"
+  proxy-read-timeout: "86400"
   proxy-send-timeout: "75"
