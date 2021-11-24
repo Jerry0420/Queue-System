@@ -87,6 +87,7 @@ func main() {
 			StoreDuration:         config.ServerConfig.STOREDURATION(),
 			TokenDuration:         config.ServerConfig.TOKENDURATION(),
 			PasswordTokenDuration: config.ServerConfig.PASSWORDTOKENDURATION(),
+			Domain:                config.ServerConfig.DOMAIN(),
 		},
 	)
 

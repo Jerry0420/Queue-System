@@ -15,6 +15,7 @@ type HttpAPIDeliveryConfig struct {
 	StoreDuration         time.Duration
 	TokenDuration         time.Duration
 	PasswordTokenDuration time.Duration
+	Domain                string
 }
 
 type httpAPIDelivery struct {

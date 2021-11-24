@@ -45,7 +45,7 @@ func (had *httpAPIDelivery) SessionCreate(w http.ResponseWriter, r *http.Request
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	fmt.Fprintf(w, "data: %v\n\n", presenter.SessionCreate(session))
+	fmt.Fprintf(w, "data: %v\n\n", presenter.SessionCreate(had.config.Domain, session))
 	flusher.Flush()
 
 	for {
@@ -57,7 +57,7 @@ func (had *httpAPIDelivery) SessionCreate(w http.ResponseWriter, r *http.Request
 					presenter.JsonResponse(w, nil, err)
 					return
 				}
-				fmt.Fprintf(w, "data: %v\n\n", presenter.SessionCreate(session))
+				fmt.Fprintf(w, "data: %v\n\n", presenter.SessionCreate(had.config.Domain, session))
 				flusher.Flush()
 			}
 		case <-r.Context().Done():
