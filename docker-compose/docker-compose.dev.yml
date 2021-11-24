@@ -22,6 +22,23 @@ services:
       - ../package-lock.json:/app/package-lock.json
       - ../build:/app/build
 
+  grpc:
+    build:
+      context: ../
+      dockerfile: Dockerfile.grpc
+      target: base
+    container_name: grpc
+    networks:
+      - queue_system
+    stdin_open: true
+    tty: true
+    env_file: 
+      - .env
+    ports:
+      - "8002:8002"
+    volumes:
+      - ../:/app
+
   backend:
     build:
       context: ../
