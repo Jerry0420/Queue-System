@@ -68,7 +68,7 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 
 	router.HandleFunc(
 		V_1("/sessions/{id}"),
-		had.SessionScan,
+		had.SessionScanned,
 	).Methods(http.MethodPut)
 
 	//customers

@@ -30,7 +30,12 @@ func (broker *Broker) Subscribe(topicName string) chan Event {
 	}
 
 	consumerChan := make(chan Event)
-	broker.consumers[topicName] = map[chan Event]bool{consumerChan: true}
+	consumerChans, ok := broker.consumers[topicName]
+	if !ok {
+		broker.consumers[topicName] = map[chan Event]bool{consumerChan: true}
+	} else {
+		consumerChans[consumerChan] = true
+	}
 	return consumerChan
 }
 

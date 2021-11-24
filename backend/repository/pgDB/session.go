@@ -2,7 +2,6 @@ package pgDB
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/jerry0420/queue-system/backend/domain"
 )
