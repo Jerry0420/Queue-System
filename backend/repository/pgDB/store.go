@@ -93,8 +93,7 @@ func (repo *pgDBRepository) RemoveStoreByID(ctx context.Context, id int) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
-	var deletedID int
-	query := `DELETE FROM stores WHERE id=$1 RETURNING id`
+	query := `DELETE FROM stores WHERE id=$1`
 	stmt, err := repo.db.PrepareContext(ctx, query)
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)
@@ -102,11 +101,18 @@ func (repo *pgDBRepository) RemoveStoreByID(ctx context.Context, id int) error {
 	}
 	defer stmt.Close()
 
-	row := stmt.QueryRowContext(ctx, id)
-	err = row.Scan(&deletedID)
-	if err != nil || deletedID != id {
+	result, err := stmt.ExecContext(ctx, id)
+	if err != nil {
 		repo.logger.ERRORf("error %v", err)
-		return domain.ServerError40403
+		return domain.ServerError50002
+	}
+	num, err := result.RowsAffected()
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
+	if num == 0 {
+		return domain.ServerError40402
 	}
 	return nil
 }
