@@ -1,7 +1,6 @@
 FROM golang:1.17.1-alpine AS base
-WORKDIR /app
-COPY ./proto ./proto
-COPY ./grpc ./grpc
+WORKDIR /app/grpc
+COPY ./grpc ./
 
 # FROM base AS builder
 # RUN go build -o main /app/grpc/main.go

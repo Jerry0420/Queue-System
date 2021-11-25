@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,6 +17,7 @@ import (
 	"github.com/jerry0420/queue-system/backend/delivery/httpAPI"
 	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/middleware"
 	"github.com/jerry0420/queue-system/backend/logging"
+	// grpcServices "github.com/jerry0420/queue-system/backend/proto"
 	"github.com/jerry0420/queue-system/backend/repository/pgDB"
 	"github.com/jerry0420/queue-system/backend/usecase"
 )
