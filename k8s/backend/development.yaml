@@ -21,9 +21,9 @@ spec:
       initContainers:
       - name: volume-chown
         image: busybox
-        command: ["sh", "-c", "chown -R 1000:1001 /app/logs"]
+        command: ["sh", "-c", "chown -R 1000:1001 /app/backend/logs"]
         volumeMounts:
-          - mountPath: /app/logs
+          - mountPath: /app/backend/logs
             name: log-dir
       containers:
       - name: backend
@@ -43,7 +43,7 @@ spec:
           - name: backend-port
             containerPort: 8000
         volumeMounts:
-          - mountPath: /app/logs
+          - mountPath: /app/backend/logs
             name: log-dir
           - name: backend-secret
             mountPath: "/run/secrets/backend-secret"
@@ -53,7 +53,7 @@ spec:
       volumes:
         - name: log-dir
           hostPath:
-            path: /app/logs
+            path: /app/backend/logs
             type: DirectoryOrCreate
         - name: backend-secret
           secret:

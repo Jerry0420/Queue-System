@@ -39,7 +39,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - backend_log_dir:/app/logs:rw
+      - backend_log_dir:/app/backend/logs:rw
     logging:
       driver: "none"
 

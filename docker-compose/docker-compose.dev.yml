@@ -16,11 +16,7 @@ services:
     ports:
       - "3000:3000"
     volumes:
-      - ../src:/app/src
-      - ../public:/app/public
-      - ../package.json:/app/package.json
-      - ../package-lock.json:/app/package-lock.json
-      - ../build:/app/build
+      - ../frontend:/app/frontend
 
   grpc:
     build:
@@ -57,7 +53,7 @@ services:
     volumes:
       - ../:/app
       - ./secret:/run/secrets/backend-secret/backend-secret
-      - ../logs:/app/logs
+      - ../backend/logs/:/app/backend/logs/
 
   db_admin:
     image: dpage/pgadmin4:5
