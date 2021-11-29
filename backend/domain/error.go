@@ -72,4 +72,6 @@ var (
 	ServerError50002 = &ServerError{Code: 50002, Description: "unexpected database error"}
 	// server not support flushing
 	ServerError50003 = &ServerError{Code: 50003, Description: "server not support flushing"}
+	// unexpected grpc server error
+	ServerError50004 = &ServerError{Code: 50004, Description: "unexpected grpc server error"}
 )

@@ -1,6 +1,9 @@
 package grpcServices
 
+import context "context"
+
 type GrpcServicesRepositoryInterface interface {
 	// services.go
-	// CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error
+	GenerateCSV(ctx context.Context, name string, content []byte) (filePath string, err error)
+	SendEmail(ctx context.Context, subject string, content string, email string, filepath string) (result bool, err error)
 }

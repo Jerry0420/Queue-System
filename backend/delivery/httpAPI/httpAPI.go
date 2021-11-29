@@ -64,19 +64,24 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 	// sessions
 	router.HandleFunc(
 		V_1("/sessions/sse"),
-		had.SessionCreate,
+		had.sessionCreate,
 	).Methods(http.MethodGet) // get method for sse.
 
 	router.HandleFunc(
 		V_1("/sessions/{id}"),
-		had.SessionScanned,
+		had.sessionScanned,
 	).Methods(http.MethodPut)
 
 	//customers
+	// router.HandleFunc(
+	// 	V_1("/customers"),
+	// 	had.customersCreate,
+	// ).Methods(http.MethodPost).Headers("Content-Type", "application/json")
+	// TODO: removed!!!
 	router.HandleFunc(
 		V_1("/customers"),
 		had.customersCreate,
-	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
+	).Methods(http.MethodGet)
 
 	// base routes
 	// these two routes will just response to the client directly, and will not go into any middleware.

@@ -30,6 +30,8 @@ type UseCaseInterface interface {
 	// queue.go
 
 	// customer.go
+	// TODO: remove！！！！
+	CreateCustomer(ctx context.Context)
 
 	// session.go
 	CreateSession(ctx context.Context, store domain.Store) (domain.StoreSession, error)

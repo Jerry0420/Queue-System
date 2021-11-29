@@ -29,7 +29,7 @@ func main() {
 	var db *sql.DB
 	dbLocation := config.ServerConfig.POSTGRES_LOCATION()
 	var grpcConn *grpc.ClientConn
-	var grpcClient *grpcServices.GrpcServiceClient
+	var grpcClient grpcServices.GrpcServiceClient
 
 	if config.ServerConfig.ENV() == config.EnvStatus.PROD {
 		vaultConnectionConfig := config.ServerConfig.VAULT_CONNECTION_CONFIG()

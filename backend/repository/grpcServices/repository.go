@@ -7,11 +7,11 @@ import (
 )
 
 type grpcServicesRepository struct {
-	client         *GrpcServiceClient
+	client         GrpcServiceClient
 	logger         logging.LoggerTool
 	contextTimeOut time.Duration
 }
 
-func NewGrpcServicesRepository(client *GrpcServiceClient, logger logging.LoggerTool, contextTimeOut time.Duration) GrpcServicesRepositoryInterface {
+func NewGrpcServicesRepository(client GrpcServiceClient, logger logging.LoggerTool, contextTimeOut time.Duration) GrpcServicesRepositoryInterface {
 	return &grpcServicesRepository{client, logger, contextTimeOut}
 }
