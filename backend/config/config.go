@@ -154,3 +154,8 @@ func (config Config) VAULT_CONNECTION_CONFIG() VaultConnectionConfig {
 		CredName:            config.VAULT_CRED_NAME(),
 	}
 }
+
+func (config Config) GRPC_HOST() string {
+	content := config.get("GRPC_HOST")
+	return content
+}

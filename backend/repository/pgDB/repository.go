@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/jerry0420/queue-system/backend/logging"
-	"github.com/jerry0420/queue-system/backend/repository"
 )
 
 type pgDBRepository struct {
@@ -14,6 +13,6 @@ type pgDBRepository struct {
 	contextTimeOut time.Duration
 }
 
-func NewPGDBRepository(db *sql.DB, logger logging.LoggerTool, contextTimeOut time.Duration) repository.RepositoryInterface {
+func NewPGDBRepository(db *sql.DB, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBRepositoryInterface {
 	return &pgDBRepository{db, logger, contextTimeOut}
 }

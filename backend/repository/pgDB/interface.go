@@ -1,4 +1,4 @@
-package repository
+package pgDB
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-type RepositoryInterface interface {
+type PgDBRepositoryInterface interface {
 	// store.go
 	CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error
 	GetStoreByEmail(ctx context.Context, email string) (domain.Store, error)

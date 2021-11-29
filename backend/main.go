@@ -10,6 +10,7 @@ import (
 
 	"github.com/gorilla/mux"
 	_ "github.com/lib/pq"
+	"google.golang.org/grpc"
 
 	"github.com/jerry0420/queue-system/backend/broker"
 	"github.com/jerry0420/queue-system/backend/config"
@@ -17,7 +18,7 @@ import (
 	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/middleware"
 	"github.com/jerry0420/queue-system/backend/logging"
 
-	// grpcServices "github.com/jerry0420/queue-system/backend/proto"
+	"github.com/jerry0420/queue-system/backend/repository/grpcServices"
 	"github.com/jerry0420/queue-system/backend/repository/pgDB"
 	"github.com/jerry0420/queue-system/backend/usecase"
 )
@@ -27,6 +28,8 @@ func main() {
 
 	var db *sql.DB
 	dbLocation := config.ServerConfig.POSTGRES_LOCATION()
+	var grpcConn *grpc.ClientConn
+	var grpcClient *grpcServices.GrpcServiceClient
 
 	if config.ServerConfig.ENV() == config.EnvStatus.PROD {
 		vaultConnectionConfig := config.ServerConfig.VAULT_CONNECTION_CONFIG()
@@ -59,14 +62,25 @@ func main() {
 				logger.ERRORf("dev db connection close fail %v", err)
 			}
 		}()
+
+		grpcConn, grpcClient = grpcServices.GetDevGrpcConn(logger, config.ServerConfig.GRPC_HOST())
+		defer func() {
+			err := grpcConn.Close()
+			if err != nil {
+				logger.ERRORf("dev grpc connection close fail %v", err)
+			}
+		}()
+
 	}
 
 	router := mux.NewRouter()
 
 	pgDBRepository := pgDB.NewPGDBRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+	grpcServicesRepository := grpcServices.NewGrpcServicesRepository(grpcClient, logger, config.ServerConfig.CONTEXT_TIMEOUT()*2)
 
 	usecase := usecase.NewUsecase(
 		pgDBRepository,
+		grpcServicesRepository,
 		logger,
 		usecase.UsecaseConfig{
 			Domain:        config.ServerConfig.DOMAIN(),
