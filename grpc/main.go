@@ -11,6 +11,8 @@ import (
 	grpcServices "github.com/jerry0420/queue-system/grpc/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/health"
+	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 )
 
 type GrpcServicesServer struct {
@@ -78,6 +80,10 @@ func main() {
 	)
 	grpcServices.RegisterGrpcServiceServer(grpcServer, &GrpcServicesServer{})
 
+	healthcheck := health.NewServer()
+	healthpb.RegisterHealthServer(grpcServer, healthcheck)
+	healthcheck.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
+	
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v \n", err)
 	}
