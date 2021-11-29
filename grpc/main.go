@@ -43,7 +43,7 @@ func (*GrpcServicesServer) SendEmail(ctx context.Context, req *grpcServices.Send
 }
 
 func main() {
-	lis, err := net.Listen("tcp", "localhost:50051")
+	lis, err := net.Listen("tcp", "localhost:8002")
 	if err != nil {
 		log.Fatalf("failed to listen: %v \n", err)
 	}
