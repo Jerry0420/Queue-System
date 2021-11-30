@@ -5,12 +5,15 @@ COPY ./grpc ./
 FROM base AS builder
 RUN go build -o main /app/grpc/main.go
 
-# FROM alpine:3.14
-# EXPOSE 8002
-# WORKDIR /app/grpc
-# COPY --from=builder /app/grpc/main /app/grpc
-# RUN addgroup -g 1001 appgroup && \
-#     adduser -u 1000 -S appuser -g 1001 -G appgroup && \
-#     mkdir /app/grpc/logs && \
-#     chown appuser:appgroup -R /app
-# ENTRYPOINT /app/grpc/main
+FROM alpine:3.14
+EXPOSE 8002
+WORKDIR /app/grpc
+COPY --from=builder /app/grpc/main /app/grpc
+RUN addgroup -g 1001 appgroup && \
+    adduser -u 1000 -S appuser -g 1001 -G appgroup && \
+    mkdir /app/grpc/logs && \
+    mkdir /app/cert && \
+    chown appuser:appgroup -R /app
+COPY ./cert/server.crt /app/cert/server.crt
+COPY ./cert/server.key /app/cert/server.key
+ENTRYPOINT /app/grpc/main
