@@ -18,8 +18,8 @@ var ServerConfig Config
 
 func init() {
 	path := "/run/secrets/grpc-secret/grpc-secret"
-	if os.Getenv("SECRET_PATH") != "" {
-		path = os.Getenv("SECRET_PATH")
+	if os.Getenv("GRPC_SECRET_PATH") != "" {
+		path = os.Getenv("GRPC_SECRET_PATH")
 	}
 	rawData, err := ioutil.ReadFile(path)
 	if err != nil {

@@ -39,6 +39,8 @@ services:
     ports:
       - "8002:8002"
     volumes:
+      - ../cert/server.crt:/app/cert/server.crt
+      - ../cert/server.key:/app/cert/server.key
       - grpc_log_dir:/app/grpc/logs:rw
     logging:
       driver: "none"
@@ -63,6 +65,7 @@ services:
     ports:
       - "8000:8000"
     volumes:
+      - ../cert/ca.crt:/app/cert/ca.crt
       - backend_log_dir:/app/backend/logs:rw
     logging:
       driver: "none"

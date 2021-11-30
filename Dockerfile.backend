@@ -14,5 +14,4 @@ RUN addgroup -g 1001 appgroup && \
     mkdir /app/backend/logs && \
     mkdir /app/cert && \
     chown appuser:appgroup -R /app
-COPY ./cert/ca.crt /app/cert/ca.crt
 ENTRYPOINT /app/backend/main

@@ -14,6 +14,4 @@ RUN addgroup -g 1001 appgroup && \
     mkdir /app/grpc/logs && \
     mkdir /app/cert && \
     chown appuser:appgroup -R /app
-COPY ./cert/server.crt /app/cert/server.crt
-COPY ./cert/server.key /app/cert/server.key
 ENTRYPOINT /app/grpc/main
