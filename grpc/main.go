@@ -68,7 +68,7 @@ func main() {
 
 	// TODO: config.ServerConfig.ENV() == config.EnvStatus.PROD
 	if config.ServerConfig.ENV() == config.EnvStatus.DEV {
-		creds, err := credentials.NewServerTLSFromFile("/app/docker-compose/dev_tls/server.crt", "/app/docker-compose/dev_tls/server.key")
+		creds, err := credentials.NewServerTLSFromFile(config.ServerConfig.SERVER_CRT(), config.ServerConfig.SERVER_KEY())
 		if err != nil {
 			log.Fatalf("error: %v", err)
 		}

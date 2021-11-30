@@ -43,7 +43,7 @@ func main() {
 		)
 		dbWrapper := pgDB.NewDbWrapper(vaultWrapper, dbLocation, logger)
 		db = dbWrapper.GetDb()
-		grpcConn, grpcClient = grpcServices.GetGrpcConn(logger, config.ServerConfig.GRPC_HOST())
+		grpcConn, grpcClient = grpcServices.GetGrpcConn(logger, config.ServerConfig.GRPC_HOST(), config.ServerConfig.CA_CRT())
 		defer func() {
 			revokeTokenErr := vaultWrapper.RevokeToken()
 			if revokeTokenErr != nil {
@@ -53,8 +53,8 @@ func main() {
 
 	} else {
 		db = pgDB.GetDevDb(config.ServerConfig.POSTGRES_DEV_USER(), config.ServerConfig.POSTGRES_DEV_PASSWORD(), dbLocation, logger)
-		// TODO: GetDevGrpcConn
-		grpcConn, grpcClient = grpcServices.GetGrpcConn(logger, config.ServerConfig.GRPC_HOST())
+		// TODO: GetDevGrpcConn  , config.ServerConfig.CA_CRT()
+		grpcConn, grpcClient = grpcServices.GetGrpcConn(logger, config.ServerConfig.GRPC_HOST(), config.ServerConfig.CA_CRT())
 	}
 
 	defer func() {

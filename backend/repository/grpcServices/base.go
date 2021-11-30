@@ -36,8 +36,8 @@ func GetDevGrpcConn(logger logging.LoggerTool, host string) (*grpc.ClientConn, G
 	return conn, client
 }
 
-func GetGrpcConn(logger logging.LoggerTool, host string) (*grpc.ClientConn, GrpcServiceClient) {
-	creds, err := credentials.NewClientTLSFromFile("/app/docker-compose/dev_tls/ca.crt", "queue.com")
+func GetGrpcConn(logger logging.LoggerTool, host string, caCrtPath string) (*grpc.ClientConn, GrpcServiceClient) {
+	creds, err := credentials.NewClientTLSFromFile(caCrtPath, "queue-system")
 	if err != nil {
 		logger.FATALf("error: %v", err)
 	}

@@ -64,6 +64,12 @@ func (config Config) CONTEXT_TIMEOUT() time.Duration {
 	return time.Duration(CONTEXT_TIMEOUT) * time.Second
 }
 
+
+func (config Config) EMAIL_FROM() string {
+	content := config.get("EMAIL_FROM")
+	return content
+}
+
 func (config Config) EMAIL_SERVER() string {
 	content := config.get("EMAIL_SERVER")
 	return content
@@ -79,7 +85,12 @@ func (config Config) EMAIL_PASSWORD() string {
 	return content
 }
 
-func (config Config) EMAIL_FROM() string {
-	content := config.get("EMAIL_FROM")
+func (config Config) SERVER_CRT() string {
+	content := config.get("SERVER_CRT")
+	return content
+}
+
+func (config Config) SERVER_KEY() string {
+	content := config.get("SERVER_KEY")
 	return content
 }

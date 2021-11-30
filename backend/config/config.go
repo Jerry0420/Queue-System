@@ -159,3 +159,8 @@ func (config Config) GRPC_HOST() string {
 	content := config.get("GRPC_HOST")
 	return content
 }
+
+func (config Config) CA_CRT() string {
+	content := config.get("CA_CRT")
+	return content
+}
