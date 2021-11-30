@@ -40,6 +40,7 @@ yarn-error.log*
 .env
 .env.db
 .env.frontend
+.env.grpc
 
 config.json
 
@@ -53,3 +54,6 @@ test.go
 test.pgsql
 test.js
 test.html
+*.crt
+*.key
+*.csr

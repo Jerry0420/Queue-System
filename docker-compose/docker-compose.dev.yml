@@ -29,11 +29,13 @@ services:
     stdin_open: true
     tty: true
     env_file: 
-      - .env
+      - .env.grpc
     ports:
       - "8002:8002"
     volumes:
       - ../:/app
+      - ./secret_grpc:/run/secrets/grpc-secret/grpc-secret
+      - ../grpc/logs/:/app/grpc/logs/
 
   backend:
     build:

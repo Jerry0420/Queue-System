@@ -9,10 +9,12 @@ import (
 	"time"
 
 	grpcServices "github.com/jerry0420/queue-system/grpc/proto"
+	"github.com/jerry0420/queue-system/grpc/config"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/grpc/keepalive"
 )
 
 type GrpcServicesServer struct {
@@ -61,8 +63,18 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to listen: %v \n", err)
 	}
-	grpcServer := grpc.NewServer(
-		grpc.KeepaliveParams(
+
+	opts := []grpc.ServerOption{}
+
+	// TODO: config.ServerConfig.ENV() == config.EnvStatus.PROD
+	if config.ServerConfig.ENV() == config.EnvStatus.DEV {
+		creds, err := credentials.NewServerTLSFromFile("/app/docker-compose/dev_tls/server.crt", "/app/docker-compose/dev_tls/server.key")
+		if err != nil {
+			log.Fatalf("error: %v", err)
+		}
+
+		opts = append(opts, grpc.Creds(creds))
+		opts = append(opts, grpc.KeepaliveParams(
 			keepalive.ServerParameters{
 				MaxConnectionIdle:     15 * time.Second, // If a client is idle for 15 seconds, send a GOAWAY
 				MaxConnectionAge:      30 * time.Second, // If any connection is alive for more than 30 seconds, send a GOAWAY
@@ -70,20 +82,22 @@ func main() {
 				Time:                  5 * time.Second,  // Ping the client if it is idle for 5 seconds to ensure the connection is still active
 				Timeout:               1 * time.Second,  // Wait 1 second for the ping ack before assuming the connection is dead
 			},
-		),
-		grpc.KeepaliveEnforcementPolicy(
+		))
+		opts = append(opts, grpc.KeepaliveEnforcementPolicy(
 			keepalive.EnforcementPolicy{
 				MinTime:             5 * time.Second, // If a client pings more than once every 5 seconds, terminate the connection
 				PermitWithoutStream: true,            // Allow pings even when there are no active streams
 			},
-		),
-	)
+		))
+	}
+
+	grpcServer := grpc.NewServer(opts...)
 	grpcServices.RegisterGrpcServiceServer(grpcServer, &GrpcServicesServer{})
 
 	healthcheck := health.NewServer()
 	healthpb.RegisterHealthServer(grpcServer, healthcheck)
 	healthcheck.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
-	
+
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v \n", err)
 	}

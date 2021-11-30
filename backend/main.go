@@ -43,35 +43,30 @@ func main() {
 		)
 		dbWrapper := pgDB.NewDbWrapper(vaultWrapper, dbLocation, logger)
 		db = dbWrapper.GetDb()
-
+		grpcConn, grpcClient = grpcServices.GetGrpcConn(logger, config.ServerConfig.GRPC_HOST())
 		defer func() {
-			dbCloseErr := db.Close()
-			if dbCloseErr != nil {
-				logger.ERRORf("db connection close fail %v", dbCloseErr)
-			}
 			revokeTokenErr := vaultWrapper.RevokeToken()
 			if revokeTokenErr != nil {
 				logger.WARNf("Fail to revoke token. %v", revokeTokenErr)
 			}
 		}()
+
 	} else {
 		db = pgDB.GetDevDb(config.ServerConfig.POSTGRES_DEV_USER(), config.ServerConfig.POSTGRES_DEV_PASSWORD(), dbLocation, logger)
-		defer func() {
-			err := db.Close()
-			if err != nil {
-				logger.ERRORf("dev db connection close fail %v", err)
-			}
-		}()
-
-		grpcConn, grpcClient = grpcServices.GetDevGrpcConn(logger, config.ServerConfig.GRPC_HOST())
-		defer func() {
-			err := grpcConn.Close()
-			if err != nil {
-				logger.ERRORf("dev grpc connection close fail %v", err)
-			}
-		}()
-
+		// TODO: GetDevGrpcConn
+		grpcConn, grpcClient = grpcServices.GetGrpcConn(logger, config.ServerConfig.GRPC_HOST())
 	}
+
+	defer func() {
+		err := db.Close()
+		if err != nil {
+			logger.ERRORf("db connection close fail %v", err)
+		}
+		err = grpcConn.Close()
+		if err != nil {
+			logger.ERRORf("grpc connection close fail %v", err)
+		}
+	}()
 
 	router := mux.NewRouter()
 
