@@ -15,7 +15,7 @@ services:
       - "3000:3000"
     volumes:
       - ../:/app
-      - ../envs/.env.frontend:/etc/config/.env
+      - ../envs/.env.frontend:/etc/config/.env.frontend
 
   grpc:
     build:
@@ -32,7 +32,9 @@ services:
     volumes:
       - ../:/app
       - ../envs/.secret_grpc:/run/secrets/grpc-secret/.grpc-secret
-      - ../envs/.env.grpc:/etc/config/.env
+      - ../cert/server.crt:/run/secrets/server-crt/.server-crt
+      - ../cert/server.key:/run/secrets/server-key/.server-key
+      - ../envs/.env.grpc:/etc/config/.env.grpc
       - ../grpc/logs/:/app/grpc/logs/
 
   backend:
@@ -51,6 +53,7 @@ services:
     volumes:
       - ../:/app
       - ../envs/.secret:/run/secrets/backend-secret/.backend-secret
+      - ../cert/ca.crt:/run/secrets/ca-crt/.ca-crt
       - ../envs/.env:/etc/config/.env
       - ../backend/logs/:/app/backend/logs/
 

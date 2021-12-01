@@ -28,7 +28,7 @@ func init() {
 	json.Unmarshal(rawData, &secretData)
 	ServerConfig = Config{data: secretData}
 
-	envPath := "/etc/config/.env"
+	envPath := "/etc/config/.env.grpc"
 	if os.Getenv("GRPC_ENV_PATH") != "" {
 		envPath = os.Getenv("GRPC_ENV_PATH")
 	}

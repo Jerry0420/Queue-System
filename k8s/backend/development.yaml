@@ -47,9 +47,9 @@ spec:
             name: log-dir
           - name: backend-secret
             mountPath: "/run/secrets/backend-secret"
-        envFrom:
-          - configMapRef:
-               name: backend-env
+          - name: backend-env
+            mountPath: /etc/config
+            readOnly: true
       volumes:
         - name: log-dir
           hostPath:
@@ -60,5 +60,8 @@ spec:
             secretName: backend-secret
             items:
             - key: BACKEND-SECRET
-              path: backend-secret
+              path: .backend-secret
               mode: 0444
+        - name: backend-env
+          configMap: 
+            name: backend-env

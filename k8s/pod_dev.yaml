@@ -18,3 +18,29 @@ spec:
       - sleep 
       - "10000" 
     imagePullPolicy: IfNotPresent 
+    volumeMounts:
+      - name: backend-env
+        mountPath: /etc/config
+        readOnly: true
+      - name: backend-secret
+        mountPath: "/run/secrets/backend-secret"
+      - name: ca-crt
+        mountPath: "/run/secrets/ca-crt"
+  volumes:
+    - name: backend-env
+      configMap: 
+        name: backend-env
+    - name: backend-secret
+      secret:
+        secretName: backend-secret
+        items:
+        - key: BACKEND-SECRET
+          path: .backend-secret
+          mode: 0444
+    - name: ca-crt
+      secret:
+        secretName: ca-crt
+        items:
+        - key: CA-CRT
+          path: .ca-cert
+          mode: 0444
