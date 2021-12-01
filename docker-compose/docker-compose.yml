@@ -9,13 +9,12 @@ services:
     container_name: frontend
     networks:
       - queue_system
-    env_file: 
-      - .env.frontend
     user: 1000:1001
     ports:
       - "80:3000"
     volumes:
       - frontend_log_dir:/var/log/nginx:rw
+      - ../envs/.env.frontend:/etc/config/.env:ro
     logging:
       driver: "none"
 
@@ -27,12 +26,10 @@ services:
     container_name: grpc
     networks:
       - queue_system
-    env_file: 
-      - .env.grpc
     user: 1000:1001
     secrets:
       - source: grpc-secret
-        target: /run/secrets/grpc-secret/grpc-secret
+        target: /run/secrets/grpc-secret/.grpc-secret
         uid: '1000'
         gid: '1001'
         mode: 0444
@@ -42,6 +39,7 @@ services:
       - ../cert/server.crt:/app/cert/server.crt
       - ../cert/server.key:/app/cert/server.key
       - grpc_log_dir:/app/grpc/logs:rw
+      - ../envs/.env.grpc:/etc/config/.env:ro
     logging:
       driver: "none"
 
@@ -53,12 +51,10 @@ services:
     container_name: backend
     networks:
       - queue_system
-    env_file: 
-      - .env
     user: 1000:1001
     secrets:
       - source: backend-secret
-        target: /run/secrets/backend-secret/backend-secret
+        target: /run/secrets/backend-secret/.backend-secret
         uid: '1000'
         gid: '1001'
         mode: 0444
@@ -67,6 +63,7 @@ services:
     volumes:
       - ../cert/ca.crt:/app/cert/ca.crt
       - backend_log_dir:/app/backend/logs:rw
+      - ../envs/.env:/etc/config/.env:ro
     logging:
       driver: "none"
 
@@ -81,6 +78,6 @@ networks:
 
 secrets:
   backend-secret:
-    file: ./secret
+    file: ../envs/.secret
   grpc-secret:
-    file: ./secret_grpc
+    file: ../envs/.secret_grpc

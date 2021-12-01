@@ -6,7 +6,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -17,7 +16,7 @@ type Config struct {
 var ServerConfig Config
 
 func init() {
-	path := "/run/secrets/grpc-secret/grpc-secret"
+	path := "/run/secrets/grpc-secret/.grpc-secret"
 	if os.Getenv("GRPC_SECRET_PATH") != "" {
 		path = os.Getenv("GRPC_SECRET_PATH")
 	}
@@ -29,10 +28,19 @@ func init() {
 	json.Unmarshal(rawData, &secretData)
 	ServerConfig = Config{data: secretData}
 
-	var pairs []string
-	for _, value := range os.Environ() {
-		pairs = strings.Split(value, "=")
-		ServerConfig.data[pairs[0]] = pairs[1]
+	envPath := "/etc/config/.env"
+	if os.Getenv("GRPC_ENV_PATH") != "" {
+		envPath = os.Getenv("GRPC_ENV_PATH")
+	}
+	rawEnvData, err := ioutil.ReadFile(envPath)
+	if err != nil {
+		log.Fatalf("fail to read env file.")
+	}
+	var envData map[string]string
+	json.Unmarshal(rawEnvData, &envData)
+
+	for key, value := range envData {
+		ServerConfig.data[key] = value
 	}
 }
 
@@ -63,7 +71,6 @@ func (config Config) CONTEXT_TIMEOUT() time.Duration {
 	}
 	return time.Duration(CONTEXT_TIMEOUT) * time.Second
 }
-
 
 func (config Config) EMAIL_FROM() string {
 	content := config.get("EMAIL_FROM")

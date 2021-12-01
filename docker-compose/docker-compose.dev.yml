@@ -11,12 +11,11 @@ services:
       - queue_system
     stdin_open: true
     tty: true
-    env_file: 
-      - .env.frontend
     ports:
       - "3000:3000"
     volumes:
       - ../:/app
+      - ../envs/.env.frontend:/etc/config/.env
 
   grpc:
     build:
@@ -28,13 +27,12 @@ services:
       - queue_system
     stdin_open: true
     tty: true
-    env_file: 
-      - .env.grpc
     ports:
       - "8002:8002"
     volumes:
       - ../:/app
-      - ./secret_grpc:/run/secrets/grpc-secret/grpc-secret
+      - ../envs/.secret_grpc:/run/secrets/grpc-secret/.grpc-secret
+      - ../envs/.env.grpc:/etc/config/.env
       - ../grpc/logs/:/app/grpc/logs/
 
   backend:
@@ -47,14 +45,13 @@ services:
       - queue_system
     stdin_open: true
     tty: true
-    env_file: 
-      - .env
     ports:
       - "8000:8000"
       - "3001:3001"
     volumes:
       - ../:/app
-      - ./secret:/run/secrets/backend-secret/backend-secret
+      - ../envs/.secret:/run/secrets/backend-secret/.backend-secret
+      - ../envs/.env:/etc/config/.env
       - ../backend/logs/:/app/backend/logs/
 
   db_admin:
