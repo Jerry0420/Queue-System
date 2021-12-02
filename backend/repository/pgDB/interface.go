@@ -23,8 +23,10 @@ type PgDBRepositoryInterface interface {
 	CreateQueues(ctx context.Context, tx *sql.Tx, storeID int, queues []domain.Queue) error
 
 	// customer.go
+	CreateCustomers(ctx context.Context, session domain.StoreSession, oldStatus string, newStatus string, customers []domain.Customer) error 
 
 	// session.go
 	CreateSession(ctx context.Context, store domain.Store) (domain.StoreSession, error)
-	UpdateSession(ctx context.Context, session *domain.StoreSession, oldStatus string, newStatus string) error
+	UpdateSession(ctx context.Context, session domain.StoreSession, oldStatus string, newStatus string) error
+	UpdateSessionWithTx(ctx context.Context, tx *sql.Tx, session domain.StoreSession, oldStatus string, newStatus string) error
 }

@@ -78,7 +78,7 @@ func (had *httpAPIDelivery) sessionScanned(w http.ResponseWriter, r *http.Reques
 	}
 	err = had.usecase.UpdateSession(
 		r.Context(),
-		&session,
+		session,
 		domain.StoreSessionStatus.NORMAL,  //oldStatus
 		domain.StoreSessionStatus.SCANNED, //newStatus
 	)

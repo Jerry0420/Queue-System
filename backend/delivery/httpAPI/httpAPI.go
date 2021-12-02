@@ -73,16 +73,11 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 	).Methods(http.MethodPut)
 
 	//customers
-	// router.HandleFunc(
-	// 	V_1("/customers"),
-	// 	had.customersCreate,
-	// ).Methods(http.MethodPost).Headers("Content-Type", "application/json")
-	// TODO: removed!!!
 	router.HandleFunc(
 		V_1("/customers"),
 		had.customersCreate,
-	).Methods(http.MethodGet)
-
+	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
+	
 	// base routes
 	// these two routes will just response to the client directly, and will not go into any middleware.
 	router.MethodNotAllowedHandler = http.HandlerFunc(had.methodNotAllow)

@@ -2,18 +2,11 @@ package usecase
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
+
+	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-// TODO: remove！！！！
-func (uc *usecase) CreateCustomer(ctx context.Context) {
-	contentOfCSV, _ := json.Marshal(map[string]string{
-		"hello": "world",
-	})
-	filePath, err := uc.grpcServicesRepository.GenerateCSV(ctx, "jerry_hospital", contentOfCSV)
-	fmt.Println(filePath, err)
-
-	result, err := uc.grpcServicesRepository.SendEmail(ctx, "subjectxxx", "contentxxx", "emailxxx", "filepathxxx")
-	fmt.Println(result, err)
+func (uc *usecase) CreateCustomer(ctx context.Context, session domain.StoreSession, oldStatus string, newStatus string, customers []domain.Customer) error {
+	err := uc.pgDBRepository.CreateCustomers(ctx, session, oldStatus, newStatus, customers)
+	return err
 }

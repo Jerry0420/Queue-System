@@ -12,7 +12,7 @@ func (uc *usecase) CreateSession(ctx context.Context, store domain.Store) (domai
 	return session, err
 }
 
-func (uc *usecase) UpdateSession(ctx context.Context, session *domain.StoreSession, oldStatus string, newStatus string) error {
+func (uc *usecase) UpdateSession(ctx context.Context, session domain.StoreSession, oldStatus string, newStatus string) error {
 	err := uc.pgDBRepository.UpdateSession(ctx, session, oldStatus, newStatus)
 	return err
 }

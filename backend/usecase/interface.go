@@ -30,11 +30,10 @@ type UseCaseInterface interface {
 	// queue.go
 
 	// customer.go
-	// TODO: remove！！！！
-	CreateCustomer(ctx context.Context)
+	CreateCustomer(ctx context.Context, session domain.StoreSession, oldStatus string, newStatus string, customers []domain.Customer) error
 
 	// session.go
 	CreateSession(ctx context.Context, store domain.Store) (domain.StoreSession, error)
-	UpdateSession(ctx context.Context, session *domain.StoreSession, oldStatus string, newStatus string) error
+	UpdateSession(ctx context.Context, session domain.StoreSession, oldStatus string, newStatus string) error
 	TopicNameOfUpdateSession(storeId int) string
 }
