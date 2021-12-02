@@ -13,22 +13,22 @@ func Customercreate(r *http.Request) (storeId int, sessionId string, customers [
 	if err != nil {
 		return storeId, sessionId, customers, domain.ServerError40001
 	}
-	
+
 	sessionId, ok := jsonBody["session_id"].(string)
 	if !ok || sessionId == "" {
 		return storeId, sessionId, customers, domain.ServerError40001
 	}
-	
+
 	storeIdFloat64, ok := jsonBody["store_id"].(float64)
 	if !ok {
 		return storeId, sessionId, customers, domain.ServerError40001
 	}
-	
+
 	customersInfo, ok := jsonBody["customers"].([]interface{})
 	if !ok || len(customersInfo) <= 0 {
 		return storeId, sessionId, customers, domain.ServerError40001
 	}
-	
+
 	for _, customerInfo := range customersInfo {
 		customerInfo, ok := customerInfo.(map[string]interface{})
 		if !ok {

@@ -35,9 +35,9 @@ func (repo *pgDBRepository) CreateCustomers(ctx context.Context, session domain.
 		query.WriteString(", $")
 		query.WriteString(strconv.Itoa(variableCounts + 1))
 		query.WriteString(", $")
-		query.WriteString(strconv.Itoa(variableCounts + 1))
+		query.WriteString(strconv.Itoa(variableCounts + 2))
 		query.WriteString(", $")
-		query.WriteString(strconv.Itoa(variableCounts + 1))
+		query.WriteString(strconv.Itoa(variableCounts + 3))
 		query.WriteString(")")
 		variableCounts = variableCounts + 4
 		queryRowParams = append(queryRowParams, customer.Name, customer.Phone, customer.QueueID, customer.Status)
@@ -64,6 +64,7 @@ func (repo *pgDBRepository) CreateCustomers(ctx context.Context, session domain.
 			repo.logger.ERRORf("error %v", err)
 			return domain.ServerError50002
 		}
+		customer.Status = domain.CustomerStatus.NORMAL
 		customers = append(customers, customer)
 
 	}
