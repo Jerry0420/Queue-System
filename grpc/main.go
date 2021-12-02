@@ -66,8 +66,7 @@ func main() {
 
 	opts := []grpc.ServerOption{}
 
-	// TODO: config.ServerConfig.ENV() == config.EnvStatus.PROD
-	if config.ServerConfig.ENV() == config.EnvStatus.DEV {
+	if config.ServerConfig.ENV() == config.EnvStatus.PROD {
 		creds, err := credentials.NewServerTLSFromFile(config.ServerConfig.SERVER_CRT(), config.ServerConfig.SERVER_KEY())
 		if err != nil {
 			log.Fatalf("error: %v", err)

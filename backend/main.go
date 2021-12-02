@@ -53,8 +53,7 @@ func main() {
 
 	} else {
 		db = pgDB.GetDevDb(config.ServerConfig.POSTGRES_DEV_USER(), config.ServerConfig.POSTGRES_DEV_PASSWORD(), dbLocation, logger)
-		// TODO: GetDevGrpcConn  , config.ServerConfig.CA_CRT()
-		grpcConn, grpcClient = grpcServices.GetGrpcConn(logger, config.ServerConfig.GRPC_HOST(), config.ServerConfig.CA_CRT())
+		grpcConn, grpcClient = grpcServices.GetDevGrpcConn(logger, config.ServerConfig.GRPC_HOST())
 	}
 
 	defer func() {
