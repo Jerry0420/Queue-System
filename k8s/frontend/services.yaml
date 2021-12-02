@@ -18,4 +18,4 @@ spec:
       protocol: TCP
       nodePort: 30001
       port: 80
-      targetPort: frontend-port
+      targetPort: 3000

@@ -42,5 +42,5 @@ spec:
         secretName: ca-crt
         items:
         - key: CA-CRT
-          path: .ca-cert
+          path: .ca-crt
           mode: 0444

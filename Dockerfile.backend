@@ -11,6 +11,6 @@ WORKDIR /app/backend
 COPY --from=builder /app/backend/main /app/backend
 RUN addgroup -g 1001 appgroup && \
     adduser -u 1000 -S appuser -g 1001 -G appgroup && \
-    mkdir /app/backend/logs && \
-    chown appuser:appgroup -R /app
+    mkdir /app/backend/logs /run/secrets && \
+    chown appuser:appgroup -R /app /run/secrets
 ENTRYPOINT /app/backend/main
