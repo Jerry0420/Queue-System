@@ -21,7 +21,7 @@ func (uc *usecase) TopicNameOfUpdateSession(storeId int) string {
 	return fmt.Sprintf("updateSession.%d", storeId)
 }
 
-func (uc *usecase) GetSessionById(ctx context.Context, sessionId string) (domain.StoreSession, error) {
-	session, err := uc.pgDBRepository.GetSessionById(ctx, sessionId)
-	return session, err
+func (uc *usecase) GetSessionAndStoreBySessionId(ctx context.Context, sessionId string) (domain.StoreSession, domain.Store, error) {
+	session, store, err := uc.pgDBRepository.GetSessionAndStoreBySessionId(ctx, sessionId)
+	return session, store, err
 }

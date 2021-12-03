@@ -86,21 +86,27 @@ func (repo *pgDBRepository) UpdateSessionWithTx(ctx context.Context, tx *sql.Tx,
 	return nil
 }
 
-func (repo *pgDBRepository) GetSessionById(ctx context.Context, sessionId string) (domain.StoreSession, error) {
+func (repo *pgDBRepository) GetSessionAndStoreBySessionId(ctx context.Context, sessionId string) (domain.StoreSession, domain.Store, error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
-	session := domain.StoreSession{ID: sessionId}
-	query := `SELECT store_id FROM store_sessions WHERE id=$1`
+	session := domain.StoreSession{}
+	store := domain.Store{}
+
+	query := `SELECT stores.id, stores.created_at, store_sessions.status 
+				FROM store_sessions
+				INNER JOIN stores ON stores.id = store_sessions.store_id WHERE store_sessions.id=$1`
 	row := repo.db.QueryRowContext(ctx, query, sessionId)
-	err := row.Scan(&session.StoreId)
+	err := row.Scan(&store.ID, &store.CreatedAt, &session.StoreSessionStatus)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		repo.logger.ERRORf("error %v", err)
-		return session, domain.ServerError40404
+		return session, store, domain.ServerError40404
 	case err != nil:
 		repo.logger.ERRORf("error %v", err)
-		return session, domain.ServerError50002
+		return session, store, domain.ServerError50002
 	}
-	return session, nil
+	session.ID = sessionId
+	session.StoreId = store.ID
+	return session, store, nil
 }

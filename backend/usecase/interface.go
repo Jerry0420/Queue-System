@@ -11,7 +11,7 @@ type UseCaseInterface interface {
 	// store.go
 	CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error
 	GetStoreByEmail(ctx context.Context, email string) (domain.Store, error)
-	GetStoreById(ctx context.Context, storeId int) (domain.Store, error)
+	CheckStoreExpirationStatus(store domain.Store, err error) (domain.Store, error)
 	GetStoreWIthQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error)
 	VerifyPasswordLength(password string) error
 	EncryptPassword(password string) (string, error)
@@ -38,5 +38,6 @@ type UseCaseInterface interface {
 	CreateSession(ctx context.Context, store domain.Store) (domain.StoreSession, error)
 	UpdateSession(ctx context.Context, session domain.StoreSession, oldStatus string, newStatus string) error
 	TopicNameOfUpdateSession(storeId int) string
-	GetSessionById(ctx context.Context, sessionId string) (domain.StoreSession, error)
+	GetSessionAndStoreBySessionId(ctx context.Context, sessionId string) (domain.StoreSession, domain.Store, error)
+
 }

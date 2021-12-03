@@ -20,17 +20,11 @@ func (uc *usecase) CreateStore(ctx context.Context, store *domain.Store, queues 
 
 func (uc *usecase) GetStoreByEmail(ctx context.Context, email string) (domain.Store, error) {
 	store, err := uc.pgDBRepository.GetStoreByEmail(ctx, email)
-	store, err = uc.checkStoreExpirationStatus(store, err)
+	store, err = uc.CheckStoreExpirationStatus(store, err)
 	return store, err
 }
 
-func (uc *usecase) GetStoreById(ctx context.Context, storeId int) (domain.Store, error) {
-	store, err := uc.pgDBRepository.GetStoreById(ctx, storeId)
-	store, err = uc.checkStoreExpirationStatus(store, err)
-	return store, err
-}
-
-func (uc *usecase) checkStoreExpirationStatus(store domain.Store, err error) (domain.Store, error) {
+func (uc *usecase) CheckStoreExpirationStatus(store domain.Store, err error) (domain.Store, error) {
 	switch {
 	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) < uc.config.StoreDuration):
 		return store, domain.ServerError40901
