@@ -40,6 +40,11 @@ func (uc *usecase) checkStoreExpirationStatus(store domain.Store, err error) (do
 	return domain.Store{}, err
 }
 
+func (uc *usecase) GetStoreWIthQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
+	store, err := uc.pgDBRepository.GetStoreWIthQueuesAndCustomersById(ctx, storeId)
+	return store, err
+}
+
 func (uc *usecase) VerifyPasswordLength(password string) error {
 	decodedPassword, err := base64.StdEncoding.DecodeString(password)
 	if err != nil {

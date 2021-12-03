@@ -23,3 +23,13 @@ type TokenClaims struct {
 	SignKeyID      int    `json:"signkey_id"`
 	jwt.StandardClaims
 }
+
+type StoreWithQueues struct {
+	ID          int                  `json:"id"`
+	Email       string               `json:"email"`
+	Password    string               `json:"password"`
+	Name        string               `json:"name"`
+	Description string               `json:"description"`
+	CreatedAt   time.Time            `json:"created_at"`
+	Queues      []QueueWithCustomers `json:"queues"`
+}

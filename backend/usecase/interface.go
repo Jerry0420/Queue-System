@@ -12,6 +12,7 @@ type UseCaseInterface interface {
 	CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error
 	GetStoreByEmail(ctx context.Context, email string) (domain.Store, error)
 	GetStoreById(ctx context.Context, storeId int) (domain.Store, error)
+	GetStoreWIthQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error)
 	VerifyPasswordLength(password string) error
 	EncryptPassword(password string) (string, error)
 	ValidatePassword(ctx context.Context, incomingPassword string, password string) error

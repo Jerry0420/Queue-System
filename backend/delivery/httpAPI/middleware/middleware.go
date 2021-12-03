@@ -97,7 +97,7 @@ func (mw *Middleware) SessionAuthenticationMiddleware(next http.Handler) http.Ha
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), domain.StoreSessionString, nil)
+			ctx := context.WithValue(r.Context(), domain.StoreSessionString, session)
 			r = r.WithContext(ctx)
 		} else {
 			presenter.JsonResponse(w, nil, domain.ServerError40106)

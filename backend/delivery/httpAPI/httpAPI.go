@@ -59,6 +59,11 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 		had.passwordUpdate,
 	).Methods(http.MethodPatch).Headers("Content-Type", "application/json")
 
+	router.HandleFunc(
+		V_1("/stores/{id:[0-9]+}/sse"),
+		had.getStoreInfo,
+	).Methods(http.MethodGet) // get method for sse.
+
 	//queues
 
 	// sessions

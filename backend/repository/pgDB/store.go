@@ -46,6 +46,13 @@ func (repo *pgDBRepository) getStore(ctx context.Context, row *sql.Row) (domain.
 	return store, nil
 }
 
+func (repo *pgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
+	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+	defer cancel()
+
+	return domain.StoreWithQueues{}, nil
+}
+
 func (repo *pgDBRepository) CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()

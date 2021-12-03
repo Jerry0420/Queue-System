@@ -26,5 +26,6 @@ func (had *httpAPIDelivery) customersCreate(w http.ResponseWriter, r *http.Reque
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
+	// TODO: publish to broker
 	presenter.JsonResponseOK(w, customers)
 }

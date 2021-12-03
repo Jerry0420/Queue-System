@@ -117,3 +117,12 @@ func StorePasswordUpdate(r *http.Request) (map[string]string, int, error) {
 	body := map[string]string{"password_token": passwordToken, "password": password} 
 	return body, id, nil
 }
+
+func StoreInfoGet(r *http.Request) (storeId int, err error){
+	vars := mux.Vars(r)
+	storeId, err = strconv.Atoi(vars["id"])
+	if err != nil {
+		return storeId, domain.ServerError40001
+	}
+	return storeId, nil
+}

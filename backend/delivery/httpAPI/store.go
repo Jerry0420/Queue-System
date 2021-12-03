@@ -236,3 +236,21 @@ func (had *httpAPIDelivery) passwordUpdate(w http.ResponseWriter, r *http.Reques
 
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
+
+func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request) {
+	storeId, err := validator.StoreInfoGet(r)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+
+	store, err := had.usecase.GetStoreWIthQueuesAndCustomersById(r.Context(), storeId)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+
+	presenter.JsonResponseOK(w, store)
+
+	//TODO: change to sse route.
+}
