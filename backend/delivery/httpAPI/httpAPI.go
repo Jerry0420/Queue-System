@@ -67,15 +67,15 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 		had.sessionCreate,
 	).Methods(http.MethodGet) // get method for sse.
 
-	router.HandleFunc(
+	router.Handle(
 		V_1("/sessions/{id}"),
-		had.sessionScanned,
-	).Methods(http.MethodPut)
+		mw.SessionAuthenticationMiddleware(http.HandlerFunc(had.sessionScanned)),
+	).Methods(http.MethodPut).Headers("Content-Type", "application/json")
 
 	//customers
-	router.HandleFunc(
+	router.Handle(
 		V_1("/customers"),
-		had.customersCreate,
+		mw.SessionAuthenticationMiddleware(http.HandlerFunc(had.customersCreate)),
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 	
 	// base routes

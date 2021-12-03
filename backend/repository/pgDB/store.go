@@ -13,9 +13,27 @@ func (repo *pgDBRepository) GetStoreByEmail(ctx context.Context, email string) (
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
-	var store domain.Store
 	query := `SELECT id,email,password,name,description,created_at FROM stores WHERE email=$1`
 	row := repo.db.QueryRowContext(ctx, query, email)
+	store, err := repo.getStore(ctx, row)
+	return store, err
+}
+
+func (repo *pgDBRepository) GetStoreById(ctx context.Context, storeId int) (domain.Store, error) {
+	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+	defer cancel()
+
+	query := `SELECT id,email,password,name,description,created_at FROM stores WHERE id=$1`
+	row := repo.db.QueryRowContext(ctx, query, storeId)
+	store, err := repo.getStore(ctx, row)
+	return store, err
+}
+
+func (repo *pgDBRepository) getStore(ctx context.Context, row *sql.Row) (domain.Store, error) {
+	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+	defer cancel()
+
+	var store domain.Store
 	err := row.Scan(&store.ID, &store.Email, &store.Password, &store.Name, &store.Description, &store.CreatedAt)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):

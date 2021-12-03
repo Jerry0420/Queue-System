@@ -3,6 +3,7 @@ package pgDB
 import (
 	"context"
 	"database/sql"
+	"errors"
 
 	"github.com/jerry0420/queue-system/backend/domain"
 )
@@ -83,4 +84,23 @@ func (repo *pgDBRepository) UpdateSessionWithTx(ctx context.Context, tx *sql.Tx,
 		return domain.ServerError40404
 	}
 	return nil
+}
+
+func (repo *pgDBRepository) GetSessionById(ctx context.Context, sessionId string) (domain.StoreSession, error) {
+	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+	defer cancel()
+
+	session := domain.StoreSession{ID: sessionId}
+	query := `SELECT store_id FROM store_sessions WHERE id=$1`
+	row := repo.db.QueryRowContext(ctx, query, sessionId)
+	err := row.Scan(&session.StoreId)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		repo.logger.ERRORf("error %v", err)
+		return session, domain.ServerError40404
+	case err != nil:
+		repo.logger.ERRORf("error %v", err)
+		return session, domain.ServerError50002
+	}
+	return session, nil
 }

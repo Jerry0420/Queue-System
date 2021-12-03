@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -68,6 +69,38 @@ func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 
 		} else {
 			presenter.JsonResponse(w, nil, domain.ServerError40102)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// for customers....
+func (mw *Middleware) SessionAuthenticationMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sessionId := r.Header.Get("Authorization")
+		if sessionId != "" {
+			session, err := mw.usecase.GetSessionById(r.Context(), sessionId)
+			if err != nil {
+				presenter.JsonResponse(w, nil, err)
+				return
+			}
+
+			store, err := mw.usecase.GetStoreById(r.Context(), session.StoreId)
+			switch {
+			case store == domain.Store{} && err != nil:
+				presenter.JsonResponse(w, nil, err)
+				return
+			case store != domain.Store{} && errors.Is(err, domain.ServerError40903):
+				_ = mw.usecase.CloseStore(r.Context(), store)
+				presenter.JsonResponse(w, nil, domain.ServerError40903)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), domain.StoreSessionString, nil)
+			r = r.WithContext(ctx)
+		} else {
+			presenter.JsonResponse(w, nil, domain.ServerError40106)
 			return
 		}
 		next.ServeHTTP(w, r)

@@ -20,3 +20,8 @@ func (uc *usecase) UpdateSession(ctx context.Context, session domain.StoreSessio
 func (uc *usecase) TopicNameOfUpdateSession(storeId int) string {
 	return fmt.Sprintf("updateSession.%d", storeId)
 }
+
+func (uc *usecase) GetSessionById(ctx context.Context, sessionId string) (domain.StoreSession, error) {
+	session, err := uc.pgDBRepository.GetSessionById(ctx, sessionId)
+	return session, err
+}

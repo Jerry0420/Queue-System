@@ -9,18 +9,11 @@ import (
 )
 
 func (had *httpAPIDelivery) customersCreate(w http.ResponseWriter, r *http.Request) {
-	storeId, sessionId, customers, err := validator.Customercreate(r)
+	session, customers, err := validator.Customercreate(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-
-	session := domain.StoreSession{
-		ID:      sessionId,
-		StoreId: storeId,
-	}
-
-	// TODO: check store exist
 
 	err = had.usecase.CreateCustomer(
 		r.Context(),

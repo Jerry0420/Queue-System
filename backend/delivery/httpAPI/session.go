@@ -19,7 +19,7 @@ func (had *httpAPIDelivery) sessionCreate(w http.ResponseWriter, r *http.Request
 		r.Context(),
 		sessionToken,
 		domain.SignKeyTypes.SESSION,
-		had.usecase.GetSignKeyByID,
+		had.usecase.GetSignKeyByID, // TODO: change to RemoveSignKeyByID
 	)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -67,14 +67,10 @@ func (had *httpAPIDelivery) sessionCreate(w http.ResponseWriter, r *http.Request
 }
 
 func (had *httpAPIDelivery) sessionScanned(w http.ResponseWriter, r *http.Request) {
-	storeId, sessionId, err := validator.SessionScanned(r)
+	session, err := validator.SessionScanned(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
-	}
-	session := domain.StoreSession{
-		ID:      sessionId,
-		StoreId: int(storeId),
 	}
 	err = had.usecase.UpdateSession(
 		r.Context(),
@@ -90,5 +86,7 @@ func (had *httpAPIDelivery) sessionScanned(w http.ResponseWriter, r *http.Reques
 		had.usecase.TopicNameOfUpdateSession(session.StoreId),
 		map[string]interface{}{"old_session_id": session.ID},
 	)
+	
+	session.StoreSessionStatus = domain.StoreSessionStatus.SCANNED
 	presenter.JsonResponseOK(w, session)
 }

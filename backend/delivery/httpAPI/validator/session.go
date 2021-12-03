@@ -16,20 +16,27 @@ func SessionCreate(r *http.Request) (sessionToken string, err error) {
 	return sessionToken, nil
 }
 
-func SessionScanned(r *http.Request) (storeId float64, sessionId string, err error) {
+func SessionScanned(r *http.Request) (session domain.StoreSession, err error) {
+	session = r.Context().Value(domain.StoreSessionString).(domain.StoreSession)
+
 	var jsonBody map[string]interface{}
 	err = json.NewDecoder(r.Body).Decode(&jsonBody)
 	if err != nil {
-		return storeId, sessionId, domain.ServerError40001
+		return session, domain.ServerError40001
 	}
 	storeId, ok := jsonBody["store_id"].(float64)
 	if !ok {
-		return storeId, sessionId, domain.ServerError40001
+		return session, domain.ServerError40001
 	}
+	if int(storeId) != session.StoreId {
+		return session, domain.ServerError40004
+	}
+
 	vars := mux.Vars(r)
-	sessionId, ok = vars["id"]
-	if !ok || sessionId == "" {
-		return storeId, sessionId, domain.ServerError40004
+	sessionId, ok := vars["id"] //sessionId
+	if !ok || sessionId == "" || sessionId != session.ID {
+		return session, domain.ServerError40004
 	}
-	return storeId, sessionId, nil
+
+	return session, nil
 }
