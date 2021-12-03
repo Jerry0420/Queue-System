@@ -13,3 +13,6 @@ protoc --go_out=. --go_opt=paths=source_relative \
 
 cp -r /app/proto /app/backend
 cp -r /app/proto /app/grpc
+
+chmod 777 -R /app/backend/proto
+chmod 777 -R /app/grpc/proto
