@@ -1,11 +1,10 @@
 package middleware
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"io"
+	"errors"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -31,26 +30,22 @@ func NewMiddleware(router *mux.Router, logger logging.LoggerTool, usecase usecas
 
 func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// TODO: remove after dev...
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.Header().Set("Access-Control-Allow-Headers", "*")
+
 		start := time.Now()
 
 		randomUUID := uuid.New().String()
 		ctx := context.WithValue(r.Context(), "requestID", randomUUID)
-
 		r = r.WithContext(ctx)
-		responseWrapper := &presenter.ResponseWrapper{ResponseWriter: w, Buffer: &bytes.Buffer{}}
-		next.ServeHTTP(responseWrapper, r)
-
-		var wrappedResponse map[string]interface{}
-		json.Unmarshal(responseWrapper.Buffer.Bytes(), &wrappedResponse)
-		io.Copy(w, responseWrapper.Buffer)
+		next.ServeHTTP(w, r)
 
 		ctx = context.WithValue(r.Context(), "duration", time.Since(start).Truncate(1*time.Millisecond))
-
-		if errorCode, ok := wrappedResponse["error_code"]; ok {
-			// api routes will go here.
+		if errorCode := w.Header().Get("Server-Code"); errorCode != "" {
 			ctx = context.WithValue(ctx, "code", errorCode)
 		} else {
-			ctx = context.WithValue(ctx, "code", 200)
+			ctx = context.WithValue(ctx, "code", strconv.Itoa(200))
 		}
 
 		r = r.WithContext(ctx)
@@ -74,6 +69,38 @@ func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 
 		} else {
 			presenter.JsonResponse(w, nil, domain.ServerError40102)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
+// for customers....
+func (mw *Middleware) SessionAuthenticationMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		sessionId := r.Header.Get("Authorization")
+		if sessionId != "" {
+			session, err := mw.usecase.GetSessionById(r.Context(), sessionId)
+			if err != nil {
+				presenter.JsonResponse(w, nil, err)
+				return
+			}
+
+			store, err := mw.usecase.GetStoreById(r.Context(), session.StoreId)
+			switch {
+			case store == domain.Store{} && err != nil:
+				presenter.JsonResponse(w, nil, err)
+				return
+			case store != domain.Store{} && errors.Is(err, domain.ServerError40903):
+				_ = mw.usecase.CloseStore(r.Context(), store)
+				presenter.JsonResponse(w, nil, domain.ServerError40903)
+				return
+			}
+
+			ctx := context.WithValue(r.Context(), domain.StoreSessionString, nil)
+			r = r.WithContext(ctx)
+		} else {
+			presenter.JsonResponse(w, nil, domain.ServerError40106)
 			return
 		}
 		next.ServeHTTP(w, r)

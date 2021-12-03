@@ -45,11 +45,14 @@ spec:
         volumeMounts:
           - mountPath: /var/log/nginx
             name: log-dir
-        envFrom:
-          - configMapRef:
-               name: frontend-env
+          - name: frontend-env
+            mountPath: /etc/config
+            readOnly: true
       volumes:
         - name: log-dir
           hostPath:
             path: /var/log/nginx
             type: DirectoryOrCreate
+        - name: frontend-env
+          configMap: 
+            name: frontend-env

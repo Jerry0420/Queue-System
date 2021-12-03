@@ -9,15 +9,47 @@ services:
     container_name: frontend
     networks:
       - queue_system
-    env_file: 
-      - .env.frontend
     user: 1000:1001
     ports:
       - "80:3000"
     volumes:
       - frontend_log_dir:/var/log/nginx:rw
+      - ../envs/.env.frontend:/etc/config/.env.frontend:ro
     logging:
       driver: "none"
+
+  grpc:
+    build:
+      context: ../
+      dockerfile: Dockerfile.grpc
+    restart: always
+    container_name: grpc
+    networks:
+      - queue_system
+    user: 1000:1001
+    secrets:
+      - source: grpc-secret
+        target: /run/secrets/grpc-secret/.grpc-secret
+        uid: '1000'
+        gid: '1001'
+        mode: 0444
+      - source: server-crt
+        target: /run/secrets/server-crt/.server-crt
+        uid: '1000'
+        gid: '1001'
+        mode: 0444
+      - source: server-key
+        target: /run/secrets/server-key/.server-key
+        uid: '1000'
+        gid: '1001'
+        mode: 0444
+    ports:
+      - "8002:8002"
+    volumes:
+      - grpc_log_dir:/app/grpc/logs:rw
+      - ../envs/.env.grpc:/etc/config/.env.grpc:ro
+    # logging:
+    #   driver: "none"
 
   backend:
     build:
@@ -27,24 +59,29 @@ services:
     container_name: backend
     networks:
       - queue_system
-    env_file: 
-      - .env
     user: 1000:1001
     secrets:
       - source: backend-secret
-        target: /run/secrets/backend-secret/backend-secret
+        target: /run/secrets/backend-secret/.backend-secret
+        uid: '1000'
+        gid: '1001'
+        mode: 0444
+      - source: ca-crt
+        target: /run/secrets/ca-crt/.ca-crt
         uid: '1000'
         gid: '1001'
         mode: 0444
     ports:
       - "8000:8000"
     volumes:
-      - backend_log_dir:/app/logs:rw
-    logging:
-      driver: "none"
+      - backend_log_dir:/app/backend/logs:rw
+      - ../envs/.env:/etc/config/.env:ro
+    # logging:
+    #   driver: "none"
 
 volumes: 
   backend_log_dir: {}
+  grpc_log_dir: {}
   frontend_log_dir: {}
 
 networks: 
@@ -53,4 +90,12 @@ networks:
 
 secrets:
   backend-secret:
-    file: ./secret
+    file: ../envs/.secret
+  grpc-secret:
+    file: ../envs/.secret_grpc
+  ca-crt:
+    file: ../cert/ca.crt
+  server-crt:
+    file: ../cert/server.crt
+  server-key:
+    file: ../cert/server.key

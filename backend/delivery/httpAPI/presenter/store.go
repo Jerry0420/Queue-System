@@ -38,15 +38,16 @@ func StoreForResponse(store domain.Store) map[string]interface{} {
 	return storeMap
 }
 
-func StoreToken(store domain.Store, token string, tokenExpiresAt time.Time) map[string]interface{} {
+func StoreToken(store domain.Store, normalToken string, tokenExpiresAt time.Time, sessionToken string) map[string]interface{} {
 	var storeJson []byte
 	var storeMap map[string]interface{}
 	storeJson, _ = json.Marshal(store)
 	json.Unmarshal(storeJson, &storeMap)
 	delete(storeMap, "password")
-	storeMap["token"] = token
+	storeMap["token"] = normalToken
 	storeMap["token_expires_at"] = tokenExpiresAt.Unix()
 	created_at, _ := time.Parse(time.RFC3339, storeMap["created_at"].(string))
 	storeMap["created_at"] = created_at.Unix()
+	storeMap["session_token"] = sessionToken
 	return storeMap
 }

@@ -8,20 +8,28 @@ CREATE TABLE IF NOT EXISTS stores(
    password varchar(64) NOT NULL,
    name varchar(64) NOT NULL,
    description text DEFAULT '',
-   created_at timestamp NOT NULL DEFAULT clock_timestamp(),
-   session_id uuid NOT NULL DEFAULT uuid_generate_v4()
+   created_at timestamp NOT NULL DEFAULT clock_timestamp()
 );
 
 -- ----------------------------
 
-CREATE TYPE sign_key_types AS ENUM ('normal', 'password', 'refresh');
+CREATE TYPE store_session_status AS ENUM ('normal', 'scanned', 'used');
+
+CREATE TABLE IF NOT EXISTS store_sessions(
+   id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+   store_id integer REFERENCES stores ON DELETE CASCADE,
+   status store_session_status DEFAULT 'normal'
+);
+
+-- ----------------------------
+
+CREATE TYPE sign_key_types AS ENUM ('normal', 'password', 'refresh', 'session');
 
 CREATE TABLE IF NOT EXISTS sign_keys(
    id serial PRIMARY KEY,
    store_id integer REFERENCES stores ON DELETE CASCADE,
    sign_key varchar(64) NOT NULL,
-   type sign_key_types NOT NULL,
-   created_at timestamp NOT NULL DEFAULT clock_timestamp()
+   type sign_key_types NOT NULL
 );
 
 -- ----------------------------
@@ -34,14 +42,14 @@ CREATE TABLE IF NOT EXISTS queues(
 
 -- ----------------------------
 
-CREATE TYPE customer_status AS ENUM ('processing', 'done', 'delete');
+CREATE TYPE customer_status AS ENUM ('normal', 'processing', 'done', 'delete');
 
 CREATE TABLE IF NOT EXISTS customers(
    id serial PRIMARY KEY,
    name varchar(64) NOT NULL,
    phone varchar(30) NOT NULL,
    queue_id integer REFERENCES queues ON DELETE CASCADE,
-   status customer_status NOT NULL,
+   status customer_status DEFAULT 'normal',
    created_at timestamp NOT NULL DEFAULT clock_timestamp()
 );
 

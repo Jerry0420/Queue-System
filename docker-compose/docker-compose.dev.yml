@@ -11,16 +11,31 @@ services:
       - queue_system
     stdin_open: true
     tty: true
-    env_file: 
-      - .env.frontend
     ports:
       - "3000:3000"
     volumes:
-      - ../src:/app/src
-      - ../public:/app/public
-      - ../package.json:/app/package.json
-      - ../package-lock.json:/app/package-lock.json
-      - ../build:/app/build
+      - ../:/app
+      - ../envs/.env.frontend:/etc/config/.env.frontend
+
+  grpc:
+    build:
+      context: ../
+      dockerfile: Dockerfile.grpc
+      target: base
+    container_name: grpc
+    networks:
+      - queue_system
+    stdin_open: true
+    tty: true
+    ports:
+      - "8002:8002"
+    volumes:
+      - ../:/app
+      - ../envs/.secret_grpc:/run/secrets/grpc-secret/.grpc-secret
+      - ../cert/server.crt:/run/secrets/server-crt/.server-crt
+      - ../cert/server.key:/run/secrets/server-key/.server-key
+      - ../envs/.env.grpc:/etc/config/.env.grpc
+      - ../grpc/logs/:/app/grpc/logs/
 
   backend:
     build:
@@ -32,15 +47,15 @@ services:
       - queue_system
     stdin_open: true
     tty: true
-    env_file: 
-      - .env
     ports:
       - "8000:8000"
       - "3001:3001"
     volumes:
       - ../:/app
-      - ./secret:/run/secrets/backend-secret/backend-secret
-      - ../logs:/app/logs
+      - ../envs/.secret:/run/secrets/backend-secret/.backend-secret
+      - ../cert/ca.crt:/run/secrets/ca-crt/.ca-crt
+      - ../envs/.env:/etc/config/.env
+      - ../backend/logs/:/app/backend/logs/
 
   db_admin:
     image: dpage/pgadmin4:5

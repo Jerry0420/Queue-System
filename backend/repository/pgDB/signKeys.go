@@ -33,7 +33,7 @@ func (repo *pgDBRepository) GetSignKeyByID(ctx context.Context, id int, signKeyT
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
-	query := `SELECT sign_key FROM sign_keys WHERE id=$1,type=$2`
+	query := `SELECT sign_key FROM sign_keys WHERE id=$1 and type=$2`
 	row := repo.db.QueryRowContext(ctx, query, id, signKeyType)
 	err = row.Scan(&signKey.SignKey)
 	switch {

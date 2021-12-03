@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -18,22 +17,31 @@ type Config struct {
 var ServerConfig Config
 
 func init() {
-	path := "/run/secrets/backend-secret/backend-secret"
+	secretPath := "/run/secrets/backend-secret/.backend-secret"
 	if os.Getenv("SECRET_PATH") != "" {
-		path = os.Getenv("SECRET_PATH")
+		secretPath = os.Getenv("SECRET_PATH")
 	}
-	rawData, err := ioutil.ReadFile(path)
+	rawSecretData, err := ioutil.ReadFile(secretPath)
 	if err != nil {
 		log.Fatalf("fail to read secret file.")
 	}
 	var secretData map[string]string
-	json.Unmarshal(rawData, &secretData)
+	json.Unmarshal(rawSecretData, &secretData)
 	ServerConfig = Config{data: secretData}
 
-	var pairs []string
-	for _, value := range os.Environ() {
-		pairs = strings.Split(value, "=")
-		ServerConfig.data[pairs[0]] = pairs[1]
+	envPath := "/etc/config/.env"
+	if os.Getenv("ENV_PATH") != "" {
+		envPath = os.Getenv("ENV_PATH")
+	}
+	rawEnvData, err := ioutil.ReadFile(envPath)
+	if err != nil {
+		log.Fatalf("fail to read env file.")
+	}
+	var envData map[string]string
+	json.Unmarshal(rawEnvData, &envData)
+
+	for key, value := range envData {
+		ServerConfig.data[key] = value
 	}
 }
 
@@ -153,4 +161,14 @@ func (config Config) VAULT_CONNECTION_CONFIG() VaultConnectionConfig {
 		RoleID:              config.VAULT_ROLE_ID(),
 		CredName:            config.VAULT_CRED_NAME(),
 	}
+}
+
+func (config Config) GRPC_HOST() string {
+	content := config.get("GRPC_HOST")
+	return content
+}
+
+func (config Config) CA_CRT() string {
+	content := config.get("CA_CRT")
+	return content
 }

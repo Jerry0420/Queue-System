@@ -1,5 +1,5 @@
 # dependencies
-/node_modules
+/frontend/node_modules
 /.pnp
 .pnp.js
 
@@ -7,7 +7,7 @@
 /coverage
 
 # production
-/build
+/frontend/build
 
 # misc
 .DS_Store
@@ -40,14 +40,23 @@ yarn-error.log*
 .env
 .env.db
 .env.frontend
-
-config.json
-
-gin-bin
+.env.grpc
 logs
+.secret
+.secret_grpc
+*.crt
+*.key
+*.csr
+*.srl
+
+# for dev...
+env.json
+env_grpc.json
+gin-bin
 todo.txt
-secret
 test.sql
 test.sh
 test.go
 test.pgsql
+test.js
+test.html

@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: queue-system
+  name: grpc-development
+  labels:
+    app: grpc
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: grpc
+  template:
+    metadata:
+      labels:
+        app: grpc
+        app.kubernetes.io/name: grpc
+        app.kubernetes.io/instance: grpc
+    spec:
+      restartPolicy: Always
+      initContainers:
+      - name: volume-chown
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000:1001 /app/grpc/logs"]
+        volumeMounts:
+          - mountPath: /app/grpc/logs
+            name: grpc-log-dir
+      containers:
+      - name: grpc
+        image: jerry0420/queue-system-grpc:v0.0.1
+        imagePullPolicy: IfNotPresent 
+        resources:
+          requests:
+            memory: "32Mi"
+            cpu: "0.1"
+          limits:
+            memory: "64Mi"
+            cpu: "0.2"
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1001
+        ports:
+          - name: grpc-port
+            containerPort: 8002
+        volumeMounts:
+          - mountPath: /app/grpc/logs
+            name: grpc-log-dir
+          - name: grpc-secret
+            mountPath: "/run/secrets/grpc-secret"
+          - name: server-crt
+            mountPath: "/run/secrets/server-crt"
+          - name: server-key
+            mountPath: "/run/secrets/server-key"
+          - name: grpc-env
+            mountPath: /etc/config
+            readOnly: true
+      volumes:
+        - name: grpc-log-dir
+          hostPath:
+            path: /app/grpc/logs
+            type: DirectoryOrCreate
+        - name: grpc-secret
+          secret:
+            secretName: grpc-secret
+            items:
+            - key: GRPC-SECRET
+              path: .grpc-secret
+              mode: 0444
+        - name: server-crt
+          secret:
+            secretName: server-crt
+            items:
+            - key: SERVER-CRT
+              path: .server-crt
+              mode: 0444
+        - name: server-key
+          secret:
+            secretName: server-key
+            items:
+            - key: SERVER-KEY
+              path: .server-key
+              mode: 0444
+        - name: grpc-env
+          configMap: 
+            name: grpc-env

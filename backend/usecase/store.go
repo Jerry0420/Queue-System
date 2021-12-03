@@ -20,6 +20,17 @@ func (uc *usecase) CreateStore(ctx context.Context, store *domain.Store, queues 
 
 func (uc *usecase) GetStoreByEmail(ctx context.Context, email string) (domain.Store, error) {
 	store, err := uc.pgDBRepository.GetStoreByEmail(ctx, email)
+	store, err = uc.checkStoreExpirationStatus(store, err)
+	return store, err
+}
+
+func (uc *usecase) GetStoreById(ctx context.Context, storeId int) (domain.Store, error) {
+	store, err := uc.pgDBRepository.GetStoreById(ctx, storeId)
+	store, err = uc.checkStoreExpirationStatus(store, err)
+	return store, err
+}
+
+func (uc *usecase) checkStoreExpirationStatus(store domain.Store, err error) (domain.Store, error) {
 	switch {
 	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) < uc.config.StoreDuration):
 		return store, domain.ServerError40901
@@ -156,7 +167,7 @@ func (uc *usecase) GetSignKeyByID(ctx context.Context, signKeyID int, signKeyTyp
 
 func (uc *usecase) GenerateEmailContentOfForgetPassword(passwordToken string, store domain.Store) (subject string, content string) {
 	// TODO: update email content to html format.
-	resetPasswordUrl := fmt.Sprintf("%s/stores/password/update?id=%d&password_token=%s", uc.config.Domain, store.ID, passwordToken)
+	resetPasswordUrl := fmt.Sprintf("%s/stores/%d/password/update?password_token=%s", uc.config.Domain, store.ID, passwordToken)
 	return "Queue-System Reset Password", fmt.Sprintf("Hello, %s, please click %s", store.Name, resetPasswordUrl)
 }
 

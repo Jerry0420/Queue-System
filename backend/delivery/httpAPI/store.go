@@ -122,7 +122,8 @@ func (had *httpAPIDelivery) tokenRefresh(w http.ResponseWriter, r *http.Request)
 		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
 	}
 	tokenExpiresAt := time.Now().Add(had.config.TokenDuration)
-	token, err := had.usecase.GenerateToken(
+	// normal token
+	normalToken, err := had.usecase.GenerateToken(
 		r.Context(),
 		store,
 		domain.SignKeyTypes.NORMAL,
@@ -132,7 +133,18 @@ func (had *httpAPIDelivery) tokenRefresh(w http.ResponseWriter, r *http.Request)
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	presenter.JsonResponseOK(w, presenter.StoreToken(store, token, tokenExpiresAt))
+	// session token
+	sessionToken, err := had.usecase.GenerateToken(
+		r.Context(),
+		store,
+		domain.SignKeyTypes.SESSION,
+		tokenExpiresAt,
+	)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+	presenter.JsonResponseOK(w, presenter.StoreToken(store, normalToken, tokenExpiresAt, sessionToken))
 }
 
 func (had *httpAPIDelivery) storeClose(w http.ResponseWriter, r *http.Request) {

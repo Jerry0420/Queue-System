@@ -4,7 +4,8 @@ import (
 	"time"
 
 	"github.com/jerry0420/queue-system/backend/logging"
-	"github.com/jerry0420/queue-system/backend/repository"
+	"github.com/jerry0420/queue-system/backend/repository/grpcServices"
+	"github.com/jerry0420/queue-system/backend/repository/pgDB"
 )
 
 type UsecaseConfig struct {
@@ -13,15 +14,17 @@ type UsecaseConfig struct {
 }
 
 type usecase struct {
-	pgDBRepository repository.RepositoryInterface
-	logger         logging.LoggerTool
-	config         UsecaseConfig
+	pgDBRepository         pgDB.PgDBRepositoryInterface
+	grpcServicesRepository grpcServices.GrpcServicesRepositoryInterface
+	logger                 logging.LoggerTool
+	config                 UsecaseConfig
 }
 
 func NewUsecase(
-	pgDBRepository repository.RepositoryInterface,
+	pgDBRepository pgDB.PgDBRepositoryInterface,
+	grpcServicesRepository grpcServices.GrpcServicesRepositoryInterface,
 	logger logging.LoggerTool,
 	usecaseConfig UsecaseConfig,
 ) UseCaseInterface {
-	return &usecase{pgDBRepository, logger, usecaseConfig}
+	return &usecase{pgDBRepository, grpcServicesRepository, logger, usecaseConfig}
 }
