@@ -2,6 +2,7 @@ package httpAPI
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -244,13 +245,35 @@ func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	w.Header().Set("Content-Type", "text/event-stream")
+	flusher, ok := w.(http.Flusher)
+	if !ok {
+		presenter.JsonResponse(w, nil, domain.ServerError50003)
+		return
+	}
+	consumerChan := had.broker.Subscribe(had.usecase.TopicNameOfUpdateCustomer(storeId))
+	defer had.broker.UnsubscribeConsumer(had.usecase.TopicNameOfUpdateCustomer(storeId), consumerChan)
+	
 	store, err := had.usecase.GetStoreWIthQueuesAndCustomersById(r.Context(), storeId)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
+	fmt.Fprintf(w, "data: %v\n\n", presenter.StoreGet(store))
+	flusher.Flush()
 
-	presenter.JsonResponseOK(w, store)
-
-	//TODO: change to sse route.
+	for {
+		select {
+		case <-consumerChan:
+			store, err := had.usecase.GetStoreWIthQueuesAndCustomersById(r.Context(), storeId)
+			if err != nil {
+				presenter.JsonResponse(w, nil, err)
+				return
+			}
+			fmt.Fprintf(w, "data: %v\n\n", presenter.StoreGet(store))
+			flusher.Flush()
+		case <-r.Context().Done():
+			return
+		}
+	}
 }

@@ -28,6 +28,7 @@ type UseCaseInterface interface {
 	RemoveSignKeyByID(ctx context.Context, signKeyID int, signKeyType string) (domain.SignKey, error)
 	GenerateEmailContentOfForgetPassword(passwordToken string, store domain.Store) (subject string, content string)
 	UpdateStore(ctx context.Context, store *domain.Store, fieldName string, newFieldValue string) error
+	TopicNameOfUpdateCustomer(storeId int) string
 
 	// queue.go
 

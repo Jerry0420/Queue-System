@@ -31,8 +31,92 @@ func (repo *pgDBRepository) GetStoreByEmail(ctx context.Context, email string) (
 func (repo *pgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
-	// TODO: update!
-	return domain.StoreWithQueues{}, nil
+
+	var storeWithQueues domain.StoreWithQueues
+	query := `SELECT 
+					stores.email, stores.name, stores.description, stores.created_at, 
+					queues.id AS queue_id, queues.name AS queue_name, 
+					customers.id AS customer_id, customers.name AS customer_name, customers.phone AS customer_phone, 
+					customers.status AS customer_status,
+					customers.created_at AS customer_created_at
+			FROM stores
+			INNER JOIN queues ON stores.id = queues.store_id
+			INNER JOIN customers ON queues.id = customers.queue_id
+			WHERE stores.id=$1 and customers.status='normal' OR customers.status='processing'
+			ORDER BY customers.id ASC`
+
+	rows, err := repo.db.QueryContext(ctx, query, storeId)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return storeWithQueues, domain.ServerError50002
+	}
+
+	var store domain.Store
+	queues := make(map[int]domain.Queue)
+	customers := make(map[int][]domain.Customer)
+	
+	for rows.Next() {
+		var queue domain.Queue
+		var customer domain.Customer
+
+		err := rows.Scan(
+			&store.Email, &store.Name, &store.Description, &store.CreatedAt,
+			&queue.ID, &queue.Name,
+			&customer.ID, &customer.Name, &customer.Phone, &customer.Status, &customer.CreatedAt,
+		)
+		if err != nil {
+			repo.logger.ERRORf("error %v", err)
+			return storeWithQueues, domain.ServerError50002
+		}
+		queues[queue.ID] = queue
+		customers[queue.ID] = append(customers[queue.ID], customer)
+	}
+	defer rows.Close()
+
+	if store == (domain.Store{}) {
+		queues = make(map[int]domain.Queue)
+		query = `SELECT 
+					stores.email, 
+					stores.name, 
+					stores.description, 
+					stores.created_at, 
+					queues.id AS queue_id, 
+					queues.name AS queue_name
+				FROM stores
+				INNER JOIN queues ON stores.id = queues.store_id
+				WHERE stores.id=$1`
+		rows, err = repo.db.QueryContext(ctx, query, storeId)
+		if err != nil {
+			repo.logger.ERRORf("error %v", err)
+			return storeWithQueues, domain.ServerError50002
+		}
+		for rows.Next() {
+			var queue domain.Queue
+			err := rows.Scan(
+				&store.Email, &store.Name, &store.Description, &store.CreatedAt,
+				&queue.ID, &queue.Name,
+			)
+			if err != nil {
+				repo.logger.ERRORf("error %v", err)
+				return storeWithQueues, domain.ServerError50002
+			}
+			queues[queue.ID] = queue
+		}
+	}
+
+	if store == (domain.Store{}) {
+		return storeWithQueues, domain.ServerError40402
+	}
+
+	storeWithQueues = domain.StoreWithQueues{ID: storeId, Email: store.Email, Name: store.Name, Description: store.Description, CreatedAt: store.CreatedAt}
+	for _, queue := range queues {
+		storeWithQueues.Queues = append(storeWithQueues.Queues, domain.QueueWithCustomers{
+			ID: queue.ID,
+			Name: queue.Name,
+			Customers: customers[queue.ID],
+		})
+	}
+	return storeWithQueues, nil
 }
 
 func (repo *pgDBRepository) CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error {

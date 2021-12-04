@@ -26,6 +26,11 @@ func (had *httpAPIDelivery) customersCreate(w http.ResponseWriter, r *http.Reque
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	// TODO: publish to broker
+	
+	go had.broker.Publish(
+		had.usecase.TopicNameOfUpdateCustomer(session.StoreId),
+		map[string]interface{}{},
+	)
+
 	presenter.JsonResponseOK(w, customers)
 }

@@ -174,3 +174,7 @@ func (uc *usecase) UpdateStore(ctx context.Context, store *domain.Store, fieldNa
 	err := uc.pgDBRepository.UpdateStore(ctx, store, fieldName, newFieldValue)
 	return err
 }
+
+func (uc *usecase) TopicNameOfUpdateCustomer(storeId int) string {
+	return fmt.Sprintf("updateCustomer.%d", storeId)
+}
