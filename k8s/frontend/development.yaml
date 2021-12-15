@@ -27,7 +27,7 @@ spec:
             name: log-dir
       containers:
       - name: frontend
-        image: jerry0420/queue-system-frontend:v0.0.1
+        image: queue-system-frontend:v0.0.1
         imagePullPolicy: IfNotPresent 
         resources:
           requests:

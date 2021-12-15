@@ -12,10 +12,11 @@ spec:
     app: backend
     app.kubernetes.io/name: backend
     app.kubernetes.io/instance: backend
-  type: NodePort
+  # type: NodePort
+  type: LoadBalancer
   ports:
     - name: backend-port
       protocol: TCP
-      nodePort: 30000
+      # nodePort: 30000
       port: 80
       targetPort: 8000

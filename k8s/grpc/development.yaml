@@ -27,7 +27,7 @@ spec:
             name: grpc-log-dir
       containers:
       - name: grpc
-        image: jerry0420/queue-system-grpc:v0.0.1
+        image: queue-system-grpc:v0.0.1
         imagePullPolicy: IfNotPresent 
         resources:
           requests:
