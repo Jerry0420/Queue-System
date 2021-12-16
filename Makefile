@@ -81,6 +81,11 @@ microk8s_install:
 	sudo snap alias microk8s.kubectl kubectl
 	sudo chown -f -R ubuntu ~/.kube
 
+microk8s_docker_install:
+	sudo apt update
+	sudo apt install docker.io
+	sudo gpasswd -a $(user) docker
+
 microk8s_load_images_backend:
 	microk8s ctr image import queue-system-backend.tar 
 
