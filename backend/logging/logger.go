@@ -45,28 +45,25 @@ func getLogFilePathOfToday() string {
 
 func rotateLogFile(lt *loggerTool) {
 	for {
-		select {
-		case <-lt.receiveMessage:
-			// daily rotate the log file.
-			today := fmt.Sprint(time.Now().Format("20060102"))
-			if !strings.Contains(lt.logFile.Name(), today) {
-				lt.Lock()
-				logFilePath := getLogFilePathOfToday()
-				newlogFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-				if err != nil {
-					log.Fatalf("Fail to open log file :%v", err)
-				}
-
-				lt.logger.SetOutput(io.MultiWriter(os.Stdout, newlogFile))
-
-				err = lt.logFile.Close()
-				if err != nil {
-					log.Fatalf("Fail to close old log file :%v", err)
-				}
-				lt.logFile = newlogFile
-				defer lt.Unlock()
+		<-lt.receiveMessage
+		// daily rotate the log file.
+		today := fmt.Sprint(time.Now().Format("20060102"))
+		if !strings.Contains(lt.logFile.Name(), today) {
+			lt.Lock()
+			logFilePath := getLogFilePathOfToday()
+			newlogFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+			if err != nil {
+				log.Fatalf("Fail to open log file :%v", err)
 			}
-		default:
+
+			lt.logger.SetOutput(io.MultiWriter(os.Stdout, newlogFile))
+
+			err = lt.logFile.Close()
+			if err != nil {
+				log.Fatalf("Fail to close old log file :%v", err)
+			}
+			lt.logFile = newlogFile
+			defer lt.Unlock()
 		}
 	}
 }
