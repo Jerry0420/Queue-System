@@ -126,3 +126,32 @@ func StoreInfoGet(r *http.Request) (storeId int, err error){
 	}
 	return storeId, nil
 }
+
+func StoreDescriptionUpdate(r *http.Request) (store domain.Store, err error){
+	tokenClaims := r.Context().Value(domain.SignKeyTypes.NORMAL).(domain.TokenClaims)
+	
+	vars := mux.Vars(r)
+	storeId, err := strconv.Atoi(vars["id"])
+	if err != nil || storeId != tokenClaims.StoreID {
+		return store, domain.ServerError40004
+	}
+
+	var jsonBody map[string]interface{}
+	err = json.NewDecoder(r.Body).Decode(&jsonBody)
+	if err != nil {
+		return store, domain.ServerError40001
+	}
+	description, ok := jsonBody["description"].(string)
+	if !ok || description == "" {
+		return store, domain.ServerError40001
+	}
+
+	store = domain.Store{
+		ID: tokenClaims.StoreID,
+		Email: tokenClaims.Email,
+		Name: tokenClaims.Name,
+		Description: description,
+	}
+
+	return store, nil
+}

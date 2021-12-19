@@ -277,3 +277,24 @@ func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request)
 		}
 	}
 }
+
+func (had *httpAPIDelivery) storeUpdate(w http.ResponseWriter, r *http.Request) {
+	store, err := validator.StoreDescriptionUpdate(r)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+
+	err = had.usecase.UpdateStore(r.Context(), &store, "description", store.Description)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+
+	go had.broker.Publish(
+		had.usecase.TopicNameOfUpdateCustomer(store.ID),
+		map[string]interface{}{},
+	)
+
+	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
+}

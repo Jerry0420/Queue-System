@@ -9,13 +9,13 @@ import (
 )
 
 func (had *httpAPIDelivery) customersCreate(w http.ResponseWriter, r *http.Request) {
-	session, customers, err := validator.Customercreate(r)
+	session, customers, err := validator.CustomerCreate(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
-	err = had.usecase.CreateCustomer(
+	err = had.usecase.CreateCustomers(
 		r.Context(),
 		session,
 		domain.StoreSessionStatus.SCANNED,
@@ -33,4 +33,25 @@ func (had *httpAPIDelivery) customersCreate(w http.ResponseWriter, r *http.Reque
 	)
 
 	presenter.JsonResponseOK(w, customers)
+}
+
+func (had *httpAPIDelivery) customerUpdate(w http.ResponseWriter, r *http.Request) {
+	storeId, oldCustomerStatus, newCustomerStatus, customer, err := validator.CustomerUpdate(r)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+
+	err = had.usecase.UpdateCustomer(r.Context(), oldCustomerStatus, newCustomerStatus, &customer)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+
+	go had.broker.Publish(
+		had.usecase.TopicNameOfUpdateCustomer(storeId),
+		map[string]interface{}{},
+	)
+
+	presenter.JsonResponseOK(w, customer)
 }

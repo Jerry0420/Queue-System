@@ -77,3 +77,31 @@ func (repo *pgDBRepository) CreateCustomers(ctx context.Context, session domain.
 	}
 	return nil
 }
+
+func (repo *pgDBRepository) UpdateCustomer(ctx context.Context, oldStatus string, newStatus string, customer *domain.Customer) error {
+	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+	defer cancel()
+
+	query := `UPDATE customers SET status=$1 WHERE id=$2 and status=$3`
+	stmt, err := repo.db.PrepareContext(ctx, query)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, newStatus, customer.ID, oldStatus)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
+	num, err := result.RowsAffected()
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
+	if num == 0 {
+		return domain.ServerError40405
+	}
+	return nil
+}

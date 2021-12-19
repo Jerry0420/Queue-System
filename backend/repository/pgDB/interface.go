@@ -25,6 +25,7 @@ type PgDBRepositoryInterface interface {
 
 	// customer.go
 	CreateCustomers(ctx context.Context, session domain.StoreSession, oldStatus string, newStatus string, customers []domain.Customer) error
+	UpdateCustomer(ctx context.Context, oldStatus string, newStatus string, customer *domain.Customer) error
 
 	// session.go
 	CreateSession(ctx context.Context, store domain.Store) (domain.StoreSession, error)
