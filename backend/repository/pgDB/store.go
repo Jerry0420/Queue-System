@@ -126,7 +126,7 @@ func (repo *pgDBRepository) CreateStore(ctx context.Context, store *domain.Store
 	tx, err := repo.db.BeginTx(ctx, nil)
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)
-		return err
+		return domain.ServerError50002
 	}
 	defer tx.Rollback()
 
