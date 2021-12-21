@@ -23,6 +23,8 @@ var (
 	ServerError40003 = &ServerError{Code: 40003, Description: "password mismatch."}
 	// wrong params
 	ServerError40004 = &ServerError{Code: 40004, Description: "wrong params"}
+	// the count of customers is more than 5
+	ServerError40005 = &ServerError{Code: 40005, Description: "the count of customers is more than 5"}
 
 	// ============================================================
 
@@ -49,6 +51,8 @@ var (
 	ServerError40403 = &ServerError{Code: 40403, Description: "sign_key not exist."}
 	// store_session not exist.
 	ServerError40404 = &ServerError{Code: 40404, Description: "store_session not exist."}
+	// customer not exist.
+	ServerError40405 = &ServerError{Code: 40405, Description: "customer not exist."}
 
 	// ============================================================
 

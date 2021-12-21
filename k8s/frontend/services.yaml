@@ -12,10 +12,11 @@ spec:
     app: frontend
     app.kubernetes.io/name: frontend
     app.kubernetes.io/instance: frontend
-  type: NodePort
+  # type: NodePort
+  type: LoadBalancer
   ports:
     - name: frontend-port
       protocol: TCP
-      nodePort: 30001
+      # nodePort: 30001
       port: 80
       targetPort: 3000

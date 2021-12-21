@@ -27,7 +27,7 @@ spec:
             name: backend-log-dir
       containers:
       - name: backend
-        image: jerry0420/queue-system-backend:v0.0.1
+        image: queue-system-backend:v0.0.1
         imagePullPolicy: IfNotPresent 
         resources:
           requests:

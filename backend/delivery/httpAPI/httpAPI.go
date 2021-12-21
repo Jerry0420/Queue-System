@@ -59,6 +59,16 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 		had.passwordUpdate,
 	).Methods(http.MethodPatch).Headers("Content-Type", "application/json")
 
+	router.HandleFunc(
+		V_1("/stores/{id:[0-9]+}/sse"),
+		had.getStoreInfo,
+	).Methods(http.MethodGet) // get method for sse.
+
+	router.Handle(
+		V_1("/stores/{id:[0-9]+}"),
+		mw.AuthenticationMiddleware(http.HandlerFunc(had.storeUpdate)),
+	).Methods(http.MethodPut)
+
 	//queues
 
 	// sessions
@@ -77,6 +87,11 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 		V_1("/customers"),
 		mw.SessionAuthenticationMiddleware(http.HandlerFunc(had.customersCreate)),
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
+
+	router.Handle(
+		V_1("/customers/{id:[0-9]+}"),
+		mw.AuthenticationMiddleware(http.HandlerFunc(had.customerUpdate)),
+	).Methods(http.MethodPut)
 	
 	// base routes
 	// these two routes will just response to the client directly, and will not go into any middleware.

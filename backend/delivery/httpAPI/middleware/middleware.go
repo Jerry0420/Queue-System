@@ -80,13 +80,8 @@ func (mw *Middleware) SessionAuthenticationMiddleware(next http.Handler) http.Ha
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionId := r.Header.Get("Authorization")
 		if sessionId != "" {
-			session, err := mw.usecase.GetSessionById(r.Context(), sessionId)
-			if err != nil {
-				presenter.JsonResponse(w, nil, err)
-				return
-			}
-
-			store, err := mw.usecase.GetStoreById(r.Context(), session.StoreId)
+			session, store, err := mw.usecase.GetSessionAndStoreBySessionId(r.Context(), sessionId)
+			store, err = mw.usecase.CheckStoreExpirationStatus(store, err)
 			switch {
 			case store == domain.Store{} && err != nil:
 				presenter.JsonResponse(w, nil, err)
@@ -97,7 +92,7 @@ func (mw *Middleware) SessionAuthenticationMiddleware(next http.Handler) http.Ha
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), domain.StoreSessionString, nil)
+			ctx := context.WithValue(r.Context(), domain.StoreSessionString, session)
 			r = r.WithContext(ctx)
 		} else {
 			presenter.JsonResponse(w, nil, domain.ServerError40106)

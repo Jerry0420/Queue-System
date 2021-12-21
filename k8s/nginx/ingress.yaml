@@ -36,7 +36,8 @@ metadata:
       }
 
 spec:
-  ingressClassName: nginx
+  # ingressClassName: nginx
+  ingressClassName: public
   tls:
   - hosts:
     - queue.com

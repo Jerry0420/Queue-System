@@ -1,6 +1,7 @@
 package presenter
 
 import (
+	"bytes"
 	"encoding/json"
 	"time"
 
@@ -50,4 +51,16 @@ func StoreToken(store domain.Store, normalToken string, tokenExpiresAt time.Time
 	storeMap["created_at"] = created_at.Unix()
 	storeMap["session_token"] = sessionToken
 	return storeMap
+}
+
+func StoreGet(store domain.StoreWithQueues) string {
+	var storeJson []byte
+	var storeMap map[string]interface{}
+	storeJson, _ = json.Marshal(store)
+	json.Unmarshal(storeJson, &storeMap)
+	delete(storeMap, "password")
+	delete(storeMap, "created_at")
+	var flushedData bytes.Buffer
+	json.NewEncoder(&flushedData).Encode(storeMap)
+	return flushedData.String()
 }
