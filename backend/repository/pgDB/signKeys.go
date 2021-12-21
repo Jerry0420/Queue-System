@@ -8,7 +8,7 @@ import (
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-func (repo *pgDBRepository) CreateSignKey(ctx context.Context, signKey *domain.SignKey) error {
+func (repo *PgDBRepository) CreateSignKey(ctx context.Context, signKey *domain.SignKey) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
@@ -29,7 +29,7 @@ func (repo *pgDBRepository) CreateSignKey(ctx context.Context, signKey *domain.S
 	return nil
 }
 
-func (repo *pgDBRepository) GetSignKeyByID(ctx context.Context, id int, signKeyType string) (signKey domain.SignKey, err error) {
+func (repo *PgDBRepository) GetSignKeyByID(ctx context.Context, id int, signKeyType string) (signKey domain.SignKey, err error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
@@ -47,7 +47,7 @@ func (repo *pgDBRepository) GetSignKeyByID(ctx context.Context, id int, signKeyT
 	return signKey, nil
 }
 
-func (repo *pgDBRepository) RemoveSignKeyByID(ctx context.Context, id int, signKeyType string) (signKey domain.SignKey, err error) {
+func (repo *PgDBRepository) RemoveSignKeyByID(ctx context.Context, id int, signKeyType string) (signKey domain.SignKey, err error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 

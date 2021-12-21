@@ -9,7 +9,7 @@ import (
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-func (repo *pgDBRepository) CreateQueues(ctx context.Context, tx *sql.Tx, storeID int, queues []domain.Queue) error {
+func (repo *PgDBRepository) CreateQueues(ctx context.Context, tx *sql.Tx, storeID int, queues []domain.Queue) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 

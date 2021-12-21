@@ -20,12 +20,12 @@ type HttpAPIDeliveryConfig struct {
 
 type httpAPIDelivery struct {
 	logger  logging.LoggerTool
-	usecase usecase.UseCaseInterface
+	usecase *usecase.Usecase
 	broker  *broker.Broker
 	config  HttpAPIDeliveryConfig
 }
 
-func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middleware.Middleware, usecase usecase.UseCaseInterface, broker *broker.Broker, config HttpAPIDeliveryConfig) {
+func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middleware.Middleware, usecase *usecase.Usecase, broker *broker.Broker, config HttpAPIDeliveryConfig) {
 	had := &httpAPIDelivery{logger, usecase, broker, config}
 
 	// stores

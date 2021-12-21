@@ -7,12 +7,12 @@ import (
 	"github.com/jerry0420/queue-system/backend/logging"
 )
 
-type pgDBRepository struct {
+type PgDBRepository struct {
 	db             *sql.DB
 	logger         logging.LoggerTool
 	contextTimeOut time.Duration
 }
 
-func NewPGDBRepository(db *sql.DB, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBRepositoryInterface {
-	return &pgDBRepository{db, logger, contextTimeOut}
+func NewPGDBRepository(db *sql.DB, logger logging.LoggerTool, contextTimeOut time.Duration) *PgDBRepository {
+	return &PgDBRepository{db, logger, contextTimeOut}
 }

@@ -13,7 +13,7 @@ type UsecaseConfig struct {
 	StoreDuration time.Duration
 }
 
-type usecase struct {
+type Usecase struct {
 	pgDBRepository         pgDB.PgDBRepositoryInterface
 	grpcServicesRepository grpcServices.GrpcServicesRepositoryInterface
 	logger                 logging.LoggerTool
@@ -21,10 +21,10 @@ type usecase struct {
 }
 
 func NewUsecase(
-	pgDBRepository pgDB.PgDBRepositoryInterface,
+	pgDBRepository *pgDB.PgDBRepository,
 	grpcServicesRepository grpcServices.GrpcServicesRepositoryInterface,
 	logger logging.LoggerTool,
 	usecaseConfig UsecaseConfig,
-) UseCaseInterface {
-	return &usecase{pgDBRepository, grpcServicesRepository, logger, usecaseConfig}
+) *Usecase {
+	return &Usecase{pgDBRepository, grpcServicesRepository, logger, usecaseConfig}
 }

@@ -9,7 +9,7 @@ import (
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-func (repo *pgDBRepository) GetStoreByEmail(ctx context.Context, email string) (domain.Store, error) {
+func (repo *PgDBRepository) GetStoreByEmail(ctx context.Context, email string) (domain.Store, error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
@@ -28,7 +28,7 @@ func (repo *pgDBRepository) GetStoreByEmail(ctx context.Context, email string) (
 	return store, nil
 }
 
-func (repo *pgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
+func (repo *PgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
@@ -119,7 +119,7 @@ func (repo *pgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Conte
 	return storeWithQueues, nil
 }
 
-func (repo *pgDBRepository) CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
+func (repo *PgDBRepository) CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
@@ -159,7 +159,7 @@ func (repo *pgDBRepository) CreateStore(ctx context.Context, store *domain.Store
 	return nil
 }
 
-func (repo *pgDBRepository) UpdateStore(ctx context.Context, store *domain.Store, fieldName string, newFieldValue string) error {
+func (repo *PgDBRepository) UpdateStore(ctx context.Context, store *domain.Store, fieldName string, newFieldValue string) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
@@ -180,7 +180,7 @@ func (repo *pgDBRepository) UpdateStore(ctx context.Context, store *domain.Store
 	return nil
 }
 
-func (repo *pgDBRepository) RemoveStoreByID(ctx context.Context, id int) error {
+func (repo *PgDBRepository) RemoveStoreByID(ctx context.Context, id int) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
