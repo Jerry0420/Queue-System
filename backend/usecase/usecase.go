@@ -14,7 +14,7 @@ type UsecaseConfig struct {
 }
 
 type Usecase struct {
-	pgDBRepository         pgDB.PgDBRepositoryInterface
+	pgDBRepository         *pgDB.PgDBRepository
 	grpcServicesRepository grpcServices.GrpcServicesRepositoryInterface
 	logger                 logging.LoggerTool
 	config                 UsecaseConfig
