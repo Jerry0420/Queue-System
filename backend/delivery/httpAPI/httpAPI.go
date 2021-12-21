@@ -31,22 +31,22 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 	// stores
 	router.HandleFunc(
 		V_1("/stores"),
-		had.storeOpen,
+		had.openStore,
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
 		V_1("/stores/signin"),
-		had.storeSignin,
+		had.signinStore,
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
 		V_1("/stores/token"),
-		had.tokenRefresh,
+		had.refreshToken,
 	).Methods(http.MethodPut)
 
 	router.Handle(
 		V_1("/stores/{id:[0-9]+}"),
-		mw.AuthenticationMiddleware(http.HandlerFunc(had.storeClose)),
+		mw.AuthenticationMiddleware(http.HandlerFunc(had.closeStore)),
 	).Methods(http.MethodDelete)
 
 	router.HandleFunc(
@@ -92,7 +92,7 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 		V_1("/customers/{id:[0-9]+}"),
 		mw.AuthenticationMiddleware(http.HandlerFunc(had.customerUpdate)),
 	).Methods(http.MethodPut)
-	
+
 	// base routes
 	// these two routes will just response to the client directly, and will not go into any middleware.
 	router.MethodNotAllowedHandler = http.HandlerFunc(had.methodNotAllow)

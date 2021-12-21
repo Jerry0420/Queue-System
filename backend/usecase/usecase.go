@@ -11,6 +11,7 @@ import (
 type UsecaseConfig struct {
 	Domain        string
 	StoreDuration time.Duration
+	TokenDuration time.Duration
 }
 
 type Usecase struct {

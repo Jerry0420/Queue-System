@@ -79,6 +79,7 @@ func main() {
 		usecase.UsecaseConfig{
 			Domain:        config.ServerConfig.DOMAIN(),
 			StoreDuration: config.ServerConfig.STOREDURATION(),
+			TokenDuration: config.ServerConfig.TOKENDURATION(),
 		},
 	)
 

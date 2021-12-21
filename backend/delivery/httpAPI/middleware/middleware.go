@@ -18,11 +18,11 @@ import (
 )
 
 type Middleware struct {
-	usecase usecase.UseCaseInterface
+	usecase *usecase.Usecase
 	logger  logging.LoggerTool
 }
 
-func NewMiddleware(router *mux.Router, logger logging.LoggerTool, usecase usecase.UseCaseInterface) *Middleware {
+func NewMiddleware(router *mux.Router, logger logging.LoggerTool, usecase *usecase.Usecase) *Middleware {
 	mw := &Middleware{usecase, logger}
 	router.Use(mw.LoggingMiddleware)
 	return mw

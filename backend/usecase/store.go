@@ -14,8 +14,91 @@ import (
 )
 
 func (uc *Usecase) CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
-	err := uc.pgDBRepository.CreateStore(ctx, store, queues)
+	err := uc.VerifyPasswordLength(store.Password)
+	if err != nil {
+		return err
+	}
+	encryptedPassword, err := uc.EncryptPassword(store.Password)
+	if err != nil {
+		return err
+	}
+	store.Password = encryptedPassword
+
+	storeInDb, err := uc.pgDBRepository.GetStoreByEmail(ctx, store.Email)
+	storeInDb, err = uc.CheckStoreExpirationStatus(storeInDb, err)
+	switch {
+	case storeInDb != domain.Store{} && errors.Is(err, domain.ServerError40903):
+		err = uc.CloseStore(ctx, storeInDb)
+		if err != nil {
+			return err
+		}
+	case storeInDb != domain.Store{} && errors.Is(err, domain.ServerError40901):
+		return err
+	}
+
+	err = uc.pgDBRepository.CreateStore(ctx, store, queues)
 	return err
+}
+
+func (uc *Usecase) SigninStore(ctx context.Context, incomingStore *domain.Store) (token string, refreshTokenExpiresAt time.Time,err error) {
+	storeInDb, err := uc.pgDBRepository.GetStoreByEmail(ctx, incomingStore.Email)
+	switch {
+	case storeInDb == domain.Store{} && err != nil:
+		return token, refreshTokenExpiresAt, err
+	case storeInDb != domain.Store{} && errors.Is(err, domain.ServerError40903):
+		err = uc.CloseStore(ctx, storeInDb)
+		return token, refreshTokenExpiresAt, err
+	}
+
+	err = uc.ValidatePassword(storeInDb.Password, incomingStore.Password)
+	if err != nil {
+		return token, refreshTokenExpiresAt, err
+	}
+
+	refreshTokenExpiresAt = storeInDb.CreatedAt.Add(uc.config.StoreDuration)
+	token, err = uc.GenerateToken(
+		ctx,
+		storeInDb,
+		domain.SignKeyTypes.REFRESH,
+		refreshTokenExpiresAt,
+	)
+	if err != nil {
+		return token, refreshTokenExpiresAt, err
+	}
+	
+	*incomingStore = storeInDb
+	return token, refreshTokenExpiresAt, nil
+}
+
+func (uc *Usecase) RefreshToken(ctx context.Context, store *domain.Store) (
+	normalToken string, 
+	sessionToken string, 
+	tokenExpiresAt time.Time, 
+	err error,
+	) {
+	tokenExpiresAt = time.Now().Add(uc.config.TokenDuration)
+	// normal token
+	normalToken, err = uc.GenerateToken(
+		ctx,
+		*store,
+		domain.SignKeyTypes.NORMAL,
+		tokenExpiresAt,
+	)
+	if err != nil {
+		return normalToken, sessionToken, tokenExpiresAt, err
+	}
+	// session token
+	sessionToken, err = uc.GenerateToken(
+		ctx,
+		*store,
+		domain.SignKeyTypes.SESSION,
+		tokenExpiresAt,
+	)
+	if err != nil {
+		return normalToken, sessionToken, tokenExpiresAt, err
+	}
+
+	return normalToken, sessionToken, tokenExpiresAt, nil
 }
 
 func (uc *Usecase) GetStoreByEmail(ctx context.Context, email string) (domain.Store, error) {
@@ -62,7 +145,7 @@ func (uc *Usecase) EncryptPassword(password string) (string, error) {
 	return string(cryptedPassword), nil
 }
 
-func (uc *Usecase) ValidatePassword(ctx context.Context, passwordInDb string, incomingPassword string) error {
+func (uc *Usecase) ValidatePassword(passwordInDb string, incomingPassword string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(passwordInDb), []byte(incomingPassword))
 	switch {
 	case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
