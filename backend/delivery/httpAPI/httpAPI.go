@@ -51,12 +51,12 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 
 	router.HandleFunc(
 		V_1("/stores/password/forgot"),
-		had.passwordForgot,
+		had.forgotPassword,
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
 		V_1("/stores/{id:[0-9]+}/password"),
-		had.passwordUpdate,
+		had.updatePassword,
 	).Methods(http.MethodPatch).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
@@ -66,7 +66,7 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 
 	router.Handle(
 		V_1("/stores/{id:[0-9]+}"),
-		mw.AuthenticationMiddleware(http.HandlerFunc(had.storeUpdate)),
+		mw.AuthenticationMiddleware(http.HandlerFunc(had.updateStoreDescription)),
 	).Methods(http.MethodPut)
 
 	//queues
@@ -74,12 +74,12 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 	// sessions
 	router.HandleFunc(
 		V_1("/sessions/sse"),
-		had.sessionCreate,
+		had.createSession,
 	).Methods(http.MethodGet) // get method for sse.
 
 	router.Handle(
 		V_1("/sessions/{id}"),
-		mw.SessionAuthenticationMiddleware(http.HandlerFunc(had.sessionScanned)),
+		mw.SessionAuthenticationMiddleware(http.HandlerFunc(had.scannedSession)),
 	).Methods(http.MethodPut).Headers("Content-Type", "application/json")
 
 	//customers

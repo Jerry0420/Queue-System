@@ -9,9 +9,10 @@ import (
 )
 
 type UsecaseConfig struct {
-	Domain        string
-	StoreDuration time.Duration
-	TokenDuration time.Duration
+	Domain                string
+	StoreDuration         time.Duration
+	TokenDuration         time.Duration
+	PasswordTokenDuration time.Duration
 }
 
 type Usecase struct {

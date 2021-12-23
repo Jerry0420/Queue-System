@@ -31,7 +31,7 @@ func (repo *PgDBRepository) CreateSession(ctx context.Context, store domain.Stor
 	return session, nil
 }
 
-func (repo *PgDBRepository) UpdateSession(ctx context.Context, session domain.StoreSession, oldStatus string, newStatus string) error {
+func (repo *PgDBRepository) UpdateSessionStatus(ctx context.Context, session *domain.StoreSession, oldStatus string, newStatus string) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 

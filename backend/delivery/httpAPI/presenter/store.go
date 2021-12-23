@@ -59,7 +59,6 @@ func StoreGet(store domain.StoreWithQueues) string {
 	storeJson, _ = json.Marshal(store)
 	json.Unmarshal(storeJson, &storeMap)
 	delete(storeMap, "password")
-	delete(storeMap, "created_at")
 	var flushedData bytes.Buffer
 	json.NewEncoder(&flushedData).Encode(storeMap)
 	return flushedData.String()

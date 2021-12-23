@@ -2,10 +2,8 @@ package middleware
 
 import (
 	"context"
-	"errors"
 	"net/http"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -55,22 +53,15 @@ func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 
 func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		encryptToken := strings.Split(r.Header.Get("Authorization"), " ")
-		if len(encryptToken) == 2 && strings.ToLower(encryptToken[0]) == "bearer" {
-			tokenClaims, err := mw.usecase.VerifyToken(r.Context(), encryptToken[1], domain.SignKeyTypes.NORMAL, mw.usecase.GetSignKeyByID)
-			if err != nil {
-				presenter.JsonResponse(w, nil, err)
-				return
-			}
-
-			ctx := context.WithValue(r.Context(), domain.SignKeyTypes.NORMAL, tokenClaims)
-			mw.logger.INFOf(ctx, "storeID: %d", tokenClaims.StoreID)
-			r = r.WithContext(ctx)
-
-		} else {
-			presenter.JsonResponse(w, nil, domain.ServerError40102)
+		normalToken := r.Header.Get("Authorization")
+		tokenClaims, err := mw.usecase.VerifyNormalToken(r.Context(), normalToken)
+		if err != nil {
+			presenter.JsonResponse(w, nil, err)
 			return
 		}
+		ctx := context.WithValue(r.Context(), domain.SignKeyTypes.NORMAL, tokenClaims)
+		mw.logger.INFOf(ctx, "storeID: %d", tokenClaims.StoreID)
+		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -79,25 +70,13 @@ func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 func (mw *Middleware) SessionAuthenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionId := r.Header.Get("Authorization")
-		if sessionId != "" {
-			session, store, err := mw.usecase.GetSessionAndStoreBySessionId(r.Context(), sessionId)
-			store, err = mw.usecase.CheckStoreExpirationStatus(store, err)
-			switch {
-			case store == domain.Store{} && err != nil:
-				presenter.JsonResponse(w, nil, err)
-				return
-			case store != domain.Store{} && errors.Is(err, domain.ServerError40903):
-				_ = mw.usecase.CloseStore(r.Context(), store)
-				presenter.JsonResponse(w, nil, domain.ServerError40903)
-				return
-			}
-
-			ctx := context.WithValue(r.Context(), domain.StoreSessionString, session)
-			r = r.WithContext(ctx)
-		} else {
-			presenter.JsonResponse(w, nil, domain.ServerError40106)
+		session, _, err := mw.usecase.GetSessionAndStoreBySessionId(r.Context(), sessionId)
+		if err != nil {
+			presenter.JsonResponse(w, nil, err)
 			return
 		}
+		ctx := context.WithValue(r.Context(), domain.StoreSessionString, session)
+		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
 }

@@ -17,6 +17,12 @@ func (had *httpAPIDelivery) openStore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = had.usecase.VerifyPasswordLength(store.Password)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+
 	err = had.usecase.CreateStore(r.Context(), &store, queues)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -33,14 +39,16 @@ func (had *httpAPIDelivery) signinStore(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	token, refreshTokenExpiresAt, err := had.usecase.SigninStore(
+	store, token, refreshTokenExpiresAt, err := had.usecase.SigninStore(
 		r.Context(),
-		&incomingStore,
+		incomingStore.Email,
+		incomingStore.Password,
 	)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
+
 	cookie := http.Cookie{
 		Name:     domain.SignKeyTypes.REFRESH,
 		Value:    token,
@@ -51,7 +59,7 @@ func (had *httpAPIDelivery) signinStore(w http.ResponseWriter, r *http.Request) 
 		MaxAge:   int(refreshTokenExpiresAt.Sub(time.Now())),
 	}
 	http.SetCookie(w, &cookie)
-	presenter.JsonResponseOK(w, presenter.StoreForResponse(incomingStore))
+	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
 func (had *httpAPIDelivery) refreshToken(w http.ResponseWriter, r *http.Request) {
@@ -60,24 +68,8 @@ func (had *httpAPIDelivery) refreshToken(w http.ResponseWriter, r *http.Request)
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	tokenClaims, err := had.usecase.VerifyToken(
-		r.Context(),
-		encryptedRefreshToken.Value,
-		domain.SignKeyTypes.REFRESH,
-		had.usecase.GetSignKeyByID,
-	)
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-	store := domain.Store{
-		ID:        tokenClaims.StoreID,
-		Email:     tokenClaims.Email,
-		Name:      tokenClaims.Name,
-		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
-	}
 
-	normalToken, sessionToken, tokenExpiresAt, err := had.usecase.RefreshToken(r.Context(), &store)
+	store, normalToken, sessionToken, tokenExpiresAt, err := had.usecase.RefreshToken(r.Context(), encryptedRefreshToken.Value)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -106,43 +98,26 @@ func (had *httpAPIDelivery) closeStore(w http.ResponseWriter, r *http.Request) {
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
-func (had *httpAPIDelivery) passwordForgot(w http.ResponseWriter, r *http.Request) {
+func (had *httpAPIDelivery) forgotPassword(w http.ResponseWriter, r *http.Request) {
 	store, err := validator.StorePasswordForgot(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
-	store, err = had.usecase.GetStoreByEmail(r.Context(), store.Email)
+	store, err = had.usecase.ForgetPassword(r.Context(), store.Email)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	passwordToken, err := had.usecase.GenerateToken(r.Context(), store, domain.SignKeyTypes.PASSWORD, time.Now().Add(had.config.PasswordTokenDuration))
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-
-	_, _ = had.usecase.GenerateEmailContentOfForgetPassword(passwordToken, store)
-	// TODO: SendEmail function (grpc)
+	
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
-func (had *httpAPIDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) {
-	jsonBody, id, err := validator.StorePasswordUpdate(r)
+func (had *httpAPIDelivery) updatePassword(w http.ResponseWriter, r *http.Request) {
+	jsonBody, _, err := validator.StorePasswordUpdate(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
-		return
-	}
-
-	tokenClaims, err := had.usecase.VerifyToken(r.Context(), jsonBody["password_token"], domain.SignKeyTypes.PASSWORD, had.usecase.RemoveSignKeyByID)
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-	if id != tokenClaims.StoreID {
-		presenter.JsonResponse(w, nil, domain.ServerError40004)
 		return
 	}
 
@@ -152,26 +127,15 @@ func (had *httpAPIDelivery) passwordUpdate(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	store := domain.Store{
-		ID:        tokenClaims.StoreID,
-		Email:     tokenClaims.Email,
-		Name:      tokenClaims.Name,
-		Password:  jsonBody["password"],
-		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
-	}
-	encryptedPassword, err := had.usecase.EncryptPassword(store.Password)
+	store, err := had.usecase.UpdatePassword(
+		r.Context(), 
+		jsonBody["password_token"], 
+		jsonBody["password"],
+	)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	store.Password = encryptedPassword
-
-	err = had.usecase.UpdateStore(r.Context(), &store, "password", store.Password)
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
@@ -215,14 +179,14 @@ func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func (had *httpAPIDelivery) storeUpdate(w http.ResponseWriter, r *http.Request) {
+func (had *httpAPIDelivery) updateStoreDescription(w http.ResponseWriter, r *http.Request) {
 	store, err := validator.StoreDescriptionUpdate(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
-	err = had.usecase.UpdateStore(r.Context(), &store, "description", store.Description)
+	err = had.usecase.UpdateStoreDescription(r.Context(), store.Description, &store)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
