@@ -29,7 +29,7 @@ down:
 # ==========================================================
 
 add_crontab:
-	(crontab -l 2>/dev/null; echo "* * * * * curl -X DELETE 'http://$(server)/api/v1/routine/stores'") | crontab -
+	(crontab -l 2>/dev/null; echo "* * * * * curl --max-time 30 --connect-timeout 5 -X DELETE --url $(server)/api/v1/routine/stores") | crontab -
 
 # ==========================================================
 
@@ -107,4 +107,4 @@ microk8s_enable_addons:
 # hostname -I | awk '{print $1}'
 # multipass find
 # multipass info --all
-# docker run -it --rm curlimages/curl:latest curl -X DELETE'http://$1/api/v1/routine/stores'
+# docker run -it --rm curlimages/curl:latest curl --max-time 30 --connect-timeout 5 -X DELETE --url {{server}}/api/v1/routine/stores
