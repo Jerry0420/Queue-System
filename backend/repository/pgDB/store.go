@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jerry0420/queue-system/backend/domain"
 )
@@ -206,4 +207,32 @@ func (repo *PgDBRepository) RemoveStoreByID(ctx context.Context, id int) error {
 		return domain.ServerError40402
 	}
 	return nil
+}
+
+func (repo *PgDBRepository) RemoveStoreByRoutine(ctx context.Context, expiresTime time.Time) (deletedStoresCount int64, err error) {
+	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+	defer cancel()
+	
+	query := `DELETE FROM stores WHERE created_at<=$1`
+	stmt, err := repo.db.PrepareContext(ctx, query)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return deletedStoresCount, domain.ServerError50002
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx, expiresTime)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return deletedStoresCount, domain.ServerError50002
+	}
+	deletedStoresCount, err = result.RowsAffected()
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return deletedStoresCount, domain.ServerError50002
+	}
+	if deletedStoresCount == 0 {
+		return deletedStoresCount, domain.ServerError40402
+	}
+	return deletedStoresCount, nil
 }

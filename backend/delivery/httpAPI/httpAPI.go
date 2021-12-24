@@ -69,6 +69,11 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 		mw.AuthenticationMiddleware(http.HandlerFunc(had.updateStoreDescription)),
 	).Methods(http.MethodPut)
 
+	router.HandleFunc(
+		V_1("/routine/stores"),
+		had.closeStorerRoutine,
+	).Methods(http.MethodDelete)
+
 	//queues
 
 	// sessions

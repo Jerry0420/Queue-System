@@ -122,6 +122,11 @@ func (uc *Usecase) CloseStore(ctx context.Context, store domain.Store) error {
 	return err
 }
 
+func (uc *Usecase) CloseStoreRoutine(ctx context.Context) (deletedStoresCount int64, err error) {
+	deletedStoresCount, err = uc.pgDBRepository.RemoveStoreByRoutine(ctx, time.Now().Add(-24*time.Hour))
+	return deletedStoresCount, err
+}
+
 func (uc *Usecase) ForgetPassword(ctx context.Context, email string) (store domain.Store, err error) {
 	store, err = uc.pgDBRepository.GetStoreByEmail(ctx, email)
 	if err != nil {
