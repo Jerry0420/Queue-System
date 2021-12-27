@@ -119,7 +119,7 @@ func (had *httpAPIDelivery) forgotPassword(w http.ResponseWriter, r *http.Reques
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	
+
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
@@ -137,8 +137,8 @@ func (had *httpAPIDelivery) updatePassword(w http.ResponseWriter, r *http.Reques
 	}
 
 	store, err := had.usecase.UpdatePassword(
-		r.Context(), 
-		jsonBody["password_token"], 
+		r.Context(),
+		jsonBody["password_token"],
 		jsonBody["password"],
 	)
 	if err != nil {
@@ -148,7 +148,7 @@ func (had *httpAPIDelivery) updatePassword(w http.ResponseWriter, r *http.Reques
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
-func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request) {
+func (had *httpAPIDelivery) getStoreInfoWithSSE(w http.ResponseWriter, r *http.Request) {
 	storeId, err := validator.StoreInfoGet(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -169,7 +169,7 @@ func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request)
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	fmt.Fprintf(w, "data: %v\n\n", presenter.StoreGet(store))
+	fmt.Fprintf(w, "data: %v\n\n", presenter.StoreGetForSSE(store))
 	flusher.Flush()
 
 	for {
@@ -180,12 +180,27 @@ func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request)
 				presenter.JsonResponse(w, nil, err)
 				return
 			}
-			fmt.Fprintf(w, "data: %v\n\n", presenter.StoreGet(store))
+			fmt.Fprintf(w, "data: %v\n\n", presenter.StoreGetForSSE(store))
 			flusher.Flush()
 		case <-r.Context().Done():
 			return
 		}
 	}
+}
+
+func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request) {
+	storeId, err := validator.StoreInfoGet(r)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+
+	store, err := had.usecase.GetStoreWIthQueuesAndCustomersById(r.Context(), storeId)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+	presenter.JsonResponseOK(w, presenter.StoreGet(store))
 }
 
 func (had *httpAPIDelivery) updateStoreDescription(w http.ResponseWriter, r *http.Request) {

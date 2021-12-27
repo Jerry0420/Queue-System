@@ -61,8 +61,13 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 
 	router.HandleFunc(
 		V_1("/stores/{id:[0-9]+}/sse"),
-		had.getStoreInfo,
+		had.getStoreInfoWithSSE,
 	).Methods(http.MethodGet) // get method for sse.
+
+	router.HandleFunc(
+		V_1("/stores/{id:[0-9]+}"),
+		had.getStoreInfo,
+	).Methods(http.MethodGet)
 
 	router.Handle(
 		V_1("/stores/{id:[0-9]+}"),
