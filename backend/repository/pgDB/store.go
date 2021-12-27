@@ -3,6 +3,7 @@ package pgDB
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -55,7 +56,7 @@ func (repo *PgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Conte
 	var store domain.Store
 	queues := make(map[int]domain.Queue)
 	customers := make(map[int][]domain.Customer)
-	
+
 	for rows.Next() {
 		var queue domain.Queue
 		var customer domain.Customer
@@ -112,8 +113,8 @@ func (repo *PgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Conte
 	storeWithQueues = domain.StoreWithQueues{ID: storeId, Email: store.Email, Name: store.Name, Description: store.Description, CreatedAt: store.CreatedAt}
 	for _, queue := range queues {
 		storeWithQueues.Queues = append(storeWithQueues.Queues, domain.QueueWithCustomers{
-			ID: queue.ID,
-			Name: queue.Name,
+			ID:        queue.ID,
+			Name:      queue.Name,
 			Customers: customers[queue.ID],
 		})
 	}
@@ -190,30 +191,84 @@ func (repo *PgDBRepository) RemoveStoreByID(ctx context.Context, id int) error {
 	return nil
 }
 
-func (repo *PgDBRepository) RemoveStoreByRoutine(ctx context.Context, expiresTime time.Time) (deletedStoresCount int64, err error) {
+func (repo *PgDBRepository) GetAllExpiredStores(ctx context.Context, tx *sql.Tx, expiresTime time.Time) (stores []domain.StoreWithQueues, err error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
-	
-	query := `DELETE FROM stores WHERE created_at<=$1`
-	stmt, err := repo.db.PrepareContext(ctx, query)
-	if err != nil {
-		repo.logger.ERRORf("error %v", err)
-		return deletedStoresCount, domain.ServerError50002
-	}
-	defer stmt.Close()
 
-	result, err := stmt.ExecContext(ctx, expiresTime)
+	storesWithMap := make(map[int]domain.StoreWithQueues)
+
+	query := `SELECT 
+					stores.id, stores.email, stores.name, stores.created_at, 
+					queues.id AS queue_id, queues.name AS queue_name, 
+					customers.id AS customer_id, customers.name AS customer_name, customers.phone AS customer_phone, 
+					customers.status AS customer_status,
+					customers.created_at AS customer_created_at
+			FROM stores
+			INNER JOIN queues ON stores.id = queues.store_id
+			INNER JOIN customers ON queues.id = customers.queue_id
+			WHERE stores.created_at<=$1
+			ORDER BY stores.id ASC 
+			FOR UPDATE`
+
+	rows, err := repo.db.QueryContext(ctx, query, expiresTime)
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)
-		return deletedStoresCount, domain.ServerError50002
+		return stores, domain.ServerError50002
 	}
-	deletedStoresCount, err = result.RowsAffected()
-	if err != nil {
-		repo.logger.ERRORf("error %v", err)
-		return deletedStoresCount, domain.ServerError50002
+
+	for rows.Next() {
+		var store domain.Store
+		var queue domain.Queue
+		var customer domain.Customer
+		err := rows.Scan(
+			&store.ID, &store.Email, &store.Name, &store.CreatedAt,
+			&queue.ID, &queue.Name,
+			&customer.ID, &customer.Name, &customer.Phone, &customer.Status, &customer.CreatedAt,
+		)
+		if err != nil {
+			repo.logger.ERRORf("error %v", err)
+			return stores, domain.ServerError50002
+		}
+		if storeWithQueues, ok := storesWithMap[store.ID]; ok {
+			findQueue := false
+			for _, queueInStoreWithQueues := range storeWithQueues.Queues {
+				if queueInStoreWithQueues.ID == queue.ID {
+					queueInStoreWithQueues.Customers = append(queueInStoreWithQueues.Customers, customer)
+					findQueue = true
+					break
+				}
+			}
+			if findQueue == false {
+				storeWithQueues.Queues = append(storeWithQueues.Queues, domain.QueueWithCustomers{
+					ID:   queue.ID,
+					Name: queue.Name,
+					Customers: []domain.Customer{
+						customer,
+					},
+				})
+			}
+		} else {
+			storesWithMap[store.ID] = domain.StoreWithQueues{
+				ID:        store.ID,
+				Email:     store.Email,
+				Name:      store.Name,
+				CreatedAt: store.CreatedAt,
+				Queues: []domain.QueueWithCustomers{
+					domain.QueueWithCustomers{
+						ID:   queue.ID,
+						Name: queue.Name,
+						Customers: []domain.Customer{
+							customer,
+						},
+					},
+				},
+			}
+		}
 	}
-	if deletedStoresCount == 0 {
-		return deletedStoresCount, domain.ServerError40402
-	}
-	return deletedStoresCount, nil
+	defer rows.Close()
+	var queuesMap map[int]interface{}
+	queuesJson, _ := json.Marshal(storesWithMap)
+	json.Unmarshal(queuesJson, &queuesMap)
+	fmt.Println(queuesMap)
+	return stores, nil
 }

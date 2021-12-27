@@ -99,12 +99,12 @@ func (had *httpAPIDelivery) closeStore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (had *httpAPIDelivery) closeStorerRoutine(w http.ResponseWriter, r *http.Request) {
-	deletedStoresCount, err := had.usecase.CloseStoreRoutine(r.Context())
+	err := had.usecase.CloseStoreRoutine(r.Context())
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	presenter.JsonResponseOK(w, map[string]interface{}{"result": deletedStoresCount})
+	presenter.JsonResponseOK(w, nil)
 }
 
 func (had *httpAPIDelivery) forgotPassword(w http.ResponseWriter, r *http.Request) {
