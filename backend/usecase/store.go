@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -127,14 +128,29 @@ func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
 	}
 	defer uc.pgDBRepository.RollbackTx(tx)
 
-	_, err = uc.pgDBRepository.GetAllExpiredStores(ctx, tx, time.Now().Add(-24*time.Hour))
+	storesWithMap, err := uc.pgDBRepository.GetAllExpiredStores(ctx, tx, time.Now().Add(-24*time.Hour))
 	if err != nil {
 		return err
 	}
 
-	err = uc.pgDBRepository.CommitTx(tx)
-	if err != nil {
-		return err
+	if len(storesWithMap) > 0 {
+		storeIds := make([]string, len(storesWithMap) - 1)
+		stores := make([]domain.StoreWithQueues, len(storesWithMap) - 1)
+		for id, store := range storesWithMap {
+			storeIds = append(storeIds, strconv.Itoa(id))
+			stores = append(stores, *store)
+		}
+		// TODO: send email and csv
+
+		err = uc.pgDBRepository.RemoveStoreByIDs(ctx, tx, storeIds)
+		if err != nil {
+			return err
+		}
+
+		err = uc.pgDBRepository.CommitTx(tx)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }

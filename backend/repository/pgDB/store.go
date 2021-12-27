@@ -3,9 +3,9 @@ package pgDB
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jerry0420/queue-system/backend/domain"
@@ -55,7 +55,7 @@ func (repo *PgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Conte
 
 	var store domain.Store
 	queues := make(map[int]domain.Queue)
-	customers := make(map[int][]domain.Customer)
+	customers := make(map[int][]*domain.Customer)
 
 	for rows.Next() {
 		var queue domain.Queue
@@ -71,7 +71,7 @@ func (repo *PgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Conte
 			return storeWithQueues, domain.ServerError50002
 		}
 		queues[queue.ID] = queue
-		customers[queue.ID] = append(customers[queue.ID], customer)
+		customers[queue.ID] = append(customers[queue.ID], &customer)
 	}
 	defer rows.Close()
 
@@ -112,7 +112,7 @@ func (repo *PgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Conte
 
 	storeWithQueues = domain.StoreWithQueues{ID: storeId, Email: store.Email, Name: store.Name, Description: store.Description, CreatedAt: store.CreatedAt}
 	for _, queue := range queues {
-		storeWithQueues.Queues = append(storeWithQueues.Queues, domain.QueueWithCustomers{
+		storeWithQueues.Queues = append(storeWithQueues.Queues, &domain.QueueWithCustomers{
 			ID:        queue.ID,
 			Name:      queue.Name,
 			Customers: customers[queue.ID],
@@ -191,11 +191,42 @@ func (repo *PgDBRepository) RemoveStoreByID(ctx context.Context, id int) error {
 	return nil
 }
 
-func (repo *PgDBRepository) GetAllExpiredStores(ctx context.Context, tx *sql.Tx, expiresTime time.Time) (stores []domain.StoreWithQueues, err error) {
+func (repo *PgDBRepository) RemoveStoreByIDs(ctx context.Context, tx *sql.Tx, storeIds []string) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
-	storesWithMap := make(map[int]domain.StoreWithQueues)
+	// it's for internal usage, and storeIds slice is from other function...no need to worry the sql ingection!
+	param := "(" + strings.Join(storeIds, ",") + ")"
+
+	query := fmt.Sprintf(`DELETE FROM stores WHERE id IN %s`, param)
+	stmt, err := tx.PrepareContext(ctx, query)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
+	defer stmt.Close()
+
+	result, err := stmt.ExecContext(ctx)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
+	num, err := result.RowsAffected()
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
+	if num == 0 {
+		return domain.ServerError40402
+	}
+	return nil
+}
+
+func (repo *PgDBRepository) GetAllExpiredStores(ctx context.Context, tx *sql.Tx, expiresTime time.Time) (storesWithMap map[int]*domain.StoreWithQueues, err error) {
+	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+	defer cancel()
+
+	storesWithMap = make(map[int]*domain.StoreWithQueues)
 
 	query := `SELECT 
 					stores.id, stores.email, stores.name, stores.created_at, 
@@ -207,13 +238,12 @@ func (repo *PgDBRepository) GetAllExpiredStores(ctx context.Context, tx *sql.Tx,
 			INNER JOIN queues ON stores.id = queues.store_id
 			INNER JOIN customers ON queues.id = customers.queue_id
 			WHERE stores.created_at<=$1
-			ORDER BY stores.id ASC 
-			FOR UPDATE`
+			ORDER BY stores.id ASC FOR UPDATE`
 
 	rows, err := repo.db.QueryContext(ctx, query, expiresTime)
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)
-		return stores, domain.ServerError50002
+		return storesWithMap, domain.ServerError50002
 	}
 
 	for rows.Next() {
@@ -227,38 +257,38 @@ func (repo *PgDBRepository) GetAllExpiredStores(ctx context.Context, tx *sql.Tx,
 		)
 		if err != nil {
 			repo.logger.ERRORf("error %v", err)
-			return stores, domain.ServerError50002
+			return storesWithMap, domain.ServerError50002
 		}
 		if storeWithQueues, ok := storesWithMap[store.ID]; ok {
 			findQueue := false
 			for _, queueInStoreWithQueues := range storeWithQueues.Queues {
 				if queueInStoreWithQueues.ID == queue.ID {
-					queueInStoreWithQueues.Customers = append(queueInStoreWithQueues.Customers, customer)
+					queueInStoreWithQueues.Customers = append(queueInStoreWithQueues.Customers, &customer)
 					findQueue = true
 					break
 				}
 			}
 			if findQueue == false {
-				storeWithQueues.Queues = append(storeWithQueues.Queues, domain.QueueWithCustomers{
+				storeWithQueues.Queues = append(storeWithQueues.Queues, &domain.QueueWithCustomers{
 					ID:   queue.ID,
 					Name: queue.Name,
-					Customers: []domain.Customer{
-						customer,
+					Customers: []*domain.Customer{
+						&customer,
 					},
 				})
 			}
 		} else {
-			storesWithMap[store.ID] = domain.StoreWithQueues{
+			storesWithMap[store.ID] = &domain.StoreWithQueues{
 				ID:        store.ID,
 				Email:     store.Email,
 				Name:      store.Name,
 				CreatedAt: store.CreatedAt,
-				Queues: []domain.QueueWithCustomers{
-					domain.QueueWithCustomers{
+				Queues: []*domain.QueueWithCustomers{
+					&domain.QueueWithCustomers{
 						ID:   queue.ID,
 						Name: queue.Name,
-						Customers: []domain.Customer{
-							customer,
+						Customers: []*domain.Customer{
+							&customer,
 						},
 					},
 				},
@@ -266,9 +296,5 @@ func (repo *PgDBRepository) GetAllExpiredStores(ctx context.Context, tx *sql.Tx,
 		}
 	}
 	defer rows.Close()
-	var queuesMap map[int]interface{}
-	queuesJson, _ := json.Marshal(storesWithMap)
-	json.Unmarshal(queuesJson, &queuesMap)
-	fmt.Println(queuesMap)
-	return stores, nil
+	return storesWithMap, nil
 }

@@ -43,6 +43,10 @@ func (repo *PgDBRepository) CreateCustomers(ctx context.Context, tx *sql.Tx, cus
 	defer stmt.Close()
 
 	rows, err := stmt.QueryContext(ctx, queryRowParams...)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
 	customers = customers[:0] // clear customers slice
 
 	for rows.Next() {
