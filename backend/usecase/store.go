@@ -21,8 +21,27 @@ func (uc *Usecase) CreateStore(ctx context.Context, store *domain.Store, queues 
 	}
 	store.Password = encryptedPassword
 
-	err = uc.pgDBRepository.CreateStore(ctx, store, queues)
-	return err
+	tx, err := uc.pgDBRepository.BeginTx()
+	if err != nil {
+		return err
+	}
+	defer uc.pgDBRepository.RollbackTx(tx)
+
+	err = uc.pgDBRepository.CreateStore(ctx, tx, store, queues)
+	if err != nil {
+		return err
+	}
+
+	err = uc.pgDBRepository.CreateQueues(ctx, tx, store.ID, queues)
+	if err != nil {
+		return err
+	}
+
+	err = uc.pgDBRepository.CommitTx(tx)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (uc *Usecase) SigninStore(ctx context.Context, email string, password string) (store domain.Store, token string, refreshTokenExpiresAt time.Time, err error) {

@@ -120,16 +120,9 @@ func (repo *PgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Conte
 	return storeWithQueues, nil
 }
 
-func (repo *PgDBRepository) CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
+func (repo *PgDBRepository) CreateStore(ctx context.Context, tx *sql.Tx, store *domain.Store, queues []domain.Queue) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
-
-	tx, err := repo.db.BeginTx(ctx, nil)
-	if err != nil {
-		repo.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
-	defer tx.Rollback()
 
 	query := `INSERT INTO stores (name, email, password) VALUES ($1, $2, $3) RETURNING id,created_at`
 	stmt, err := tx.PrepareContext(ctx, query)
@@ -144,18 +137,6 @@ func (repo *PgDBRepository) CreateStore(ctx context.Context, store *domain.Store
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)
 		return domain.ServerError40901
-	}
-
-	err = repo.CreateQueues(ctx, tx, store.ID, queues)
-	if err != nil {
-		repo.logger.ERRORf("error %v", err)
-		return err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		repo.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
 	}
 	return nil
 }

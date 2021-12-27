@@ -3,27 +3,15 @@ package pgDB
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"strconv"
 
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-func (repo *PgDBRepository) CreateCustomers(ctx context.Context, session domain.StoreSession, oldStatus string, newStatus string, customers []domain.Customer) error {
+func (repo *PgDBRepository) CreateCustomers(ctx context.Context, tx *sql.Tx, customers []domain.Customer) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
-
-	tx, err := repo.db.BeginTx(ctx, nil)
-	if err != nil {
-		repo.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
-	defer tx.Rollback()
-
-	err = repo.UpdateSessionWithTx(ctx, tx, session, oldStatus, newStatus)
-	if err != nil {
-		repo.logger.ERRORf("error %v", err)
-		return err
-	}
 
 	variableCounts := 1
 	var query bytes.Buffer
@@ -70,11 +58,6 @@ func (repo *PgDBRepository) CreateCustomers(ctx context.Context, session domain.
 	}
 	defer rows.Close()
 
-	err = tx.Commit()
-	if err != nil {
-		repo.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
 	return nil
 }
 
