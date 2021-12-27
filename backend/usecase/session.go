@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"github.com/jerry0420/queue-system/backend/domain"
@@ -28,14 +27,5 @@ func (uc *Usecase) GetSessionAndStoreBySessionId(ctx context.Context, sessionId 
 		return session, store, domain.ServerError40106
 	}
 	session, store, err = uc.pgDBRepository.GetSessionAndStoreBySessionId(ctx, sessionId)
-	store, err = uc.CheckStoreExpirationStatus(store, err)
-	switch {
-	case store == domain.Store{} && err != nil:
-		return session, store, err
-	case store != domain.Store{} && errors.Is(err, domain.ServerError40903):
-		_ = uc.CloseStore(ctx, store)
-		return session, store, err
-	}
-
 	return session, store, nil
 }

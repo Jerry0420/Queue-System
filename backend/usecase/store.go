@@ -21,33 +21,12 @@ func (uc *Usecase) CreateStore(ctx context.Context, store *domain.Store, queues 
 	}
 	store.Password = encryptedPassword
 
-	storeInDb, err := uc.pgDBRepository.GetStoreByEmail(ctx, store.Email)
-	storeInDb, err = uc.CheckStoreExpirationStatus(storeInDb, err)
-	switch {
-	case storeInDb != domain.Store{} && errors.Is(err, domain.ServerError40903):
-		err = uc.CloseStore(ctx, storeInDb)
-		if err != nil {
-			return err
-		}
-	case storeInDb != domain.Store{} && errors.Is(err, domain.ServerError40901):
-		return err
-	}
-
 	err = uc.pgDBRepository.CreateStore(ctx, store, queues)
 	return err
 }
 
 func (uc *Usecase) SigninStore(ctx context.Context, email string, password string) (store domain.Store, token string, refreshTokenExpiresAt time.Time, err error) {
 	store, err = uc.pgDBRepository.GetStoreByEmail(ctx, email)
-	store, err = uc.CheckStoreExpirationStatus(store, err)
-	switch {
-	case store == domain.Store{} && err != nil:
-		return store, token, refreshTokenExpiresAt, err
-	case store != domain.Store{} && errors.Is(err, domain.ServerError40903):
-		err = uc.CloseStore(ctx, store)
-		return store, token, refreshTokenExpiresAt, err
-	}
-
 	err = uc.ValidatePassword(store.Password, password)
 	if err != nil {
 		return store, token, refreshTokenExpiresAt, err
@@ -187,15 +166,15 @@ func (uc *Usecase) UpdateStoreDescription(ctx context.Context, newDescription st
 	return nil
 }
 
-func (uc *Usecase) CheckStoreExpirationStatus(store domain.Store, err error) (domain.Store, error) {
-	switch {
-	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) < uc.config.StoreDuration):
-		return store, domain.ServerError40901
-	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) >= uc.config.StoreDuration):
-		return store, domain.ServerError40903
-	}
-	return domain.Store{}, err
-}
+// func (uc *Usecase) CheckStoreExpirationStatus(store domain.Store, err error) (domain.Store, error) {
+// 	switch {
+// 	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) < uc.config.StoreDuration):
+// 		return store, domain.ServerError40901
+// 	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) >= uc.config.StoreDuration):
+// 		return store, domain.ServerError40903
+// 	}
+// 	return domain.Store{}, err
+// }
 
 func (uc *Usecase) VerifyPasswordLength(password string) error {
 	decodedPassword, err := base64.StdEncoding.DecodeString(password)
