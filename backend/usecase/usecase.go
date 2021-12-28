@@ -9,22 +9,24 @@ import (
 )
 
 type UsecaseConfig struct {
-	Domain        string
-	StoreDuration time.Duration
+	Domain                string
+	StoreDuration         time.Duration
+	TokenDuration         time.Duration
+	PasswordTokenDuration time.Duration
 }
 
-type usecase struct {
-	pgDBRepository         pgDB.PgDBRepositoryInterface
+type Usecase struct {
+	pgDBRepository         *pgDB.PgDBRepository
 	grpcServicesRepository grpcServices.GrpcServicesRepositoryInterface
 	logger                 logging.LoggerTool
 	config                 UsecaseConfig
 }
 
 func NewUsecase(
-	pgDBRepository pgDB.PgDBRepositoryInterface,
+	pgDBRepository *pgDB.PgDBRepository,
 	grpcServicesRepository grpcServices.GrpcServicesRepositoryInterface,
 	logger logging.LoggerTool,
 	usecaseConfig UsecaseConfig,
-) UseCaseInterface {
-	return &usecase{pgDBRepository, grpcServicesRepository, logger, usecaseConfig}
+) *Usecase {
+	return &Usecase{pgDBRepository, grpcServicesRepository, logger, usecaseConfig}
 }

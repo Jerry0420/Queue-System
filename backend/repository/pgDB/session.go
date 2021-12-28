@@ -8,7 +8,7 @@ import (
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-func (repo *pgDBRepository) CreateSession(ctx context.Context, store domain.Store) (domain.StoreSession, error) {
+func (repo *PgDBRepository) CreateSession(ctx context.Context, store domain.Store) (domain.StoreSession, error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
@@ -31,7 +31,7 @@ func (repo *pgDBRepository) CreateSession(ctx context.Context, store domain.Stor
 	return session, nil
 }
 
-func (repo *pgDBRepository) UpdateSession(ctx context.Context, session domain.StoreSession, oldStatus string, newStatus string) error {
+func (repo *PgDBRepository) UpdateSessionStatus(ctx context.Context, session *domain.StoreSession, oldStatus string, newStatus string) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
@@ -59,7 +59,7 @@ func (repo *pgDBRepository) UpdateSession(ctx context.Context, session domain.St
 	return nil
 }
 
-func (repo *pgDBRepository) UpdateSessionWithTx(ctx context.Context, tx *sql.Tx, session domain.StoreSession, oldStatus string, newStatus string) error {
+func (repo *PgDBRepository) UpdateSessionWithTx(ctx context.Context, tx *sql.Tx, session domain.StoreSession, oldStatus string, newStatus string) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 	query := `UPDATE store_sessions SET status=$1 WHERE id=$2 and status=$3`
@@ -86,7 +86,7 @@ func (repo *pgDBRepository) UpdateSessionWithTx(ctx context.Context, tx *sql.Tx,
 	return nil
 }
 
-func (repo *pgDBRepository) GetSessionAndStoreBySessionId(ctx context.Context, sessionId string) (domain.StoreSession, domain.Store, error) {
+func (repo *PgDBRepository) GetSessionAndStoreBySessionId(ctx context.Context, sessionId string) (domain.StoreSession, domain.Store, error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 

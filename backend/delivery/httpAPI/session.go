@@ -9,26 +9,17 @@ import (
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-func (had *httpAPIDelivery) sessionCreate(w http.ResponseWriter, r *http.Request) {
+func (had *httpAPIDelivery) createSession(w http.ResponseWriter, r *http.Request) {
 	sessionToken, err := validator.SessionCreate(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	tokenClaims, err := had.usecase.VerifyToken(
-		r.Context(),
-		sessionToken,
-		domain.SignKeyTypes.SESSION,
-		had.usecase.GetSignKeyByID, // TODO: change to RemoveSignKeyByID
-	)
+
+	store, err := had.usecase.VerifySessionToken(r.Context(), sessionToken)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
-	}
-	store := domain.Store{
-		ID:    tokenClaims.StoreID,
-		Email: tokenClaims.Email,
-		Name:  tokenClaims.Name,
 	}
 
 	w.Header().Set("Content-Type", "text/event-stream")
@@ -66,15 +57,16 @@ func (had *httpAPIDelivery) sessionCreate(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (had *httpAPIDelivery) sessionScanned(w http.ResponseWriter, r *http.Request) {
+func (had *httpAPIDelivery) scannedSession(w http.ResponseWriter, r *http.Request) {
 	session, err := validator.SessionScanned(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	err = had.usecase.UpdateSession(
+
+	err = had.usecase.UpdateSessionStatus(
 		r.Context(),
-		session,
+		&session,
 		domain.StoreSessionStatus.NORMAL,  //oldStatus
 		domain.StoreSessionStatus.SCANNED, //newStatus
 	)
@@ -82,11 +74,10 @@ func (had *httpAPIDelivery) sessionScanned(w http.ResponseWriter, r *http.Reques
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
+
 	go had.broker.Publish(
 		had.usecase.TopicNameOfUpdateSession(session.StoreId),
 		map[string]interface{}{"old_session_id": session.ID},
 	)
-	
-	session.StoreSessionStatus = domain.StoreSessionStatus.SCANNED
 	presenter.JsonResponseOK(w, session)
 }

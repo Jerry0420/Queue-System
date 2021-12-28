@@ -20,66 +20,76 @@ type HttpAPIDeliveryConfig struct {
 
 type httpAPIDelivery struct {
 	logger  logging.LoggerTool
-	usecase usecase.UseCaseInterface
+	usecase *usecase.Usecase
 	broker  *broker.Broker
 	config  HttpAPIDeliveryConfig
 }
 
-func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middleware.Middleware, usecase usecase.UseCaseInterface, broker *broker.Broker, config HttpAPIDeliveryConfig) {
+func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middleware.Middleware, usecase *usecase.Usecase, broker *broker.Broker, config HttpAPIDeliveryConfig) {
 	had := &httpAPIDelivery{logger, usecase, broker, config}
 
 	// stores
 	router.HandleFunc(
 		V_1("/stores"),
-		had.storeOpen,
+		had.openStore,
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
 		V_1("/stores/signin"),
-		had.storeSignin,
+		had.signinStore,
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
 		V_1("/stores/token"),
-		had.tokenRefresh,
+		had.refreshToken,
 	).Methods(http.MethodPut)
 
 	router.Handle(
 		V_1("/stores/{id:[0-9]+}"),
-		mw.AuthenticationMiddleware(http.HandlerFunc(had.storeClose)),
+		mw.AuthenticationMiddleware(http.HandlerFunc(had.closeStore)),
 	).Methods(http.MethodDelete)
 
 	router.HandleFunc(
 		V_1("/stores/password/forgot"),
-		had.passwordForgot,
+		had.forgotPassword,
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
 		V_1("/stores/{id:[0-9]+}/password"),
-		had.passwordUpdate,
+		had.updatePassword,
 	).Methods(http.MethodPatch).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
 		V_1("/stores/{id:[0-9]+}/sse"),
-		had.getStoreInfo,
+		had.getStoreInfoWithSSE,
 	).Methods(http.MethodGet) // get method for sse.
+
+	router.HandleFunc(
+		V_1("/stores/{id:[0-9]+}"),
+		had.getStoreInfo,
+	).Methods(http.MethodGet)
 
 	router.Handle(
 		V_1("/stores/{id:[0-9]+}"),
-		mw.AuthenticationMiddleware(http.HandlerFunc(had.storeUpdate)),
+		mw.AuthenticationMiddleware(http.HandlerFunc(had.updateStoreDescription)),
 	).Methods(http.MethodPut)
+
+	router.HandleFunc(
+		V_1("/routine/stores"),
+		had.closeStorerRoutine,
+	).Methods(http.MethodDelete)
 
 	//queues
 
 	// sessions
 	router.HandleFunc(
 		V_1("/sessions/sse"),
-		had.sessionCreate,
+		had.createSession,
 	).Methods(http.MethodGet) // get method for sse.
 
 	router.Handle(
 		V_1("/sessions/{id}"),
-		mw.SessionAuthenticationMiddleware(http.HandlerFunc(had.sessionScanned)),
+		mw.SessionAuthenticationMiddleware(http.HandlerFunc(had.scannedSession)),
 	).Methods(http.MethodPut).Headers("Content-Type", "application/json")
 
 	//customers
@@ -92,7 +102,7 @@ func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middl
 		V_1("/customers/{id:[0-9]+}"),
 		mw.AuthenticationMiddleware(http.HandlerFunc(had.customerUpdate)),
 	).Methods(http.MethodPut)
-	
+
 	// base routes
 	// these two routes will just response to the client directly, and will not go into any middleware.
 	router.MethodNotAllowedHandler = http.HandlerFunc(had.methodNotAllow)

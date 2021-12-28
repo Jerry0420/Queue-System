@@ -5,11 +5,13 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-func (repo *pgDBRepository) GetStoreByEmail(ctx context.Context, email string) (domain.Store, error) {
+func (repo *PgDBRepository) GetStoreByEmail(ctx context.Context, email string) (domain.Store, error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
@@ -28,7 +30,7 @@ func (repo *pgDBRepository) GetStoreByEmail(ctx context.Context, email string) (
 	return store, nil
 }
 
-func (repo *pgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
+func (repo *PgDBRepository) GetStoreWithQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
@@ -53,8 +55,8 @@ func (repo *pgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Conte
 
 	var store domain.Store
 	queues := make(map[int]domain.Queue)
-	customers := make(map[int][]domain.Customer)
-	
+	customers := make(map[int][]*domain.Customer)
+
 	for rows.Next() {
 		var queue domain.Queue
 		var customer domain.Customer
@@ -69,66 +71,73 @@ func (repo *pgDBRepository) GetStoreWIthQueuesAndCustomersById(ctx context.Conte
 			return storeWithQueues, domain.ServerError50002
 		}
 		queues[queue.ID] = queue
-		customers[queue.ID] = append(customers[queue.ID], customer)
+		customer.QueueID = queue.ID
+		customers[queue.ID] = append(customers[queue.ID], &customer)
 	}
 	defer rows.Close()
 
-	if store == (domain.Store{}) {
-		queues = make(map[int]domain.Queue)
-		query = `SELECT 
-					stores.email, 
-					stores.name, 
-					stores.description, 
-					stores.created_at, 
-					queues.id AS queue_id, 
-					queues.name AS queue_name
-				FROM stores
-				INNER JOIN queues ON stores.id = queues.store_id
-				WHERE stores.id=$1`
-		rows, err = repo.db.QueryContext(ctx, query, storeId)
-		if err != nil {
-			repo.logger.ERRORf("error %v", err)
-			return storeWithQueues, domain.ServerError50002
-		}
-		for rows.Next() {
-			var queue domain.Queue
-			err := rows.Scan(
-				&store.Email, &store.Name, &store.Description, &store.CreatedAt,
-				&queue.ID, &queue.Name,
-			)
-			if err != nil {
-				repo.logger.ERRORf("error %v", err)
-				return storeWithQueues, domain.ServerError50002
-			}
-			queues[queue.ID] = queue
-		}
-	}
-
-	if store == (domain.Store{}) {
-		return storeWithQueues, domain.ServerError40402
-	}
-
 	storeWithQueues = domain.StoreWithQueues{ID: storeId, Email: store.Email, Name: store.Name, Description: store.Description, CreatedAt: store.CreatedAt}
 	for _, queue := range queues {
-		storeWithQueues.Queues = append(storeWithQueues.Queues, domain.QueueWithCustomers{
-			ID: queue.ID,
-			Name: queue.Name,
+		storeWithQueues.Queues = append(storeWithQueues.Queues, &domain.QueueWithCustomers{
+			ID:        queue.ID,
+			Name:      queue.Name,
 			Customers: customers[queue.ID],
 		})
 	}
 	return storeWithQueues, nil
 }
 
-func (repo *pgDBRepository) CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
+func (repo *PgDBRepository) GetStoreWithQueuesById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
-	tx, err := repo.db.BeginTx(ctx, nil)
+	var storeWithQueues domain.StoreWithQueues
+	var store domain.Store
+	queues := make(map[int]domain.Queue)
+
+	query := `SELECT 
+				stores.email, 
+				stores.name, 
+				stores.description, 
+				stores.created_at, 
+				queues.id AS queue_id, 
+				queues.name AS queue_name
+			FROM stores
+			INNER JOIN queues ON stores.id = queues.store_id
+			WHERE stores.id=$1`
+	rows, err := repo.db.QueryContext(ctx, query, storeId)
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
+		return storeWithQueues, domain.ServerError50002
 	}
-	defer tx.Rollback()
+	for rows.Next() {
+		var queue domain.Queue
+		err := rows.Scan(
+			&store.Email, &store.Name, &store.Description, &store.CreatedAt,
+			&queue.ID, &queue.Name,
+		)
+		if err != nil {
+			repo.logger.ERRORf("error %v", err)
+			return storeWithQueues, domain.ServerError50002
+		}
+		queues[queue.ID] = queue
+	}
+	defer rows.Close()
+
+	storeWithQueues = domain.StoreWithQueues{ID: storeId, Email: store.Email, Name: store.Name, Description: store.Description, CreatedAt: store.CreatedAt}
+	for _, queue := range queues {
+		storeWithQueues.Queues = append(storeWithQueues.Queues, &domain.QueueWithCustomers{
+			ID:        queue.ID,
+			Name:      queue.Name,
+			Customers: []*domain.Customer{},
+		})
+	}
+	return storeWithQueues, nil
+}
+
+func (repo *PgDBRepository) CreateStore(ctx context.Context, tx *sql.Tx, store *domain.Store, queues []domain.Queue) error {
+	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+	defer cancel()
 
 	query := `INSERT INTO stores (name, email, password) VALUES ($1, $2, $3) RETURNING id,created_at`
 	stmt, err := tx.PrepareContext(ctx, query)
@@ -144,22 +153,10 @@ func (repo *pgDBRepository) CreateStore(ctx context.Context, store *domain.Store
 		repo.logger.ERRORf("error %v", err)
 		return domain.ServerError40901
 	}
-
-	err = repo.CreateQueues(ctx, tx, store.ID, queues)
-	if err != nil {
-		repo.logger.ERRORf("error %v", err)
-		return err
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		repo.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
 	return nil
 }
 
-func (repo *pgDBRepository) UpdateStore(ctx context.Context, store *domain.Store, fieldName string, newFieldValue string) error {
+func (repo *PgDBRepository) UpdateStore(ctx context.Context, store *domain.Store, fieldName string, newFieldValue string) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
@@ -180,7 +177,7 @@ func (repo *pgDBRepository) UpdateStore(ctx context.Context, store *domain.Store
 	return nil
 }
 
-func (repo *pgDBRepository) RemoveStoreByID(ctx context.Context, id int) error {
+func (repo *PgDBRepository) RemoveStoreByID(ctx context.Context, id int) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
@@ -206,4 +203,132 @@ func (repo *pgDBRepository) RemoveStoreByID(ctx context.Context, id int) error {
 		return domain.ServerError40402
 	}
 	return nil
+}
+
+func (repo *PgDBRepository) RemoveStoreByIDs(ctx context.Context, tx *sql.Tx, storeIds []string) error {
+	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+	defer cancel()
+
+	// it's for internal usage, and storeIds slice is from other function...no need to worry the sql ingection!
+	param := "(" + strings.Join(storeIds, ",") + ")"
+
+	query := fmt.Sprintf(`DELETE FROM stores WHERE id IN %s`, param)
+	stmt, err := tx.PrepareContext(ctx, query)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
+	defer stmt.Close()
+
+	_, err = stmt.ExecContext(ctx)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
+	return nil
+}
+
+func (repo *PgDBRepository) GetAllIdsOfExpiredStores(ctx context.Context, tx *sql.Tx, expiresTime time.Time) (storesIds []string, err error) {
+	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+	defer cancel()
+
+	storesIds = make([]string, 0)
+
+	query := `SELECT id FROM stores WHERE created_at<=$1 FOR UPDATE`
+
+	rows, err := repo.db.QueryContext(ctx, query, expiresTime)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return storesIds, domain.ServerError50002
+	}
+
+	for rows.Next() {
+		var storeId string
+		err := rows.Scan(&storeId)
+		if err != nil {
+			repo.logger.ERRORf("error %v", err)
+			return storesIds, domain.ServerError50002
+		}
+		storesIds = append(storesIds, storeId)
+	}
+	defer rows.Close()
+	return storesIds, nil
+}
+
+
+func (repo *PgDBRepository) GetAllExpiredStores(ctx context.Context, tx *sql.Tx, expiresTime time.Time) (storesWithMap map[int]*domain.StoreWithQueues, err error) {
+	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+	defer cancel()
+
+	storesWithMap = make(map[int]*domain.StoreWithQueues)
+
+	query := `SELECT 
+					stores.id, stores.email, stores.name, stores.created_at, 
+					queues.id AS queue_id, queues.name AS queue_name, 
+					customers.id AS customer_id, customers.name AS customer_name, customers.phone AS customer_phone, 
+					customers.status AS customer_status,
+					customers.created_at AS customer_created_at
+			FROM stores
+			INNER JOIN queues ON stores.id = queues.store_id
+			INNER JOIN customers ON queues.id = customers.queue_id
+			WHERE stores.created_at<=$1
+			ORDER BY stores.id ASC FOR UPDATE`
+
+	rows, err := repo.db.QueryContext(ctx, query, expiresTime)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return storesWithMap, domain.ServerError50002
+	}
+
+	for rows.Next() {
+		var store domain.Store
+		var queue domain.Queue
+		var customer domain.Customer
+		err := rows.Scan(
+			&store.ID, &store.Email, &store.Name, &store.CreatedAt,
+			&queue.ID, &queue.Name,
+			&customer.ID, &customer.Name, &customer.Phone, &customer.Status, &customer.CreatedAt,
+		)
+		if err != nil {
+			repo.logger.ERRORf("error %v", err)
+			return storesWithMap, domain.ServerError50002
+		}
+		if storeWithQueues, ok := storesWithMap[store.ID]; ok {
+			findQueue := false
+			for _, queueInStoreWithQueues := range storeWithQueues.Queues {
+				if queueInStoreWithQueues.ID == queue.ID {
+					queueInStoreWithQueues.Customers = append(queueInStoreWithQueues.Customers, &customer)
+					findQueue = true
+					break
+				}
+			}
+			if findQueue == false {
+				storeWithQueues.Queues = append(storeWithQueues.Queues, &domain.QueueWithCustomers{
+					ID:   queue.ID,
+					Name: queue.Name,
+					Customers: []*domain.Customer{
+						&customer,
+					},
+				})
+			}
+		} else {
+			storesWithMap[store.ID] = &domain.StoreWithQueues{
+				ID:        store.ID,
+				Email:     store.Email,
+				Name:      store.Name,
+				CreatedAt: store.CreatedAt,
+				Queues: []*domain.QueueWithCustomers{
+					&domain.QueueWithCustomers{
+						ID:   queue.ID,
+						Name: queue.Name,
+						Customers: []*domain.Customer{
+							&customer,
+						},
+					},
+				},
+			}
+		}
+	}
+	defer rows.Close()
+	return storesWithMap, nil
 }

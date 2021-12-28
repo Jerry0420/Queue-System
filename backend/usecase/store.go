@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -13,33 +14,213 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (uc *usecase) CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
-	err := uc.pgDBRepository.CreateStore(ctx, store, queues)
+func (uc *Usecase) CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
+	encryptedPassword, err := uc.EncryptPassword(store.Password)
+	if err != nil {
+		return err
+	}
+	store.Password = encryptedPassword
+
+	tx, err := uc.pgDBRepository.BeginTx()
+	if err != nil {
+		return err
+	}
+	defer uc.pgDBRepository.RollbackTx(tx)
+
+	err = uc.pgDBRepository.CreateStore(ctx, tx, store, queues)
+	if err != nil {
+		return err
+	}
+
+	err = uc.pgDBRepository.CreateQueues(ctx, tx, store.ID, queues)
+	if err != nil {
+		return err
+	}
+
+	err = uc.pgDBRepository.CommitTx(tx)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (uc *Usecase) SigninStore(ctx context.Context, email string, password string) (store domain.Store, token string, refreshTokenExpiresAt time.Time, err error) {
+	store, err = uc.pgDBRepository.GetStoreByEmail(ctx, email)
+	err = uc.ValidatePassword(store.Password, password)
+	if err != nil {
+		return store, token, refreshTokenExpiresAt, err
+	}
+
+	refreshTokenExpiresAt = store.CreatedAt.Add(uc.config.StoreDuration)
+	token, err = uc.GenerateToken(
+		ctx,
+		store,
+		domain.SignKeyTypes.REFRESH,
+		refreshTokenExpiresAt,
+	)
+	if err != nil {
+		return store, token, refreshTokenExpiresAt, err
+	}
+
+	return store, token, refreshTokenExpiresAt, nil
+}
+
+func (uc *Usecase) RefreshToken(ctx context.Context, encryptedRefreshToken string) (
+	store domain.Store,
+	normalToken string,
+	sessionToken string,
+	tokenExpiresAt time.Time,
+	err error,
+) {
+	tokenClaims, err := uc.VerifyToken(
+		ctx,
+		encryptedRefreshToken,
+		domain.SignKeyTypes.REFRESH,
+		true,
+	)
+	if err != nil {
+		return store, normalToken, sessionToken, tokenExpiresAt, err
+	}
+	store = domain.Store{
+		ID:        tokenClaims.StoreID,
+		Email:     tokenClaims.Email,
+		Name:      tokenClaims.Name,
+		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
+	}
+
+	tokenExpiresAt = time.Now().Add(uc.config.TokenDuration)
+	// normal token
+	normalToken, err = uc.GenerateToken(
+		ctx,
+		store,
+		domain.SignKeyTypes.NORMAL,
+		tokenExpiresAt,
+	)
+	if err != nil {
+		return store, normalToken, sessionToken, tokenExpiresAt, err
+	}
+	// session token
+	sessionToken, err = uc.GenerateToken(
+		ctx,
+		store,
+		domain.SignKeyTypes.SESSION,
+		tokenExpiresAt,
+	)
+	if err != nil {
+		return store, normalToken, sessionToken, tokenExpiresAt, err
+	}
+
+	return store, normalToken, sessionToken, tokenExpiresAt, nil
+}
+
+func (uc *Usecase) CloseStore(ctx context.Context, store domain.Store) error {
+	// TODO: send report to the store.
+
+	err := uc.pgDBRepository.RemoveStoreByID(ctx, store.ID)
 	return err
 }
 
-func (uc *usecase) GetStoreByEmail(ctx context.Context, email string) (domain.Store, error) {
-	store, err := uc.pgDBRepository.GetStoreByEmail(ctx, email)
-	store, err = uc.CheckStoreExpirationStatus(store, err)
-	return store, err
-}
-
-func (uc *usecase) CheckStoreExpirationStatus(store domain.Store, err error) (domain.Store, error) {
-	switch {
-	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) < uc.config.StoreDuration):
-		return store, domain.ServerError40901
-	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) >= uc.config.StoreDuration):
-		return store, domain.ServerError40903
+func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
+	tx, err := uc.pgDBRepository.BeginTx()
+	if err != nil {
+		return err
 	}
-	return domain.Store{}, err
+	defer uc.pgDBRepository.RollbackTx(tx)
+
+	expires_time := time.Now().Add(-uc.config.StoreDuration)
+
+	storesWithMap, err := uc.pgDBRepository.GetAllExpiredStores(ctx, tx, expires_time)
+	if err != nil {
+		return err
+	}
+	storeIds, err := uc.pgDBRepository.GetAllIdsOfExpiredStores(ctx, tx, expires_time)
+	if err != nil {
+		return err
+	}
+
+	if len(storesWithMap) > 0 {
+		stores := make([]domain.StoreWithQueues, len(storesWithMap)-1)
+		for _, store := range storesWithMap {
+			stores = append(stores, *store)
+		}
+		// TODO: send email and csv
+	}
+
+	if len(storeIds) > 0 {
+		err = uc.pgDBRepository.RemoveStoreByIDs(ctx, tx, storeIds)
+		if err != nil {
+			return err
+		}
+
+		err = uc.pgDBRepository.CommitTx(tx)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (uc *usecase) GetStoreWIthQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
-	store, err := uc.pgDBRepository.GetStoreWIthQueuesAndCustomersById(ctx, storeId)
+func (uc *Usecase) ForgetPassword(ctx context.Context, email string) (store domain.Store, err error) {
+	store, err = uc.pgDBRepository.GetStoreByEmail(ctx, email)
+	if err != nil {
+		return store, err
+	}
+	passwordToken, err := uc.GenerateToken(
+		ctx,
+		store,
+		domain.SignKeyTypes.PASSWORD,
+		time.Now().Add(uc.config.PasswordTokenDuration),
+	)
+	if err != nil {
+		return store, err
+	}
+
+	_, _ = uc.GenerateEmailContentOfForgetPassword(passwordToken, store)
+	// TODO: SendEmail function (grpc)
+
 	return store, err
 }
 
-func (uc *usecase) VerifyPasswordLength(password string) error {
+func (uc *Usecase) UpdatePassword(ctx context.Context, passwordToken string, newPassword string) (store domain.Store, err error) {
+	tokenClaims, err := uc.VerifyToken(
+		ctx,
+		passwordToken,
+		domain.SignKeyTypes.PASSWORD,
+		false,
+	)
+	if err != nil {
+		return store, err
+	}
+	store = domain.Store{
+		ID:        tokenClaims.StoreID,
+		Email:     tokenClaims.Email,
+		Name:      tokenClaims.Name,
+		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
+	}
+
+	encryptedPassword, err := uc.EncryptPassword(newPassword)
+	if err != nil {
+		return store, err
+	}
+
+	err = uc.pgDBRepository.UpdateStore(ctx, &store, "password", encryptedPassword)
+	if err != nil {
+		return store, err
+	}
+
+	store.Password = encryptedPassword
+	return store, nil
+}
+
+func (uc *Usecase) UpdateStoreDescription(ctx context.Context, newDescription string, store *domain.Store) error {
+	err := uc.pgDBRepository.UpdateStore(ctx, store, "description", newDescription)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (uc *Usecase) VerifyPasswordLength(password string) error {
 	decodedPassword, err := base64.StdEncoding.DecodeString(password)
 	if err != nil {
 		uc.logger.ERRORf("%v", err)
@@ -53,7 +234,7 @@ func (uc *usecase) VerifyPasswordLength(password string) error {
 	return nil
 }
 
-func (uc *usecase) EncryptPassword(password string) (string, error) {
+func (uc *Usecase) EncryptPassword(password string) (string, error) {
 	cryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		uc.logger.ERRORf("%v", err)
@@ -62,7 +243,7 @@ func (uc *usecase) EncryptPassword(password string) (string, error) {
 	return string(cryptedPassword), nil
 }
 
-func (uc *usecase) ValidatePassword(ctx context.Context, passwordInDb string, incomingPassword string) error {
+func (uc *Usecase) ValidatePassword(passwordInDb string, incomingPassword string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(passwordInDb), []byte(incomingPassword))
 	switch {
 	case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
@@ -75,14 +256,7 @@ func (uc *usecase) ValidatePassword(ctx context.Context, passwordInDb string, in
 	return nil
 }
 
-func (uc *usecase) CloseStore(ctx context.Context, store domain.Store) error {
-	// TODO: send report to the store.
-
-	err := uc.pgDBRepository.RemoveStoreByID(ctx, store.ID)
-	return err
-}
-
-func (uc *usecase) GenerateToken(ctx context.Context, store domain.Store, signKeyType string, expireTime time.Time) (encryptToken string, err error) {
+func (uc *Usecase) GenerateToken(ctx context.Context, store domain.Store, signKeyType string, expireTime time.Time) (encryptToken string, err error) {
 	randomUUID := uuid.New().String()
 	saltBytes, err := bcrypt.GenerateFromPassword([]byte(randomUUID), bcrypt.DefaultCost)
 	if err != nil {
@@ -115,7 +289,7 @@ func (uc *usecase) GenerateToken(ctx context.Context, store domain.Store, signKe
 	return encryptToken, err
 }
 
-func (uc *usecase) VerifyToken(ctx context.Context, encryptToken string, signKeyType string, getSignKey func(context.Context, int, string) (domain.SignKey, error)) (tokenClaims domain.TokenClaims, err error) {
+func (uc *Usecase) VerifyToken(ctx context.Context, encryptToken string, signKeyType string, withSignkeyPreserved bool) (tokenClaims domain.TokenClaims, err error) {
 	_, _, err = new(jwt.Parser).ParseUnverified(encryptToken, &tokenClaims)
 	if err != nil {
 		uc.logger.ERRORf("%v", err)
@@ -124,7 +298,13 @@ func (uc *usecase) VerifyToken(ctx context.Context, encryptToken string, signKey
 
 	tokenClaims = domain.TokenClaims{}
 	token, err := jwt.ParseWithClaims(encryptToken, &tokenClaims, func(token *jwt.Token) (interface{}, error) {
-		signKey, err := getSignKey(ctx, tokenClaims.SignKeyID, signKeyType)
+		var getSignKeyFunc func(context.Context, int, string) (domain.SignKey, error)
+		if withSignkeyPreserved == true {
+			getSignKeyFunc = uc.pgDBRepository.GetSignKeyByID
+		} else {
+			getSignKeyFunc = uc.pgDBRepository.RemoveSignKeyByID
+		}
+		signKey, err := getSignKeyFunc(ctx, tokenClaims.SignKeyID, signKeyType)
 		if err != nil {
 			return nil, err
 		}
@@ -146,35 +326,64 @@ func (uc *usecase) VerifyToken(ctx context.Context, encryptToken string, signKey
 		return tokenClaims, domain.ServerError40103
 	}
 
-	// store expired!
-	if time.Now().Sub(time.Unix(tokenClaims.StoreCreatedAt, 0)) >= uc.config.StoreDuration {
-		return tokenClaims, domain.ServerError40105
-	}
-
 	return tokenClaims, nil
 }
 
-func (uc *usecase) RemoveSignKeyByID(ctx context.Context, signKeyID int, signKeyType string) (domain.SignKey, error) {
-	signKey, err := uc.pgDBRepository.RemoveSignKeyByID(ctx, signKeyID, signKeyType)
-	return signKey, err
-}
-
-func (uc *usecase) GetSignKeyByID(ctx context.Context, signKeyID int, signKeyType string) (domain.SignKey, error) {
-	signKey, err := uc.pgDBRepository.GetSignKeyByID(ctx, signKeyID, signKeyType)
-	return signKey, err
-}
-
-func (uc *usecase) GenerateEmailContentOfForgetPassword(passwordToken string, store domain.Store) (subject string, content string) {
+func (uc *Usecase) GenerateEmailContentOfForgetPassword(passwordToken string, store domain.Store) (subject string, content string) {
 	// TODO: update email content to html format.
 	resetPasswordUrl := fmt.Sprintf("%s/stores/%d/password/update?password_token=%s", uc.config.Domain, store.ID, passwordToken)
 	return "Queue-System Reset Password", fmt.Sprintf("Hello, %s, please click %s", store.Name, resetPasswordUrl)
 }
 
-func (uc *usecase) UpdateStore(ctx context.Context, store *domain.Store, fieldName string, newFieldValue string) error {
-	err := uc.pgDBRepository.UpdateStore(ctx, store, fieldName, newFieldValue)
-	return err
+func (uc *Usecase) TopicNameOfUpdateCustomer(storeId int) string {
+	return fmt.Sprintf("updateCustomer.%d", storeId)
 }
 
-func (uc *usecase) TopicNameOfUpdateCustomer(storeId int) string {
-	return fmt.Sprintf("updateCustomer.%d", storeId)
+func (uc *Usecase) GetStoreWithQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
+	store, err := uc.pgDBRepository.GetStoreWithQueuesAndCustomersById(ctx, storeId)
+	if err != nil {
+		return store, err
+	}
+	if store.Queues == nil {
+		store, err = uc.pgDBRepository.GetStoreWithQueuesById(ctx, storeId)
+		if err != nil {
+			return store, err
+		}
+		if store.Queues == nil {
+			return store, domain.ServerError40402
+		}
+	}
+	return store, err
+}
+
+func (uc *Usecase) VerifyNormalToken(ctx context.Context, normalToken string) (tokenClaims domain.TokenClaims, err error) {
+	encryptToken := strings.Split(normalToken, " ")
+	if len(encryptToken) == 2 && strings.ToLower(encryptToken[0]) == "bearer" {
+		tokenClaims, err = uc.VerifyToken(
+			ctx,
+			encryptToken[1],
+			domain.SignKeyTypes.NORMAL,
+			true,
+		)
+		return tokenClaims, err
+	}
+	return tokenClaims, domain.ServerError40102
+}
+
+func (uc *Usecase) VerifySessionToken(ctx context.Context, sessionToken string) (store domain.Store, err error) {
+	tokenClaims, err := uc.VerifyToken(
+		ctx,
+		sessionToken,
+		domain.SignKeyTypes.SESSION,
+		true, // TODO: change to RemoveSignKeyByID
+	)
+	if err != nil {
+		return store, err
+	}
+	store = domain.Store{
+		ID:    tokenClaims.StoreID,
+		Email: tokenClaims.Email,
+		Name:  tokenClaims.Name,
+	}
+	return store, nil
 }

@@ -53,14 +53,22 @@ func StoreToken(store domain.Store, normalToken string, tokenExpiresAt time.Time
 	return storeMap
 }
 
-func StoreGet(store domain.StoreWithQueues) string {
+func StoreGetForSSE(store domain.StoreWithQueues) string {
 	var storeJson []byte
 	var storeMap map[string]interface{}
 	storeJson, _ = json.Marshal(store)
 	json.Unmarshal(storeJson, &storeMap)
 	delete(storeMap, "password")
-	delete(storeMap, "created_at")
 	var flushedData bytes.Buffer
 	json.NewEncoder(&flushedData).Encode(storeMap)
 	return flushedData.String()
+}
+
+func StoreGet(store domain.StoreWithQueues) map[string]interface{} {
+	var storeJson []byte
+	var storeMap map[string]interface{}
+	storeJson, _ = json.Marshal(store)
+	json.Unmarshal(storeJson, &storeMap)
+	delete(storeMap, "password")
+	return storeMap
 }

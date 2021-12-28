@@ -35,6 +35,7 @@ func (had *httpAPIDelivery) customersCreate(w http.ResponseWriter, r *http.Reque
 	presenter.JsonResponseOK(w, customers)
 }
 
+// for used in store...
 func (had *httpAPIDelivery) customerUpdate(w http.ResponseWriter, r *http.Request) {
 	storeId, oldCustomerStatus, newCustomerStatus, customer, err := validator.CustomerUpdate(r)
 	if err != nil {

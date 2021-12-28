@@ -9,5 +9,5 @@ type Queue struct {
 type QueueWithCustomers struct {
 	ID        int        `json:"id"`
 	Name      string     `json:"name"`
-	Customers []Customer `json:"customers"`
+	Customers []*Customer `json:"customers"`
 }

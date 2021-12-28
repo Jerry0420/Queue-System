@@ -3,27 +3,15 @@ package pgDB
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"strconv"
 
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-func (repo *pgDBRepository) CreateCustomers(ctx context.Context, session domain.StoreSession, oldStatus string, newStatus string, customers []domain.Customer) error {
+func (repo *PgDBRepository) CreateCustomers(ctx context.Context, tx *sql.Tx, customers []domain.Customer) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
-
-	tx, err := repo.db.BeginTx(ctx, nil)
-	if err != nil {
-		repo.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
-	defer tx.Rollback()
-
-	err = repo.UpdateSessionWithTx(ctx, tx, session, oldStatus, newStatus)
-	if err != nil {
-		repo.logger.ERRORf("error %v", err)
-		return err
-	}
 
 	variableCounts := 1
 	var query bytes.Buffer
@@ -55,6 +43,10 @@ func (repo *pgDBRepository) CreateCustomers(ctx context.Context, session domain.
 	defer stmt.Close()
 
 	rows, err := stmt.QueryContext(ctx, queryRowParams...)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
+	}
 	customers = customers[:0] // clear customers slice
 
 	for rows.Next() {
@@ -70,15 +62,10 @@ func (repo *pgDBRepository) CreateCustomers(ctx context.Context, session domain.
 	}
 	defer rows.Close()
 
-	err = tx.Commit()
-	if err != nil {
-		repo.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
 	return nil
 }
 
-func (repo *pgDBRepository) UpdateCustomer(ctx context.Context, oldStatus string, newStatus string, customer *domain.Customer) error {
+func (repo *PgDBRepository) UpdateCustomer(ctx context.Context, oldStatus string, newStatus string, customer *domain.Customer) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 

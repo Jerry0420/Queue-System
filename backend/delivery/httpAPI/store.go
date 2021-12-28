@@ -1,7 +1,6 @@
 package httpAPI
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -11,7 +10,7 @@ import (
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-func (had *httpAPIDelivery) storeOpen(w http.ResponseWriter, r *http.Request) {
+func (had *httpAPIDelivery) openStore(w http.ResponseWriter, r *http.Request) {
 	store, queues, err := validator.StoreOpen(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -20,25 +19,6 @@ func (had *httpAPIDelivery) storeOpen(w http.ResponseWriter, r *http.Request) {
 
 	err = had.usecase.VerifyPasswordLength(store.Password)
 	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-	encryptedPassword, err := had.usecase.EncryptPassword(store.Password)
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-	store.Password = encryptedPassword
-
-	storeInDb, err := had.usecase.GetStoreByEmail(r.Context(), store.Email)
-	switch {
-	case storeInDb != domain.Store{} && errors.Is(err, domain.ServerError40903):
-		err = had.usecase.CloseStore(r.Context(), storeInDb)
-		if err != nil {
-			presenter.JsonResponse(w, nil, err)
-			return
-		}
-	case storeInDb != domain.Store{} && errors.Is(err, domain.ServerError40901):
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
@@ -52,41 +32,23 @@ func (had *httpAPIDelivery) storeOpen(w http.ResponseWriter, r *http.Request) {
 	presenter.JsonResponseOK(w, presenter.StoreWithQueuesForResponse(store, queues))
 }
 
-func (had *httpAPIDelivery) storeSignin(w http.ResponseWriter, r *http.Request) {
+func (had *httpAPIDelivery) signinStore(w http.ResponseWriter, r *http.Request) {
 	incomingStore, err := validator.StoreSignin(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
-	storeInDb, err := had.usecase.GetStoreByEmail(r.Context(), incomingStore.Email)
-	switch {
-	case storeInDb == domain.Store{} && err != nil:
-		presenter.JsonResponse(w, nil, err)
-		return
-	case storeInDb != domain.Store{} && errors.Is(err, domain.ServerError40903):
-		_ = had.usecase.CloseStore(r.Context(), storeInDb)
-		presenter.JsonResponse(w, nil, domain.ServerError40903)
-		return
-	}
-
-	err = had.usecase.ValidatePassword(r.Context(), storeInDb.Password, incomingStore.Password)
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-
-	refreshTokenExpiresAt := storeInDb.CreatedAt.Add(had.config.StoreDuration)
-	token, err := had.usecase.GenerateToken(
+	store, token, refreshTokenExpiresAt, err := had.usecase.SigninStore(
 		r.Context(),
-		storeInDb,
-		domain.SignKeyTypes.REFRESH,
-		refreshTokenExpiresAt,
+		incomingStore.Email,
+		incomingStore.Password,
 	)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
+
 	cookie := http.Cookie{
 		Name:     domain.SignKeyTypes.REFRESH,
 		Value:    token,
@@ -97,50 +59,17 @@ func (had *httpAPIDelivery) storeSignin(w http.ResponseWriter, r *http.Request) 
 		MaxAge:   int(refreshTokenExpiresAt.Sub(time.Now())),
 	}
 	http.SetCookie(w, &cookie)
-	presenter.JsonResponseOK(w, presenter.StoreForResponse(storeInDb))
+	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
-func (had *httpAPIDelivery) tokenRefresh(w http.ResponseWriter, r *http.Request) {
+func (had *httpAPIDelivery) refreshToken(w http.ResponseWriter, r *http.Request) {
 	encryptedRefreshToken, err := validator.StoreTokenRefresh(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	tokenClaims, err := had.usecase.VerifyToken(
-		r.Context(),
-		encryptedRefreshToken.Value,
-		domain.SignKeyTypes.REFRESH,
-		had.usecase.GetSignKeyByID,
-	)
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-	store := domain.Store{
-		ID:        tokenClaims.StoreID,
-		Email:     tokenClaims.Email,
-		Name:      tokenClaims.Name,
-		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
-	}
-	tokenExpiresAt := time.Now().Add(had.config.TokenDuration)
-	// normal token
-	normalToken, err := had.usecase.GenerateToken(
-		r.Context(),
-		store,
-		domain.SignKeyTypes.NORMAL,
-		tokenExpiresAt,
-	)
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-	// session token
-	sessionToken, err := had.usecase.GenerateToken(
-		r.Context(),
-		store,
-		domain.SignKeyTypes.SESSION,
-		tokenExpiresAt,
-	)
+
+	store, normalToken, sessionToken, tokenExpiresAt, err := had.usecase.RefreshToken(r.Context(), encryptedRefreshToken.Value)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -148,7 +77,7 @@ func (had *httpAPIDelivery) tokenRefresh(w http.ResponseWriter, r *http.Request)
 	presenter.JsonResponseOK(w, presenter.StoreToken(store, normalToken, tokenExpiresAt, sessionToken))
 }
 
-func (had *httpAPIDelivery) storeClose(w http.ResponseWriter, r *http.Request) {
+func (had *httpAPIDelivery) closeStore(w http.ResponseWriter, r *http.Request) {
 	tokenClaims, err := validator.StoreClose(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -169,43 +98,35 @@ func (had *httpAPIDelivery) storeClose(w http.ResponseWriter, r *http.Request) {
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
-func (had *httpAPIDelivery) passwordForgot(w http.ResponseWriter, r *http.Request) {
+func (had *httpAPIDelivery) closeStorerRoutine(w http.ResponseWriter, r *http.Request) {
+	err := had.usecase.CloseStoreRoutine(r.Context())
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+	presenter.JsonResponseOK(w, nil)
+}
+
+func (had *httpAPIDelivery) forgotPassword(w http.ResponseWriter, r *http.Request) {
 	store, err := validator.StorePasswordForgot(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
-	store, err = had.usecase.GetStoreByEmail(r.Context(), store.Email)
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-	passwordToken, err := had.usecase.GenerateToken(r.Context(), store, domain.SignKeyTypes.PASSWORD, time.Now().Add(had.config.PasswordTokenDuration))
+	store, err = had.usecase.ForgetPassword(r.Context(), store.Email)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
-	_, _ = had.usecase.GenerateEmailContentOfForgetPassword(passwordToken, store)
-	// TODO: SendEmail function (grpc)
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
-func (had *httpAPIDelivery) passwordUpdate(w http.ResponseWriter, r *http.Request) {
-	jsonBody, id, err := validator.StorePasswordUpdate(r)
+func (had *httpAPIDelivery) updatePassword(w http.ResponseWriter, r *http.Request) {
+	jsonBody, _, err := validator.StorePasswordUpdate(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
-		return
-	}
-
-	tokenClaims, err := had.usecase.VerifyToken(r.Context(), jsonBody["password_token"], domain.SignKeyTypes.PASSWORD, had.usecase.RemoveSignKeyByID)
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-	if id != tokenClaims.StoreID {
-		presenter.JsonResponse(w, nil, domain.ServerError40004)
 		return
 	}
 
@@ -215,30 +136,19 @@ func (had *httpAPIDelivery) passwordUpdate(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	store := domain.Store{
-		ID:        tokenClaims.StoreID,
-		Email:     tokenClaims.Email,
-		Name:      tokenClaims.Name,
-		Password:  jsonBody["password"],
-		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
-	}
-	encryptedPassword, err := had.usecase.EncryptPassword(store.Password)
+	store, err := had.usecase.UpdatePassword(
+		r.Context(),
+		jsonBody["password_token"],
+		jsonBody["password"],
+	)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	store.Password = encryptedPassword
-
-	err = had.usecase.UpdateStore(r.Context(), &store, "password", store.Password)
-	if err != nil {
-		presenter.JsonResponse(w, nil, err)
-		return
-	}
-
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
-func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request) {
+func (had *httpAPIDelivery) getStoreInfoWithSSE(w http.ResponseWriter, r *http.Request) {
 	storeId, err := validator.StoreInfoGet(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -253,24 +163,24 @@ func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request)
 	}
 	consumerChan := had.broker.Subscribe(had.usecase.TopicNameOfUpdateCustomer(storeId))
 	defer had.broker.UnsubscribeConsumer(had.usecase.TopicNameOfUpdateCustomer(storeId), consumerChan)
-	
-	store, err := had.usecase.GetStoreWIthQueuesAndCustomersById(r.Context(), storeId)
+
+	store, err := had.usecase.GetStoreWithQueuesAndCustomersById(r.Context(), storeId)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	fmt.Fprintf(w, "data: %v\n\n", presenter.StoreGet(store))
+	fmt.Fprintf(w, "data: %v\n\n", presenter.StoreGetForSSE(store))
 	flusher.Flush()
 
 	for {
 		select {
 		case <-consumerChan:
-			store, err := had.usecase.GetStoreWIthQueuesAndCustomersById(r.Context(), storeId)
+			store, err := had.usecase.GetStoreWithQueuesAndCustomersById(r.Context(), storeId)
 			if err != nil {
 				presenter.JsonResponse(w, nil, err)
 				return
 			}
-			fmt.Fprintf(w, "data: %v\n\n", presenter.StoreGet(store))
+			fmt.Fprintf(w, "data: %v\n\n", presenter.StoreGetForSSE(store))
 			flusher.Flush()
 		case <-r.Context().Done():
 			return
@@ -278,14 +188,29 @@ func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func (had *httpAPIDelivery) storeUpdate(w http.ResponseWriter, r *http.Request) {
+func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request) {
+	storeId, err := validator.StoreInfoGet(r)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+
+	store, err := had.usecase.GetStoreWithQueuesAndCustomersById(r.Context(), storeId)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+	presenter.JsonResponseOK(w, presenter.StoreGet(store))
+}
+
+func (had *httpAPIDelivery) updateStoreDescription(w http.ResponseWriter, r *http.Request) {
 	store, err := validator.StoreDescriptionUpdate(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
-	err = had.usecase.UpdateStore(r.Context(), &store, "description", store.Description)
+	err = had.usecase.UpdateStoreDescription(r.Context(), store.Description, &store)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
