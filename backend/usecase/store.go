@@ -134,11 +134,14 @@ func (uc *Usecase) CloseStore(ctx context.Context, store domain.Store) error {
     go func() {
         defer wg.Done()
         date, csvFileName, csvContent := uc.GenerateCsvFileNameAndContent(store.CreatedAt, store.Name, customers)
-		filePath, _ := uc.grpcServicesRepository.GenerateCSV(
+		filePath, err := uc.grpcServicesRepository.GenerateCSV(
 			ctx,
 			csvFileName,
 			csvContent,
 		)
+		if err != nil {
+			return
+		}
 		emailSubject, emailContent := uc.GenerateEmailContentOfCloseStore(store.Name, date)
 		_, err = uc.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, store.Email, filePath)
     }()
