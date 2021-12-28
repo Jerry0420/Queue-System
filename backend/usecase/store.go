@@ -5,7 +5,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -128,20 +127,26 @@ func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
 	}
 	defer uc.pgDBRepository.RollbackTx(tx)
 
-	storesWithMap, err := uc.pgDBRepository.GetAllExpiredStores(ctx, tx, time.Now().Add(-24*time.Hour))
+	expires_time := time.Now().Add(-uc.config.StoreDuration)
+
+	storesWithMap, err := uc.pgDBRepository.GetAllExpiredStores(ctx, tx, expires_time)
+	if err != nil {
+		return err
+	}
+	storeIds, err := uc.pgDBRepository.GetAllIdsOfExpiredStores(ctx, tx, expires_time)
 	if err != nil {
 		return err
 	}
 
 	if len(storesWithMap) > 0 {
-		storeIds := make([]string, len(storesWithMap) - 1)
-		stores := make([]domain.StoreWithQueues, len(storesWithMap) - 1)
-		for id, store := range storesWithMap {
-			storeIds = append(storeIds, strconv.Itoa(id))
+		stores := make([]domain.StoreWithQueues, len(storesWithMap)-1)
+		for _, store := range storesWithMap {
 			stores = append(stores, *store)
 		}
 		// TODO: send email and csv
+	}
 
+	if len(storeIds) > 0 {
 		err = uc.pgDBRepository.RemoveStoreByIDs(ctx, tx, storeIds)
 		if err != nil {
 			return err
@@ -214,16 +219,6 @@ func (uc *Usecase) UpdateStoreDescription(ctx context.Context, newDescription st
 	}
 	return nil
 }
-
-// func (uc *Usecase) CheckStoreExpirationStatus(store domain.Store, err error) (domain.Store, error) {
-// 	switch {
-// 	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) < uc.config.StoreDuration):
-// 		return store, domain.ServerError40901
-// 	case store != domain.Store{} && err == nil && (time.Now().Sub(store.CreatedAt) >= uc.config.StoreDuration):
-// 		return store, domain.ServerError40903
-// 	}
-// 	return domain.Store{}, err
-// }
 
 func (uc *Usecase) VerifyPasswordLength(password string) error {
 	decodedPassword, err := base64.StdEncoding.DecodeString(password)
@@ -331,11 +326,6 @@ func (uc *Usecase) VerifyToken(ctx context.Context, encryptToken string, signKey
 		return tokenClaims, domain.ServerError40103
 	}
 
-	// store expired!
-	if time.Now().Sub(time.Unix(tokenClaims.StoreCreatedAt, 0)) >= uc.config.StoreDuration {
-		return tokenClaims, domain.ServerError40105
-	}
-
 	return tokenClaims, nil
 }
 
@@ -349,8 +339,20 @@ func (uc *Usecase) TopicNameOfUpdateCustomer(storeId int) string {
 	return fmt.Sprintf("updateCustomer.%d", storeId)
 }
 
-func (uc *Usecase) GetStoreWIthQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
-	store, err := uc.pgDBRepository.GetStoreWIthQueuesAndCustomersById(ctx, storeId)
+func (uc *Usecase) GetStoreWithQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
+	store, err := uc.pgDBRepository.GetStoreWithQueuesAndCustomersById(ctx, storeId)
+	if err != nil {
+		return store, err
+	}
+	if store.Queues == nil {
+		store, err = uc.pgDBRepository.GetStoreWithQueuesById(ctx, storeId)
+		if err != nil {
+			return store, err
+		}
+		if store.Queues == nil {
+			return store, domain.ServerError40402
+		}
+	}
 	return store, err
 }
 

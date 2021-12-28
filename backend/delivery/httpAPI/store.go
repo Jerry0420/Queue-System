@@ -164,7 +164,7 @@ func (had *httpAPIDelivery) getStoreInfoWithSSE(w http.ResponseWriter, r *http.R
 	consumerChan := had.broker.Subscribe(had.usecase.TopicNameOfUpdateCustomer(storeId))
 	defer had.broker.UnsubscribeConsumer(had.usecase.TopicNameOfUpdateCustomer(storeId), consumerChan)
 
-	store, err := had.usecase.GetStoreWIthQueuesAndCustomersById(r.Context(), storeId)
+	store, err := had.usecase.GetStoreWithQueuesAndCustomersById(r.Context(), storeId)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -175,7 +175,7 @@ func (had *httpAPIDelivery) getStoreInfoWithSSE(w http.ResponseWriter, r *http.R
 	for {
 		select {
 		case <-consumerChan:
-			store, err := had.usecase.GetStoreWIthQueuesAndCustomersById(r.Context(), storeId)
+			store, err := had.usecase.GetStoreWithQueuesAndCustomersById(r.Context(), storeId)
 			if err != nil {
 				presenter.JsonResponse(w, nil, err)
 				return
@@ -195,7 +195,7 @@ func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	store, err := had.usecase.GetStoreWIthQueuesAndCustomersById(r.Context(), storeId)
+	store, err := had.usecase.GetStoreWithQueuesAndCustomersById(r.Context(), storeId)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
