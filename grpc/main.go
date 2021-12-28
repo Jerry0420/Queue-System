@@ -22,13 +22,11 @@ type GrpcServicesServer struct {
 }
 
 func (*GrpcServicesServer) GenerateCSV(ctx context.Context, req *grpcServices.GenerateCSVRequest) (*grpcServices.GenerateCSVResponse, error) {
-	fmt.Printf("GenerateCSV function is invoked with %v \n", req)
-
 	name := req.GetName()
 	fmt.Println(name)
 	content := req.GetContent()
 	fmt.Println(content)
-	var cotentMap map[string]interface{}
+	var cotentMap [][]string
 	json.Unmarshal(content, &cotentMap)
 	fmt.Println(cotentMap)
 
@@ -40,8 +38,6 @@ func (*GrpcServicesServer) GenerateCSV(ctx context.Context, req *grpcServices.Ge
 }
 
 func (*GrpcServicesServer) SendEmail(ctx context.Context, req *grpcServices.SendEmailRequest) (*grpcServices.SendEmailResponse, error) {
-	fmt.Printf("SendEmail function is invoked with %v \n", req)
-
 	subject := req.GetSubject()
 	fmt.Println(subject)
 	content := req.GetContent()

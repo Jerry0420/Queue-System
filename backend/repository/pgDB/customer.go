@@ -92,3 +92,66 @@ func (repo *PgDBRepository) UpdateCustomer(ctx context.Context, oldStatus string
 	}
 	return nil
 }
+
+func (repo *PgDBRepository) GetCustomersWithQueuesByStoreId(ctx context.Context, tx *sql.Tx, storeId int) (customers [][]string, err error) {
+	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+	defer cancel()
+
+	customers = make([][]string, 0)
+
+	query := `SELECT 
+					queues.name AS queue_name, 
+					customers.name AS customer_name, customers.phone AS customer_phone,
+					customers.status AS customer_status, customers.created_at AS customer_created_at
+				FROM queues
+				INNER JOIN customers ON queues.id = customers.queue_id
+				WHERE queues.store_id=$1
+				ORDER BY queues.id ASC, customers.id ASC FOR UPDATE`
+
+	rows, err := repo.db.QueryContext(ctx, query, storeId)
+	if err != nil {
+		repo.logger.ERRORf("error %v", err)
+		return customers, domain.ServerError50002
+	}
+
+	for rows.Next() {
+		var queue domain.Queue
+		var customer domain.Customer
+		err := rows.Scan(
+			&queue.Name,
+			&customer.Name, &customer.Phone, &customer.Status, &customer.CreatedAt,
+		)
+		if err != nil {
+			repo.logger.ERRORf("error %v", err)
+			return customers, domain.ServerError50002
+		}
+		if len(customers) == 0 {
+			customers = [][]string {
+				[]string {
+					"queue_name",
+					"customer_name",
+					"customer_phone",
+					"customer_status",
+					"customer_created_at",
+				},
+				[]string {
+					queue.Name,
+					customer.Name,
+					customer.Phone,
+					customer.Status,
+					customer.CreatedAt.Local().String(),
+				},
+			}
+		} else {
+			customers = append(customers, []string {
+				queue.Name,
+				customer.Name,
+				customer.Phone,
+				customer.Status,
+				customer.CreatedAt.Local().String(),
+			})
+		}
+	}
+	defer rows.Close()
+	return customers, nil
+}
