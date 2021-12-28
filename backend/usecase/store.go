@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -126,21 +127,42 @@ func (uc *Usecase) CloseStore(ctx context.Context, store domain.Store) error {
 		return err
 	}
 
-	date, csvFileName, csvContent := uc.GenerateCsvFileNameAndContent(store.CreatedAt, store.Name, customers)
-	filePath, _ := uc.grpcServicesRepository.GenerateCSV(
-		ctx, 
-		csvFileName, 
-		csvContent,
-	)
-	emailSubject, emailContent := uc.GenerateEmailContentOfCloseStore(store.Name, date)
-	_, err = uc.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, store.Email, filePath)
+	var wg sync.WaitGroup
+	errChan := make(chan error)
 
-	err = uc.pgDBRepository.RemoveStoreByID(ctx, tx, store.ID)
-	if err != nil {
-		return err
-	}
+	wg.Add(1)
+    go func() {
+        defer wg.Done()
+        date, csvFileName, csvContent := uc.GenerateCsvFileNameAndContent(store.CreatedAt, store.Name, customers)
+		filePath, _ := uc.grpcServicesRepository.GenerateCSV(
+			ctx,
+			csvFileName,
+			csvContent,
+		)
+		emailSubject, emailContent := uc.GenerateEmailContentOfCloseStore(store.Name, date)
+		_, err = uc.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, store.Email, filePath)
+    }()
 
-	err = uc.pgDBRepository.CommitTx(tx)
+	wg.Add(1)
+    go func(errChan chan error) {
+        defer wg.Done()
+        err = uc.pgDBRepository.RemoveStoreByID(ctx, tx, store.ID)
+		if err != nil {
+			errChan <- err
+			return
+		}
+
+		err = uc.pgDBRepository.CommitTx(tx)
+		if err != nil {
+			errChan <- err
+			return
+		}
+		errChan <- nil
+    }(errChan)
+	
+	err = <- errChan
+	wg.Wait()
+	
 	if err != nil {
 		return err
 	}
@@ -172,10 +194,10 @@ func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
 			storeName, storeEmail, storeCreatedAtInstr := storeInfo[0], storeInfo[1], storeInfo[2]
 			storeCreatedAt, _ := time.Parse("2006-01-02 15:04:05.000000 +0000 UTC", storeCreatedAtInstr)
 			date, csvFileName, csvContent := uc.GenerateCsvFileNameAndContent(storeCreatedAt, storeName, store)
-			
+
 			filePath, err := uc.grpcServicesRepository.GenerateCSV(
-				ctx, 
-				csvFileName, 
+				ctx,
+				csvFileName,
 				csvContent,
 			)
 			if err != nil {
@@ -385,7 +407,7 @@ func (uc *Usecase) GenerateEmailContentOfCloseStore(storeName string, storeCreat
 	return subject, content
 }
 
-func (uc *Usecase) GenerateCsvFileNameAndContent(storeCreatedAt time.Time, storeName string, content [][]string) (date string, csvFileName string, csvContent []byte){
+func (uc *Usecase) GenerateCsvFileNameAndContent(storeCreatedAt time.Time, storeName string, content [][]string) (date string, csvFileName string, csvContent []byte) {
 	year, month, day := storeCreatedAt.Date()
 	date = fmt.Sprintf("%d-%d-%d", year, month, day)
 	csvFileName = fmt.Sprintf("%s-%s", date, storeName)
