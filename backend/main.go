@@ -70,7 +70,7 @@ func main() {
 	router := mux.NewRouter()
 
 	pgDBRepository := pgDB.NewPGDBRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
-	grpcServicesRepository := grpcServices.NewGrpcServicesRepository(grpcClient, logger, config.ServerConfig.CONTEXT_TIMEOUT()*2)
+	grpcServicesRepository := grpcServices.NewGrpcServicesRepository(grpcClient, logger, config.ServerConfig.CONTEXT_TIMEOUT()*4)
 
 	usecase := usecase.NewUsecase(
 		pgDBRepository,

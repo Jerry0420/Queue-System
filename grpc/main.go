@@ -143,7 +143,7 @@ func main() {
 
 	grpcServer := grpc.NewServer(opts...)
 	grpcServicesServer := GrpcServicesServer{
-		csvDirPath: "/app/grpc/csvs",
+		csvDirPath: "csvs", // /app/grpc/csvs
 		dialer: gomail.NewDialer(
 			config.ServerConfig.EMAIL_SERVER(),
 			config.ServerConfig.EMAIL_PORT(),
