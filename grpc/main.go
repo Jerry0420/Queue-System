@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -25,6 +26,12 @@ type GrpcServicesServer struct {
 	dialer     *gomail.Dialer
 	fromEmail  string
 	grpcServices.UnimplementedGrpcServiceServer
+	emailContents chan Content
+}
+
+type Content struct {
+	message  *gomail.Message
+	filePath string
 }
 
 func (grpcServicesServer *GrpcServicesServer) GenerateCSV(ctx context.Context, req *grpcServices.GenerateCSVRequest) (*grpcServices.GenerateCSVResponse, error) {
@@ -78,22 +85,11 @@ func (grpcServicesServer *GrpcServicesServer) SendEmail(ctx context.Context, req
 	message.SetBody("text/html", content)
 
 	filePath := req.GetFilepath()
-	if filePath != "" {
-		message.Attach(filePath)
-	}
 
-	err := grpcServicesServer.dialer.DialAndSend(message)
-
-	if err != nil {
-		return nil, err
-	}
+	grpcServicesServer.emailContents <- Content{message: message, filePath: filePath}
 
 	res := &grpcServices.SendEmailResponse{
 		Result: true,
-	}
-
-	if filePath != "" {
-		os.Remove(filePath)
 	}
 
 	return res, nil
@@ -107,6 +103,25 @@ func initCsvDirPath(csvDirPath string) error {
 		}
 	}
 	return nil
+}
+
+func dialAndSendEmail(grpcServicesServer *GrpcServicesServer) {
+	for {
+		content := <-grpcServicesServer.emailContents
+
+		if content.filePath != "" {
+			content.message.Attach(content.filePath)
+		}
+		
+		err := grpcServicesServer.dialer.DialAndSend(content.message)
+		if err != nil {
+			fmt.Println(err)
+		}
+		
+		if content.filePath != "" {
+			os.Remove(content.filePath)
+		}
+	}
 }
 
 func main() {
@@ -126,11 +141,11 @@ func main() {
 		opts = append(opts, grpc.Creds(creds))
 		opts = append(opts, grpc.KeepaliveParams(
 			keepalive.ServerParameters{
-				MaxConnectionIdle:     15 * time.Second,  // If a client is idle for 15 seconds, send a GOAWAY
+				MaxConnectionIdle:     15 * time.Second, // If a client is idle for 15 seconds, send a GOAWAY
 				MaxConnectionAge:      30 * time.Second, // If any connection is alive for more than 30 seconds, send a GOAWAY
-				MaxConnectionAgeGrace: 5 * time.Second,   // Allow 5 seconds for pending RPCs to complete before forcibly closing connections
-				Time:                  5 * time.Second,   // Ping the client if it is idle for 5 seconds to ensure the connection is still active
-				Timeout:               1 * time.Second,   // Wait 1 second for the ping ack before assuming the connection is dead
+				MaxConnectionAgeGrace: 5 * time.Second,  // Allow 5 seconds for pending RPCs to complete before forcibly closing connections
+				Time:                  5 * time.Second,  // Ping the client if it is idle for 5 seconds to ensure the connection is still active
+				Timeout:               1 * time.Second,  // Wait 1 second for the ping ack before assuming the connection is dead
 			},
 		))
 		opts = append(opts, grpc.KeepaliveEnforcementPolicy(
@@ -150,18 +165,21 @@ func main() {
 			config.ServerConfig.EMAIL_USERNAME(),
 			config.ServerConfig.EMAIL_PASSWORD(),
 		),
-		fromEmail: config.ServerConfig.EMAIL_FROM(),
+		fromEmail:     config.ServerConfig.EMAIL_FROM(),
+		emailContents: make(chan Content, 100),
 	}
+	err = initCsvDirPath(grpcServicesServer.csvDirPath)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	go dialAndSendEmail(&grpcServicesServer)
+	
 	grpcServices.RegisterGrpcServiceServer(grpcServer, &grpcServicesServer)
 
 	healthcheck := health.NewServer()
 	healthpb.RegisterHealthServer(grpcServer, healthcheck)
 	healthcheck.SetServingStatus("", healthpb.HealthCheckResponse_SERVING)
-
-	err = initCsvDirPath(grpcServicesServer.csvDirPath)
-	if err != nil {
-		log.Fatalf("%v", err)
-	}
 
 	if err := grpcServer.Serve(lis); err != nil {
 		log.Fatalf("failed to serve: %v \n", err)
