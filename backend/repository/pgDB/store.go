@@ -255,11 +255,11 @@ func (repo *PgDBRepository) GetAllIdsOfExpiredStores(ctx context.Context, tx *sq
 	return storesIds, nil
 }
 
-func (repo *PgDBRepository) GetAllExpiredStoresInSlice(ctx context.Context, tx *sql.Tx, expiresTime time.Time) (storesWithMap map[int][][]string, err error) {
+func (repo *PgDBRepository) GetAllExpiredStoresInSlice(ctx context.Context, tx *sql.Tx, expiresTime time.Time) (stores[][][]string, err error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
-	storesWithMap = make(map[int][][]string)
+	storesWithMap := make(map[int][][]string)
 
 	query := `SELECT 
 					stores.id, stores.email, stores.name, stores.created_at, 
@@ -276,7 +276,7 @@ func (repo *PgDBRepository) GetAllExpiredStoresInSlice(ctx context.Context, tx *
 	rows, err := repo.db.QueryContext(ctx, query, expiresTime)
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)
-		return storesWithMap, domain.ServerError50002
+		return stores, domain.ServerError50002
 	}
 
 	for rows.Next() {
@@ -290,7 +290,7 @@ func (repo *PgDBRepository) GetAllExpiredStoresInSlice(ctx context.Context, tx *
 		)
 		if err != nil {
 			repo.logger.ERRORf("error %v", err)
-			return storesWithMap, domain.ServerError50002
+			return stores, domain.ServerError50002
 		}
 		if _, ok := storesWithMap[store.ID]; ok {
 			storesWithMap[store.ID] = append(storesWithMap[store.ID], []string{
@@ -325,5 +325,10 @@ func (repo *PgDBRepository) GetAllExpiredStoresInSlice(ctx context.Context, tx *
 		}
 	}
 	defer rows.Close()
-	return storesWithMap, nil
+
+	for  _, store := range storesWithMap {
+		stores = append(stores, store)
+	}
+
+	return stores, nil
 }

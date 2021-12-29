@@ -133,6 +133,7 @@ func (uc *Usecase) CloseStore(ctx context.Context, store domain.Store) error {
 	wg.Add(1)
     go func() {
         defer wg.Done()
+		// skip all errs inside grpc service.
         date, csvFileName, csvContent := uc.GenerateCsvFileNameAndContent(store.CreatedAt, store.Name, customers)
 		filePath, err := uc.grpcServicesRepository.GenerateCSV(
 			ctx,
@@ -172,6 +173,14 @@ func (uc *Usecase) CloseStore(ctx context.Context, store domain.Store) error {
 	return nil
 }
 
+func (uc *Usecase) chunkStoresSlice(items [][][]string, chunkSize int) (chunks [][][][]string) {
+	for chunkSize < len(items) {
+	   chunks = append(chunks, items[0:chunkSize])
+	   items = items[chunkSize:]
+	}
+	return append(chunks, items)
+}
+
 func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
 	tx, err := uc.pgDBRepository.BeginTx()
 	if err != nil {
@@ -181,7 +190,7 @@ func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
 
 	expires_time := time.Now().Add(-uc.config.StoreDuration)
 
-	storesWithMap, err := uc.pgDBRepository.GetAllExpiredStoresInSlice(ctx, tx, expires_time)
+	stores, err := uc.pgDBRepository.GetAllExpiredStoresInSlice(ctx, tx, expires_time)
 	if err != nil {
 		return err
 	}
@@ -190,41 +199,61 @@ func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
 		return err
 	}
 
-	if len(storesWithMap) > 0 {
-		for _, store := range storesWithMap {
-			storeInfo := store[0]
-			store = store[1:]
-			storeName, storeEmail, storeCreatedAtInstr := storeInfo[0], storeInfo[1], storeInfo[2]
-			storeCreatedAt, _ := time.Parse("2006-01-02 15:04:05.000000 +0000 UTC", storeCreatedAtInstr)
-			date, csvFileName, csvContent := uc.GenerateCsvFileNameAndContent(storeCreatedAt, storeName, store)
+	var wg sync.WaitGroup
+	errChan := make(chan error)
+	// GrpcReplicaCount numbers of grpc handler to handle tasks
+	chunckedStores := uc.chunkStoresSlice(stores, uc.config.GrpcReplicaCount)
 
-			filePath, err := uc.grpcServicesRepository.GenerateCSV(
-				ctx,
-				csvFileName,
-				csvContent,
-			)
-			if err != nil {
-				return err
-			}
-			emailSubject, emailContent := uc.GenerateEmailContentOfCloseStore(storeName, date)
-			_, err = uc.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, storeEmail, filePath)
-			if err != nil {
-				return err
-			}
-		}
+	for _, stores := range chunckedStores {
+		wg.Add(1)
+		go func (stores [][][]string)  {
+			defer wg.Done()
+			for _, store := range stores {
+				storeInfo := store[0]
+				store = store[1:]
+				storeName, storeEmail, storeCreatedAtInstr := storeInfo[0], storeInfo[1], storeInfo[2]
+				storeCreatedAt, _ := time.Parse("2006-01-02 15:04:05.000000 +0000 UTC", storeCreatedAtInstr)
+				date, csvFileName, csvContent := uc.GenerateCsvFileNameAndContent(storeCreatedAt, storeName, store)
+				// skip all errs inside grpc service.
+				filePath, err := uc.grpcServicesRepository.GenerateCSV(
+					ctx,
+					csvFileName,
+					csvContent,
+				)
+				if err != nil {
+					return
+				}
+				emailSubject, emailContent := uc.GenerateEmailContentOfCloseStore(storeName, date)
+				_, _ = uc.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, storeEmail, filePath)
+			}	
+		}(stores)
 	}
 
-	if len(storeIds) > 0 {
-		err = uc.pgDBRepository.RemoveStoreByIDs(ctx, tx, storeIds)
-		if err != nil {
-			return err
-		}
+	wg.Add(1)
+	go func(errChan chan error, storeIds []string) {
+		defer wg.Done()
+		if len(storeIds) > 0 {
+			err = uc.pgDBRepository.RemoveStoreByIDs(ctx, tx, storeIds)
+			if err != nil {
+				errChan <- err
+				return
+			}
 
-		err = uc.pgDBRepository.CommitTx(tx)
-		if err != nil {
-			return err
+			err = uc.pgDBRepository.CommitTx(tx)
+			if err != nil {
+				errChan <- err
+				return
+			}
 		}
+		errChan <- nil
+	}(errChan, storeIds)
+
+	err = <- errChan
+	wg.Wait()
+	if err != nil {
+		return err
 	}
+
 	return nil
 }
 

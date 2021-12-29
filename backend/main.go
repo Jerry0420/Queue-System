@@ -81,6 +81,7 @@ func main() {
 			StoreDuration: config.ServerConfig.STOREDURATION(),
 			TokenDuration: config.ServerConfig.TOKENDURATION(),
 			PasswordTokenDuration: config.ServerConfig.PASSWORDTOKENDURATION(),
+			GrpcReplicaCount: config.ServerConfig.GRPCREPLICACOUNT(),
 		},
 	)
 

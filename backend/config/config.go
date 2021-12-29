@@ -90,6 +90,10 @@ func (config Config) PASSWORDTOKENDURATION() time.Duration {
 	return 5 * time.Minute
 }
 
+func (config Config) GRPCREPLICACOUNT() int {
+	return 2
+}
+
 func (config Config) POSTGRES_HOST() string {
 	content := config.get("POSTGRES_HOST")
 	return content
