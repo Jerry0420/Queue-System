@@ -53,7 +53,9 @@ func (uc *Usecase) SigninStore(ctx context.Context, email string, password strin
 		return store, token, refreshTokenExpiresAt, err
 	}
 
-	refreshTokenExpiresAt = store.CreatedAt.Add(uc.config.StoreDuration)
+	// let crontab take responsibility of "closestore" tasks.
+	refreshTokenExpiresAt = time.Now().Add(uc.config.StoreDuration)
+	// refreshTokenExpiresAt = store.CreatedAt.Add(uc.config.StoreDuration)
 	token, err = uc.GenerateToken(
 		ctx,
 		store,
@@ -150,11 +152,11 @@ func (uc *Usecase) CloseStore(ctx context.Context, store domain.Store) error {
 	wg.Add(1)
     go func(errChan chan error) {
         defer wg.Done()
-        err = uc.pgDBRepository.RemoveStoreByID(ctx, tx, store.ID)
-		if err != nil {
-			errChan <- err
-			return
-		}
+        // err = uc.pgDBRepository.RemoveStoreByID(ctx, tx, store.ID)
+		// if err != nil {
+		// 	errChan <- err
+		// 	return
+		// }
 
 		err = uc.pgDBRepository.CommitTx(tx)
 		if err != nil {
@@ -233,11 +235,11 @@ func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
 	go func(errChan chan error, storeIds []string) {
 		defer wg.Done()
 		if len(storeIds) > 0 {
-			err = uc.pgDBRepository.RemoveStoreByIDs(ctx, tx, storeIds)
-			if err != nil {
-				errChan <- err
-				return
-			}
+			// err = uc.pgDBRepository.RemoveStoreByIDs(ctx, tx, storeIds)
+			// if err != nil {
+			// 	errChan <- err
+			// 	return
+			// }
 
 			err = uc.pgDBRepository.CommitTx(tx)
 			if err != nil {

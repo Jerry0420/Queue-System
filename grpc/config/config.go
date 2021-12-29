@@ -82,6 +82,12 @@ func (config Config) EMAIL_SERVER() string {
 	return content
 }
 
+func (config Config) EMAIL_PORT() int {
+	content := config.get("EMAIL_PORT")
+	emailPort, _ := strconv.Atoi(content)
+	return emailPort
+}
+
 func (config Config) EMAIL_USERNAME() string {
 	content := config.get("EMAIL_USERNAME")
 	return content
