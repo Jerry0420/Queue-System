@@ -15,7 +15,7 @@ func (had *httpAPIDelivery) customersCreate(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = had.usecase.CreateCustomers(
+	err = had.integrationUsecase.CreateCustomers(
 		r.Context(),
 		session,
 		domain.StoreSessionStatus.SCANNED,
@@ -28,7 +28,7 @@ func (had *httpAPIDelivery) customersCreate(w http.ResponseWriter, r *http.Reque
 	}
 	
 	go had.broker.Publish(
-		had.usecase.TopicNameOfUpdateCustomer(session.StoreId),
+		had.storeUsecase.TopicNameOfUpdateCustomer(session.StoreId),
 		map[string]interface{}{},
 	)
 
@@ -43,14 +43,14 @@ func (had *httpAPIDelivery) customerUpdate(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = had.usecase.UpdateCustomer(r.Context(), oldCustomerStatus, newCustomerStatus, &customer)
+	err = had.customerUsecase.UpdateCustomer(r.Context(), oldCustomerStatus, newCustomerStatus, &customer)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
 	go had.broker.Publish(
-		had.usecase.TopicNameOfUpdateCustomer(storeId),
+		had.storeUsecase.TopicNameOfUpdateCustomer(storeId),
 		map[string]interface{}{},
 	)
 

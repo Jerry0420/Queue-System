@@ -3,14 +3,25 @@ package pgDB
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"strconv"
+	"time"
 
 	"github.com/jerry0420/queue-system/backend/domain"
+	"github.com/jerry0420/queue-system/backend/logging"
 )
 
-func (repo *PgDBRepository) CreateCustomers(ctx context.Context, tx *sql.Tx, customers []domain.Customer) error {
-	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+type pgDBCustomerRepository struct {
+	db             PgDBInterface
+	logger         logging.LoggerTool
+	contextTimeOut time.Duration
+}
+
+func NewPgDBCustomerRepository(db PgDBInterface, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBCustomerRepositoryInterface {
+	return &pgDBCustomerRepository{db, logger, contextTimeOut}
+}
+
+func (pcr *pgDBCustomerRepository) CreateCustomers(ctx context.Context, tx PgDBInterface, customers []domain.Customer) error {
+	ctx, cancel := context.WithTimeout(ctx, pcr.contextTimeOut)
 	defer cancel()
 
 	variableCounts := 1
@@ -37,14 +48,14 @@ func (repo *PgDBRepository) CreateCustomers(ctx context.Context, tx *sql.Tx, cus
 
 	stmt, err := tx.PrepareContext(ctx, query.String())
 	if err != nil {
-		repo.logger.ERRORf("error %v", err)
+		pcr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
 	}
 	defer stmt.Close()
 
 	rows, err := stmt.QueryContext(ctx, queryRowParams...)
 	if err != nil {
-		repo.logger.ERRORf("error %v", err)
+		pcr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
 	}
 	customers = customers[:0] // clear customers slice
@@ -53,7 +64,7 @@ func (repo *PgDBRepository) CreateCustomers(ctx context.Context, tx *sql.Tx, cus
 		customer := domain.Customer{}
 		err = rows.Scan(&customer.ID, &customer.Name, &customer.Phone, &customer.QueueID, &customer.CreatedAt)
 		if err != nil {
-			repo.logger.ERRORf("error %v", err)
+			pcr.logger.ERRORf("error %v", err)
 			return domain.ServerError50002
 		}
 		customer.Status = domain.CustomerStatus.NORMAL
@@ -65,26 +76,26 @@ func (repo *PgDBRepository) CreateCustomers(ctx context.Context, tx *sql.Tx, cus
 	return nil
 }
 
-func (repo *PgDBRepository) UpdateCustomer(ctx context.Context, oldStatus string, newStatus string, customer *domain.Customer) error {
-	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+func (pcr *pgDBCustomerRepository) UpdateCustomer(ctx context.Context, oldStatus string, newStatus string, customer *domain.Customer) error {
+	ctx, cancel := context.WithTimeout(ctx, pcr.contextTimeOut)
 	defer cancel()
 
 	query := `UPDATE customers SET status=$1 WHERE id=$2 and status=$3`
-	stmt, err := repo.db.PrepareContext(ctx, query)
+	stmt, err := pcr.db.PrepareContext(ctx, query)
 	if err != nil {
-		repo.logger.ERRORf("error %v", err)
+		pcr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
 	}
 	defer stmt.Close()
 
 	result, err := stmt.ExecContext(ctx, newStatus, customer.ID, oldStatus)
 	if err != nil {
-		repo.logger.ERRORf("error %v", err)
+		pcr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
 	}
 	num, err := result.RowsAffected()
 	if err != nil {
-		repo.logger.ERRORf("error %v", err)
+		pcr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
 	}
 	if num == 0 {
@@ -93,8 +104,8 @@ func (repo *PgDBRepository) UpdateCustomer(ctx context.Context, oldStatus string
 	return nil
 }
 
-func (repo *PgDBRepository) GetCustomersWithQueuesByStoreId(ctx context.Context, tx *sql.Tx, storeId int) (customers [][]string, err error) {
-	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStoreId(ctx context.Context, tx PgDBInterface, storeId int) (customers [][]string, err error) {
+	ctx, cancel := context.WithTimeout(ctx, pcr.contextTimeOut)
 	defer cancel()
 
 	customers = make([][]string, 0)
@@ -108,9 +119,9 @@ func (repo *PgDBRepository) GetCustomersWithQueuesByStoreId(ctx context.Context,
 				WHERE queues.store_id=$1
 				ORDER BY queues.id ASC, customers.id ASC FOR UPDATE`
 
-	rows, err := repo.db.QueryContext(ctx, query, storeId)
+	rows, err := tx.QueryContext(ctx, query, storeId)
 	if err != nil {
-		repo.logger.ERRORf("error %v", err)
+		pcr.logger.ERRORf("error %v", err)
 		return customers, domain.ServerError50002
 	}
 
@@ -122,19 +133,19 @@ func (repo *PgDBRepository) GetCustomersWithQueuesByStoreId(ctx context.Context,
 			&customer.Name, &customer.Phone, &customer.Status, &customer.CreatedAt,
 		)
 		if err != nil {
-			repo.logger.ERRORf("error %v", err)
+			pcr.logger.ERRORf("error %v", err)
 			return customers, domain.ServerError50002
 		}
 		if len(customers) == 0 {
-			customers = [][]string {
-				[]string {
+			customers = [][]string{
+				[]string{
 					"queue_name",
 					"customer_name",
 					"customer_phone",
 					"customer_status",
 					"customer_created_at",
 				},
-				[]string {
+				[]string{
 					queue.Name,
 					customer.Name,
 					customer.Phone,
@@ -143,7 +154,7 @@ func (repo *PgDBRepository) GetCustomersWithQueuesByStoreId(ctx context.Context,
 				},
 			}
 		} else {
-			customers = append(customers, []string {
+			customers = append(customers, []string{
 				queue.Name,
 				customer.Name,
 				customer.Phone,

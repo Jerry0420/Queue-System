@@ -69,15 +69,36 @@ func main() {
 
 	router := mux.NewRouter()
 
-	pgDBRepository := pgDB.NewPGDBRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+	pgDBTx := pgDB.NewPgDBTx(db, logger)
+	pgDBStoreRepository := pgDB.NewPgDBStoreRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+	pgDBSignkeyRepository := pgDB.NewPgDBSignKeyRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+	pgDBSessionRepository := pgDB.NewPgDBSessionRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+	pgDBQueueRepository := pgDB.NewPgDBQueueRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+	pgDBCustomerRepository := pgDB.NewPgDBCustomerRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+
 	grpcServicesRepository := grpcServices.NewGrpcServicesRepository(grpcClient, logger, config.ServerConfig.CONTEXT_TIMEOUT()*4)
 
-	usecase := usecase.NewUsecase(
-		pgDBRepository,
-		grpcServicesRepository,
+	storeUsecase := usecase.NewStoreUsecase(
+		pgDBTx,
+		pgDBStoreRepository,
+		pgDBSignkeyRepository,
 		logger,
-		usecase.UsecaseConfig{
-			Domain:        config.ServerConfig.DOMAIN(),
+		usecase.StoreUsecaseConfig{
+			Domain: config.ServerConfig.DOMAIN(),
+		},
+	)
+	sessionUsecase := usecase.NewSessionUsecase(pgDBSessionRepository, logger)
+	customerUsecase := usecase.NewCustomerUsecase(pgDBCustomerRepository, logger)
+	integrationUsecase := usecase.NewIntegrationUsecase(
+		pgDBTx,
+		pgDBStoreRepository,
+		pgDBSessionRepository,
+		pgDBCustomerRepository,
+		pgDBQueueRepository,
+		grpcServicesRepository,
+		storeUsecase,
+		logger,
+		usecase.IntegrationUsecaseConfig{
 			StoreDuration: config.ServerConfig.STOREDURATION(),
 			TokenDuration: config.ServerConfig.TOKENDURATION(),
 			PasswordTokenDuration: config.ServerConfig.PASSWORDTOKENDURATION(),
@@ -88,13 +109,16 @@ func main() {
 	broker := broker.NewBroker(logger)
 	defer broker.CloseAll()
 
-	mw := middleware.NewMiddleware(router, logger, usecase)
+	mw := middleware.NewMiddleware(router, logger, integrationUsecase, sessionUsecase)
 
 	httpAPI.NewHttpAPIDelivery(
 		router,
 		logger,
 		mw,
-		usecase,
+		customerUsecase,
+		sessionUsecase,
+		storeUsecase,
+		integrationUsecase,
 		broker,
 		httpAPI.HttpAPIDeliveryConfig{
 			StoreDuration:         config.ServerConfig.STOREDURATION(),

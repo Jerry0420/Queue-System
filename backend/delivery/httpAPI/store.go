@@ -17,13 +17,13 @@ func (had *httpAPIDelivery) openStore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = had.usecase.VerifyPasswordLength(store.Password)
+	err = had.storeUsecase.VerifyPasswordLength(store.Password)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
-	err = had.usecase.CreateStore(r.Context(), &store, queues)
+	err = had.integrationUsecase.CreateStore(r.Context(), &store, queues)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -39,7 +39,7 @@ func (had *httpAPIDelivery) signinStore(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	store, token, refreshTokenExpiresAt, err := had.usecase.SigninStore(
+	store, token, refreshTokenExpiresAt, err := had.integrationUsecase.SigninStore(
 		r.Context(),
 		incomingStore.Email,
 		incomingStore.Password,
@@ -69,7 +69,7 @@ func (had *httpAPIDelivery) refreshToken(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	store, normalToken, sessionToken, tokenExpiresAt, err := had.usecase.RefreshToken(r.Context(), encryptedRefreshToken.Value)
+	store, normalToken, sessionToken, tokenExpiresAt, err := had.integrationUsecase.RefreshToken(r.Context(), encryptedRefreshToken.Value)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -90,7 +90,7 @@ func (had *httpAPIDelivery) closeStore(w http.ResponseWriter, r *http.Request) {
 		Name:      tokenClaims.Name,
 		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
 	}
-	err = had.usecase.CloseStore(r.Context(), store)
+	err = had.integrationUsecase.CloseStore(r.Context(), store)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -99,7 +99,7 @@ func (had *httpAPIDelivery) closeStore(w http.ResponseWriter, r *http.Request) {
 }
 
 func (had *httpAPIDelivery) closeStorerRoutine(w http.ResponseWriter, r *http.Request) {
-	err := had.usecase.CloseStoreRoutine(r.Context())
+	err := had.integrationUsecase.CloseStoreRoutine(r.Context())
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -114,7 +114,7 @@ func (had *httpAPIDelivery) forgotPassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	store, err = had.usecase.ForgetPassword(r.Context(), store.Email)
+	store, err = had.integrationUsecase.ForgetPassword(r.Context(), store.Email)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -130,13 +130,13 @@ func (had *httpAPIDelivery) updatePassword(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = had.usecase.VerifyPasswordLength(jsonBody["password"])
+	err = had.storeUsecase.VerifyPasswordLength(jsonBody["password"])
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
-	store, err := had.usecase.UpdatePassword(
+	store, err := had.integrationUsecase.UpdatePassword(
 		r.Context(),
 		jsonBody["password_token"],
 		jsonBody["password"],
@@ -161,10 +161,10 @@ func (had *httpAPIDelivery) getStoreInfoWithSSE(w http.ResponseWriter, r *http.R
 		presenter.JsonResponse(w, nil, domain.ServerError50003)
 		return
 	}
-	consumerChan := had.broker.Subscribe(had.usecase.TopicNameOfUpdateCustomer(storeId))
-	defer had.broker.UnsubscribeConsumer(had.usecase.TopicNameOfUpdateCustomer(storeId), consumerChan)
+	consumerChan := had.broker.Subscribe(had.storeUsecase.TopicNameOfUpdateCustomer(storeId))
+	defer had.broker.UnsubscribeConsumer(had.storeUsecase.TopicNameOfUpdateCustomer(storeId), consumerChan)
 
-	store, err := had.usecase.GetStoreWithQueuesAndCustomersById(r.Context(), storeId)
+	store, err := had.integrationUsecase.GetStoreWithQueuesAndCustomersById(r.Context(), storeId)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -175,7 +175,7 @@ func (had *httpAPIDelivery) getStoreInfoWithSSE(w http.ResponseWriter, r *http.R
 	for {
 		select {
 		case <-consumerChan:
-			store, err := had.usecase.GetStoreWithQueuesAndCustomersById(r.Context(), storeId)
+			store, err := had.integrationUsecase.GetStoreWithQueuesAndCustomersById(r.Context(), storeId)
 			if err != nil {
 				presenter.JsonResponse(w, nil, err)
 				return
@@ -195,7 +195,7 @@ func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	store, err := had.usecase.GetStoreWithQueuesAndCustomersById(r.Context(), storeId)
+	store, err := had.integrationUsecase.GetStoreWithQueuesAndCustomersById(r.Context(), storeId)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -210,14 +210,14 @@ func (had *httpAPIDelivery) updateStoreDescription(w http.ResponseWriter, r *htt
 		return
 	}
 
-	err = had.usecase.UpdateStoreDescription(r.Context(), store.Description, &store)
+	err = had.storeUsecase.UpdateStoreDescription(r.Context(), store.Description, &store)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
 	go had.broker.Publish(
-		had.usecase.TopicNameOfUpdateCustomer(store.ID),
+		had.storeUsecase.TopicNameOfUpdateCustomer(store.ID),
 		map[string]interface{}{},
 	)
 
