@@ -11,12 +11,12 @@ import (
 )
 
 type pgDBSessionRepository struct {
-	db             *sql.DB
+	db             PgDBInterface
 	logger         logging.LoggerTool
 	contextTimeOut time.Duration
 }
 
-func NewPgDBSessionRepository(db *sql.DB, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBSessionRepositoryInterface {
+func NewPgDBSessionRepository(db PgDBInterface, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBSessionRepositoryInterface {
 	return &pgDBSessionRepository{db, logger, contextTimeOut}
 }
 
@@ -71,7 +71,7 @@ func (psr *pgDBSessionRepository) UpdateSessionStatus(ctx context.Context, sessi
 	return nil
 }
 
-func (psr *pgDBSessionRepository) UpdateSessionWithTx(ctx context.Context, tx *sql.Tx, session domain.StoreSession, oldStatus string, newStatus string) error {
+func (psr *pgDBSessionRepository) UpdateSessionWithTx(ctx context.Context, tx PgDBInterface, session domain.StoreSession, oldStatus string, newStatus string) error {
 	ctx, cancel := context.WithTimeout(ctx, psr.contextTimeOut)
 	defer cancel()
 	query := `UPDATE store_sessions SET status=$1 WHERE id=$2 and status=$3`

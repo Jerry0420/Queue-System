@@ -11,12 +11,12 @@ import (
 )
 
 type pgDBSignKeyRepository struct {
-	db             *sql.DB
+	db             PgDBInterface
 	logger         logging.LoggerTool
 	contextTimeOut time.Duration
 }
 
-func NewPgDBSignKeyRepository(db *sql.DB, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBSignKeyRepositoryInterface {
+func NewPgDBSignKeyRepository(db PgDBInterface, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBSignKeyRepositoryInterface {
 	return &pgDBSignKeyRepository{db, logger, contextTimeOut}
 }
 

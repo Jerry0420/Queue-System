@@ -19,14 +19,24 @@ type HttpAPIDeliveryConfig struct {
 }
 
 type httpAPIDelivery struct {
-	logger  logging.LoggerTool
-	usecase *usecase.Usecase
-	broker  *broker.Broker
-	config  HttpAPIDeliveryConfig
+	logger          logging.LoggerTool
+	customerUsecase usecase.CustomerUseCaseInterface
+	sessionUsecase  usecase.SessionUseCaseInterface
+	storeUsecase    usecase.StoreUseCaseInterface
+	broker          *broker.Broker
+	config          HttpAPIDeliveryConfig
 }
 
-func NewHttpAPIDelivery(router *mux.Router, logger logging.LoggerTool, mw *middleware.Middleware, usecase *usecase.Usecase, broker *broker.Broker, config HttpAPIDeliveryConfig) {
-	had := &httpAPIDelivery{logger, usecase, broker, config}
+func NewHttpAPIDelivery(router *mux.Router,
+	logger logging.LoggerTool,
+	mw *middleware.Middleware,
+	customerUsecase usecase.CustomerUseCaseInterface,
+	sessionUsecase usecase.SessionUseCaseInterface,
+	storeUsecase usecase.StoreUseCaseInterface,
+	broker *broker.Broker,
+	config HttpAPIDeliveryConfig,
+) {
+	had := &httpAPIDelivery{logger, customerUsecase, sessionUsecase, storeUsecase, broker, config}
 
 	// stores
 	router.HandleFunc(

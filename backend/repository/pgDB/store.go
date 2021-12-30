@@ -13,12 +13,12 @@ import (
 )
 
 type pgDBStoreRepository struct {
-	db             *sql.DB
+	db             PgDBInterface
 	logger         logging.LoggerTool
 	contextTimeOut time.Duration
 }
 
-func NewPgDBStoreRepository(db *sql.DB, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBStoreRepositoryInterface {
+func NewPgDBStoreRepository(db PgDBInterface, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBStoreRepositoryInterface {
 	return &pgDBStoreRepository{db, logger, contextTimeOut}
 }
 
@@ -146,7 +146,7 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesById(ctx context.Context, stor
 	return storeWithQueues, nil
 }
 
-func (psr *pgDBStoreRepository) CreateStore(ctx context.Context, tx *sql.Tx, store *domain.Store, queues []domain.Queue) error {
+func (psr *pgDBStoreRepository) CreateStore(ctx context.Context, tx PgDBInterface, store *domain.Store, queues []domain.Queue) error {
 	ctx, cancel := context.WithTimeout(ctx, psr.contextTimeOut)
 	defer cancel()
 
@@ -188,7 +188,7 @@ func (psr *pgDBStoreRepository) UpdateStore(ctx context.Context, store *domain.S
 	return nil
 }
 
-func (psr *pgDBStoreRepository) RemoveStoreByID(ctx context.Context, tx *sql.Tx, id int) error {
+func (psr *pgDBStoreRepository) RemoveStoreByID(ctx context.Context, tx PgDBInterface, id int) error {
 	ctx, cancel := context.WithTimeout(ctx, psr.contextTimeOut)
 	defer cancel()
 
@@ -216,7 +216,7 @@ func (psr *pgDBStoreRepository) RemoveStoreByID(ctx context.Context, tx *sql.Tx,
 	return nil
 }
 
-func (psr *pgDBStoreRepository) RemoveStoreByIDs(ctx context.Context, tx *sql.Tx, storeIds []string) error {
+func (psr *pgDBStoreRepository) RemoveStoreByIDs(ctx context.Context, tx PgDBInterface, storeIds []string) error {
 	ctx, cancel := context.WithTimeout(ctx, psr.contextTimeOut)
 	defer cancel()
 
@@ -239,7 +239,7 @@ func (psr *pgDBStoreRepository) RemoveStoreByIDs(ctx context.Context, tx *sql.Tx
 	return nil
 }
 
-func (psr *pgDBStoreRepository) GetAllIdsOfExpiredStores(ctx context.Context, tx *sql.Tx, expiresTime time.Time) (storesIds []string, err error) {
+func (psr *pgDBStoreRepository) GetAllIdsOfExpiredStores(ctx context.Context, tx PgDBInterface, expiresTime time.Time) (storesIds []string, err error) {
 	ctx, cancel := context.WithTimeout(ctx, psr.contextTimeOut)
 	defer cancel()
 
@@ -266,7 +266,7 @@ func (psr *pgDBStoreRepository) GetAllIdsOfExpiredStores(ctx context.Context, tx
 	return storesIds, nil
 }
 
-func (psr *pgDBStoreRepository) GetAllExpiredStoresInSlice(ctx context.Context, tx *sql.Tx, expiresTime time.Time) (stores [][][]string, err error) {
+func (psr *pgDBStoreRepository) GetAllExpiredStoresInSlice(ctx context.Context, tx PgDBInterface, expiresTime time.Time) (stores [][][]string, err error) {
 	ctx, cancel := context.WithTimeout(ctx, psr.contextTimeOut)
 	defer cancel()
 

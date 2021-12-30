@@ -3,7 +3,6 @@ package pgDB
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"strconv"
 	"time"
 
@@ -12,16 +11,16 @@ import (
 )
 
 type pgDBCustomerRepository struct {
-	db             *sql.DB
+	db             PgDBInterface
 	logger         logging.LoggerTool
 	contextTimeOut time.Duration
 }
 
-func NewPgDBCustomerRepository(db *sql.DB, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBCustomerRepositoryInterface {
+func NewPgDBCustomerRepository(db PgDBInterface, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBCustomerRepositoryInterface {
 	return &pgDBCustomerRepository{db, logger, contextTimeOut}
 }
 
-func (pcr *pgDBCustomerRepository) CreateCustomers(ctx context.Context, tx *sql.Tx, customers []domain.Customer) error {
+func (pcr *pgDBCustomerRepository) CreateCustomers(ctx context.Context, tx PgDBInterface, customers []domain.Customer) error {
 	ctx, cancel := context.WithTimeout(ctx, pcr.contextTimeOut)
 	defer cancel()
 
@@ -105,7 +104,7 @@ func (pcr *pgDBCustomerRepository) UpdateCustomer(ctx context.Context, oldStatus
 	return nil
 }
 
-func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStoreId(ctx context.Context, tx *sql.Tx, storeId int) (customers [][]string, err error) {
+func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStoreId(ctx context.Context, tx PgDBInterface, storeId int) (customers [][]string, err error) {
 	ctx, cancel := context.WithTimeout(ctx, pcr.contextTimeOut)
 	defer cancel()
 
@@ -120,7 +119,7 @@ func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStoreId(ctx context.C
 				WHERE queues.store_id=$1
 				ORDER BY queues.id ASC, customers.id ASC FOR UPDATE`
 
-	rows, err := pcr.db.QueryContext(ctx, query, storeId)
+	rows, err := tx.QueryContext(ctx, query, storeId)
 	if err != nil {
 		pcr.logger.ERRORf("error %v", err)
 		return customers, domain.ServerError50002

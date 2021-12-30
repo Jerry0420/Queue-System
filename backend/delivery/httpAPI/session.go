@@ -16,7 +16,7 @@ func (had *httpAPIDelivery) createSession(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	store, err := had.usecase.VerifySessionToken(r.Context(), sessionToken)
+	store, err := had.storeUsecase.VerifySessionToken(r.Context(), sessionToken)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -28,10 +28,10 @@ func (had *httpAPIDelivery) createSession(w http.ResponseWriter, r *http.Request
 		presenter.JsonResponse(w, nil, domain.ServerError50003)
 		return
 	}
-	consumerChan := had.broker.Subscribe(had.usecase.TopicNameOfUpdateSession(store.ID))
-	defer had.broker.UnsubscribeConsumer(had.usecase.TopicNameOfUpdateSession(store.ID), consumerChan)
+	consumerChan := had.broker.Subscribe(had.sessionUsecase.TopicNameOfUpdateSession(store.ID))
+	defer had.broker.UnsubscribeConsumer(had.sessionUsecase.TopicNameOfUpdateSession(store.ID), consumerChan)
 
-	session, err := had.usecase.CreateSession(r.Context(), store)
+	session, err := had.sessionUsecase.CreateSession(r.Context(), store)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
@@ -43,7 +43,7 @@ func (had *httpAPIDelivery) createSession(w http.ResponseWriter, r *http.Request
 		select {
 		case event := <-consumerChan:
 			if event["old_session_id"].(string) == session.ID {
-				session, err = had.usecase.CreateSession(r.Context(), store)
+				session, err = had.sessionUsecase.CreateSession(r.Context(), store)
 				if err != nil {
 					presenter.JsonResponse(w, nil, err)
 					return
@@ -64,7 +64,7 @@ func (had *httpAPIDelivery) scannedSession(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = had.usecase.UpdateSessionStatus(
+	err = had.sessionUsecase.UpdateSessionStatus(
 		r.Context(),
 		&session,
 		domain.StoreSessionStatus.NORMAL,  //oldStatus
@@ -76,7 +76,7 @@ func (had *httpAPIDelivery) scannedSession(w http.ResponseWriter, r *http.Reques
 	}
 
 	go had.broker.Publish(
-		had.usecase.TopicNameOfUpdateSession(session.StoreId),
+		had.sessionUsecase.TopicNameOfUpdateSession(session.StoreId),
 		map[string]interface{}{"old_session_id": session.ID},
 	)
 	presenter.JsonResponseOK(w, session)

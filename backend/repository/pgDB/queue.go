@@ -3,7 +3,6 @@ package pgDB
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"strconv"
 	"time"
 
@@ -12,16 +11,16 @@ import (
 )
 
 type pgDBQueueRepository struct {
-	db             *sql.DB
+	db             PgDBInterface
 	logger         logging.LoggerTool
 	contextTimeOut time.Duration
 }
 
-func NewPgDBQueueRepository(db *sql.DB, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBQueueRepositoryInterface {
+func NewPgDBQueueRepository(db PgDBInterface, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBQueueRepositoryInterface {
 	return &pgDBQueueRepository{db, logger, contextTimeOut}
 }
 
-func (pqr *pgDBQueueRepository) CreateQueues(ctx context.Context, tx *sql.Tx, storeID int, queues []domain.Queue) error {
+func (pqr *pgDBQueueRepository) CreateQueues(ctx context.Context, tx PgDBInterface, storeID int, queues []domain.Queue) error {
 	ctx, cancel := context.WithTimeout(ctx, pqr.contextTimeOut)
 	defer cancel()
 

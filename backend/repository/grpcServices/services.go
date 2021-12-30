@@ -2,9 +2,21 @@ package grpcServices
 
 import (
 	context "context"
+	"time"
 
 	"github.com/jerry0420/queue-system/backend/domain"
+	"github.com/jerry0420/queue-system/backend/logging"
 )
+
+type grpcServicesRepository struct {
+	client         GrpcServiceClient
+	logger         logging.LoggerTool
+	contextTimeOut time.Duration
+}
+
+func NewGrpcServicesRepository(client GrpcServiceClient, logger logging.LoggerTool, contextTimeOut time.Duration) GrpcServicesRepositoryInterface {
+	return &grpcServicesRepository{client, logger, contextTimeOut}
+}
 
 func (repo *grpcServicesRepository) GenerateCSV(ctx context.Context, name string, content []byte) (filePath string, err error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)

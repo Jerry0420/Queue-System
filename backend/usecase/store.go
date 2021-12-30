@@ -13,50 +13,87 @@ import (
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/jerry0420/queue-system/backend/domain"
+	"github.com/jerry0420/queue-system/backend/logging"
+	"github.com/jerry0420/queue-system/backend/repository/grpcServices"
+	"github.com/jerry0420/queue-system/backend/repository/pgDB"
 	"golang.org/x/crypto/bcrypt"
 )
 
-func (uc *Usecase) CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
-	encryptedPassword, err := uc.EncryptPassword(store.Password)
+type StoreUsecaseConfig struct {
+	Domain                string
+	StoreDuration         time.Duration
+	TokenDuration         time.Duration
+	PasswordTokenDuration time.Duration
+	GrpcReplicaCount      int
+}
+
+type storeUsecase struct {
+	pgDBTx                 pgDB.PgDBTxInterface
+	pgDBStoreRepository    pgDB.PgDBStoreRepositoryInterface
+	pgDBSessionRepository  pgDB.PgDBSessionRepositoryInterface
+	pgDBCustomerRepository pgDB.PgDBCustomerRepositoryInterface
+	pgDBQueueRepository    pgDB.PgDBQueueRepositoryInterface
+	pgDBSignKeyRepository  pgDB.PgDBSignKeyRepositoryInterface
+	grpcServicesRepository grpcServices.GrpcServicesRepositoryInterface
+	logger                 logging.LoggerTool
+	config                 StoreUsecaseConfig
+}
+
+func NewStoreUsecase(
+	pgDBTx pgDB.PgDBTxInterface,
+	pgDBStoreRepository pgDB.PgDBStoreRepositoryInterface,
+	pgDBSessionRepository pgDB.PgDBSessionRepositoryInterface,
+	pgDBCustomerRepository pgDB.PgDBCustomerRepositoryInterface,
+	pgDBQueueRepository pgDB.PgDBQueueRepositoryInterface,
+	pgDBSignKeyRepository pgDB.PgDBSignKeyRepositoryInterface,
+	grpcServicesRepository grpcServices.GrpcServicesRepositoryInterface,
+	logger logging.LoggerTool,
+	config StoreUsecaseConfig,
+) StoreUseCaseInterface {
+	return &storeUsecase{pgDBTx, pgDBStoreRepository, pgDBSessionRepository, pgDBCustomerRepository, pgDBQueueRepository, pgDBSignKeyRepository, grpcServicesRepository, logger, config}
+}
+
+func (su *storeUsecase) CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
+	encryptedPassword, err := su.EncryptPassword(store.Password)
 	if err != nil {
 		return err
 	}
 	store.Password = encryptedPassword
 
-	tx, err := uc.pgDBRepository.BeginTx()
+	tx, err := su.pgDBTx.BeginTx()
 	if err != nil {
 		return err
 	}
-	defer uc.pgDBRepository.RollbackTx(tx)
+	defer su.pgDBTx.RollbackTx(tx)
 
-	err = uc.pgDBRepository.CreateStore(ctx, tx, store, queues)
-	if err != nil {
-		return err
-	}
-
-	err = uc.pgDBRepository.CreateQueues(ctx, tx, store.ID, queues)
+	err = su.pgDBStoreRepository.CreateStore(ctx, tx, store, queues)
 	if err != nil {
 		return err
 	}
 
-	err = uc.pgDBRepository.CommitTx(tx)
+	err = su.pgDBQueueRepository.CreateQueues(ctx, tx, store.ID, queues)
+	if err != nil {
+		return err
+	}
+
+	err = su.pgDBTx.CommitTx(tx)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (uc *Usecase) SigninStore(ctx context.Context, email string, password string) (store domain.Store, token string, refreshTokenExpiresAt time.Time, err error) {
-	store, err = uc.pgDBRepository.GetStoreByEmail(ctx, email)
-	err = uc.ValidatePassword(store.Password, password)
+func (su *storeUsecase) SigninStore(ctx context.Context, email string, password string) (store domain.Store, token string, refreshTokenExpiresAt time.Time, err error) {
+	store, err = su.pgDBStoreRepository.GetStoreByEmail(ctx, email)
+	err = su.ValidatePassword(store.Password, password)
 	if err != nil {
 		return store, token, refreshTokenExpiresAt, err
 	}
 
 	// let crontab take responsibility of "closestore" tasks.
-	refreshTokenExpiresAt = time.Now().Add(uc.config.StoreDuration)
+	refreshTokenExpiresAt = time.Now().Add(su.config.StoreDuration)
 	// refreshTokenExpiresAt = store.CreatedAt.Add(uc.config.StoreDuration)
-	token, err = uc.GenerateToken(
+	token, err = su.GenerateToken(
 		ctx,
 		store,
 		domain.SignKeyTypes.REFRESH,
@@ -69,14 +106,14 @@ func (uc *Usecase) SigninStore(ctx context.Context, email string, password strin
 	return store, token, refreshTokenExpiresAt, nil
 }
 
-func (uc *Usecase) RefreshToken(ctx context.Context, encryptedRefreshToken string) (
+func (su *storeUsecase) RefreshToken(ctx context.Context, encryptedRefreshToken string) (
 	store domain.Store,
 	normalToken string,
 	sessionToken string,
 	tokenExpiresAt time.Time,
 	err error,
 ) {
-	tokenClaims, err := uc.VerifyToken(
+	tokenClaims, err := su.VerifyToken(
 		ctx,
 		encryptedRefreshToken,
 		domain.SignKeyTypes.REFRESH,
@@ -92,9 +129,9 @@ func (uc *Usecase) RefreshToken(ctx context.Context, encryptedRefreshToken strin
 		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
 	}
 
-	tokenExpiresAt = time.Now().Add(uc.config.TokenDuration)
+	tokenExpiresAt = time.Now().Add(su.config.TokenDuration)
 	// normal token
-	normalToken, err = uc.GenerateToken(
+	normalToken, err = su.GenerateToken(
 		ctx,
 		store,
 		domain.SignKeyTypes.NORMAL,
@@ -104,7 +141,7 @@ func (uc *Usecase) RefreshToken(ctx context.Context, encryptedRefreshToken strin
 		return store, normalToken, sessionToken, tokenExpiresAt, err
 	}
 	// session token
-	sessionToken, err = uc.GenerateToken(
+	sessionToken, err = su.GenerateToken(
 		ctx,
 		store,
 		domain.SignKeyTypes.SESSION,
@@ -117,14 +154,14 @@ func (uc *Usecase) RefreshToken(ctx context.Context, encryptedRefreshToken strin
 	return store, normalToken, sessionToken, tokenExpiresAt, nil
 }
 
-func (uc *Usecase) CloseStore(ctx context.Context, store domain.Store) error {
-	tx, err := uc.pgDBRepository.BeginTx()
+func (su *storeUsecase) CloseStore(ctx context.Context, store domain.Store) error {
+	tx, err := su.pgDBTx.BeginTx()
 	if err != nil {
 		return err
 	}
-	defer uc.pgDBRepository.RollbackTx(tx)
+	defer su.pgDBTx.RollbackTx(tx)
 
-	customers, err := uc.pgDBRepository.GetCustomersWithQueuesByStoreId(ctx, tx, store.ID)
+	customers, err := su.pgDBCustomerRepository.GetCustomersWithQueuesByStoreId(ctx, tx, store.ID)
 	if err != nil {
 		return err
 	}
@@ -133,11 +170,11 @@ func (uc *Usecase) CloseStore(ctx context.Context, store domain.Store) error {
 	errChan := make(chan error)
 
 	wg.Add(1)
-    go func() {
-        defer wg.Done()
+	go func() {
+		defer wg.Done()
 		// skip all errs inside grpc service.
-        date, csvFileName, csvContent := uc.GenerateCsvFileNameAndContent(store.CreatedAt, store.Name, customers)
-		filePath, err := uc.grpcServicesRepository.GenerateCSV(
+		date, csvFileName, csvContent := su.GenerateCsvFileNameAndContent(store.CreatedAt, store.Name, customers)
+		filePath, err := su.grpcServicesRepository.GenerateCSV(
 			ctx,
 			csvFileName,
 			csvContent,
@@ -145,58 +182,58 @@ func (uc *Usecase) CloseStore(ctx context.Context, store domain.Store) error {
 		if err != nil {
 			return
 		}
-		emailSubject, emailContent := uc.GenerateEmailContentOfCloseStore(store.Name, date)
-		_, err = uc.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, store.Email, filePath)
-    }()
+		emailSubject, emailContent := su.GenerateEmailContentOfCloseStore(store.Name, date)
+		_, err = su.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, store.Email, filePath)
+	}()
 
 	wg.Add(1)
-    go func(errChan chan error) {
-        defer wg.Done()
-        // err = uc.pgDBRepository.RemoveStoreByID(ctx, tx, store.ID)
+	go func(errChan chan error) {
+		defer wg.Done()
+		// err := su.pgDBStoreRepository.RemoveStoreByID(ctx, tx, store.ID)
 		// if err != nil {
 		// 	errChan <- err
 		// 	return
 		// }
 
-		err = uc.pgDBRepository.CommitTx(tx)
+		err = su.pgDBTx.CommitTx(tx)
 		if err != nil {
 			errChan <- err
 			return
 		}
 		errChan <- nil
-    }(errChan)
-	
-	err = <- errChan
+	}(errChan)
+
+	err = <-errChan
 	wg.Wait()
-	
+
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (uc *Usecase) chunkStoresSlice(items [][][]string, chunkSize int) (chunks [][][][]string) {
+func (su *storeUsecase) ChunkStoresSlice(items [][][]string, chunkSize int) (chunks [][][][]string) {
 	for chunkSize < len(items) {
-	   chunks = append(chunks, items[0:chunkSize])
-	   items = items[chunkSize:]
+		chunks = append(chunks, items[0:chunkSize])
+		items = items[chunkSize:]
 	}
 	return append(chunks, items)
 }
 
-func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
-	tx, err := uc.pgDBRepository.BeginTx()
+func (su *storeUsecase) CloseStoreRoutine(ctx context.Context) error {
+	tx, err := su.pgDBTx.BeginTx()
 	if err != nil {
 		return err
 	}
-	defer uc.pgDBRepository.RollbackTx(tx)
+	defer su.pgDBTx.RollbackTx(tx)
 
-	expires_time := time.Now().Add(-uc.config.StoreDuration)
+	expires_time := time.Now().Add(-su.config.StoreDuration)
 
-	stores, err := uc.pgDBRepository.GetAllExpiredStoresInSlice(ctx, tx, expires_time)
+	stores, err := su.pgDBStoreRepository.GetAllExpiredStoresInSlice(ctx, tx, expires_time)
 	if err != nil {
 		return err
 	}
-	storeIds, err := uc.pgDBRepository.GetAllIdsOfExpiredStores(ctx, tx, expires_time)
+	storeIds, err := su.pgDBStoreRepository.GetAllIdsOfExpiredStores(ctx, tx, expires_time)
 	if err != nil {
 		return err
 	}
@@ -204,20 +241,20 @@ func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
 	var wg sync.WaitGroup
 	errChan := make(chan error)
 	// GrpcReplicaCount numbers of grpc handler to handle tasks
-	chunckedStores := uc.chunkStoresSlice(stores, uc.config.GrpcReplicaCount)
+	chunckedStores := su.ChunkStoresSlice(stores, su.config.GrpcReplicaCount)
 
 	for _, stores := range chunckedStores {
 		wg.Add(1)
-		go func (stores [][][]string)  {
+		go func(stores [][][]string) {
 			defer wg.Done()
 			for _, store := range stores {
 				storeInfo := store[0]
 				store = store[1:]
 				storeName, storeEmail, storeCreatedAtInstr := storeInfo[0], storeInfo[1], storeInfo[2]
 				storeCreatedAt, _ := time.Parse("2006-01-02 15:04:05.000000 +0000 UTC", storeCreatedAtInstr)
-				date, csvFileName, csvContent := uc.GenerateCsvFileNameAndContent(storeCreatedAt, storeName, store)
+				date, csvFileName, csvContent := su.GenerateCsvFileNameAndContent(storeCreatedAt, storeName, store)
 				// skip all errs inside grpc service.
-				filePath, err := uc.grpcServicesRepository.GenerateCSV(
+				filePath, err := su.grpcServicesRepository.GenerateCSV(
 					ctx,
 					csvFileName,
 					csvContent,
@@ -225,9 +262,9 @@ func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
 				if err != nil {
 					return
 				}
-				emailSubject, emailContent := uc.GenerateEmailContentOfCloseStore(storeName, date)
-				_, _ = uc.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, storeEmail, filePath)
-			}	
+				emailSubject, emailContent := su.GenerateEmailContentOfCloseStore(storeName, date)
+				_, _ = su.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, storeEmail, filePath)
+			}
 		}(stores)
 	}
 
@@ -235,13 +272,13 @@ func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
 	go func(errChan chan error, storeIds []string) {
 		defer wg.Done()
 		if len(storeIds) > 0 {
-			// err = uc.pgDBRepository.RemoveStoreByIDs(ctx, tx, storeIds)
+			// err := su.pgDBStoreRepository.RemoveStoreByIDs(ctx, tx, storeIds)
 			// if err != nil {
 			// 	errChan <- err
 			// 	return
 			// }
 
-			err = uc.pgDBRepository.CommitTx(tx)
+			err = su.pgDBTx.CommitTx(tx)
 			if err != nil {
 				errChan <- err
 				return
@@ -250,7 +287,7 @@ func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
 		errChan <- nil
 	}(errChan, storeIds)
 
-	err = <- errChan
+	err = <-errChan
 	wg.Wait()
 	if err != nil {
 		return err
@@ -259,29 +296,29 @@ func (uc *Usecase) CloseStoreRoutine(ctx context.Context) error {
 	return nil
 }
 
-func (uc *Usecase) ForgetPassword(ctx context.Context, email string) (store domain.Store, err error) {
-	store, err = uc.pgDBRepository.GetStoreByEmail(ctx, email)
+func (su *storeUsecase) ForgetPassword(ctx context.Context, email string) (store domain.Store, err error) {
+	store, err = su.pgDBStoreRepository.GetStoreByEmail(ctx, email)
 	if err != nil {
 		return store, err
 	}
-	passwordToken, err := uc.GenerateToken(
+	passwordToken, err := su.GenerateToken(
 		ctx,
 		store,
 		domain.SignKeyTypes.PASSWORD,
-		time.Now().Add(uc.config.PasswordTokenDuration),
+		time.Now().Add(su.config.PasswordTokenDuration),
 	)
 	if err != nil {
 		return store, err
 	}
 
-	emailSubject, emailContent := uc.GenerateEmailContentOfForgetPassword(passwordToken, store)
-	_, err = uc.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, email, "")
+	emailSubject, emailContent := su.GenerateEmailContentOfForgetPassword(passwordToken, store)
+	_, err = su.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, email, "")
 
 	return store, err
 }
 
-func (uc *Usecase) UpdatePassword(ctx context.Context, passwordToken string, newPassword string) (store domain.Store, err error) {
-	tokenClaims, err := uc.VerifyToken(
+func (su *storeUsecase) UpdatePassword(ctx context.Context, passwordToken string, newPassword string) (store domain.Store, err error) {
+	tokenClaims, err := su.VerifyToken(
 		ctx,
 		passwordToken,
 		domain.SignKeyTypes.PASSWORD,
@@ -297,12 +334,12 @@ func (uc *Usecase) UpdatePassword(ctx context.Context, passwordToken string, new
 		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
 	}
 
-	encryptedPassword, err := uc.EncryptPassword(newPassword)
+	encryptedPassword, err := su.EncryptPassword(newPassword)
 	if err != nil {
 		return store, err
 	}
 
-	err = uc.pgDBRepository.UpdateStore(ctx, &store, "password", encryptedPassword)
+	err = su.pgDBStoreRepository.UpdateStore(ctx, &store, "password", encryptedPassword)
 	if err != nil {
 		return store, err
 	}
@@ -311,18 +348,18 @@ func (uc *Usecase) UpdatePassword(ctx context.Context, passwordToken string, new
 	return store, nil
 }
 
-func (uc *Usecase) UpdateStoreDescription(ctx context.Context, newDescription string, store *domain.Store) error {
-	err := uc.pgDBRepository.UpdateStore(ctx, store, "description", newDescription)
+func (su *storeUsecase) UpdateStoreDescription(ctx context.Context, newDescription string, store *domain.Store) error {
+	err := su.pgDBStoreRepository.UpdateStore(ctx, store, "description", newDescription)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (uc *Usecase) VerifyPasswordLength(password string) error {
+func (su *storeUsecase) VerifyPasswordLength(password string) error {
 	decodedPassword, err := base64.StdEncoding.DecodeString(password)
 	if err != nil {
-		uc.logger.ERRORf("%v", err)
+		su.logger.ERRORf("%v", err)
 		return domain.ServerError50001
 	}
 	rawPassword := string(decodedPassword)
@@ -333,37 +370,37 @@ func (uc *Usecase) VerifyPasswordLength(password string) error {
 	return nil
 }
 
-func (uc *Usecase) EncryptPassword(password string) (string, error) {
+func (su *storeUsecase) EncryptPassword(password string) (string, error) {
 	cryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		uc.logger.ERRORf("%v", err)
+		su.logger.ERRORf("%v", err)
 		return "", domain.ServerError50001
 	}
 	return string(cryptedPassword), nil
 }
 
-func (uc *Usecase) ValidatePassword(passwordInDb string, incomingPassword string) error {
+func (su *storeUsecase) ValidatePassword(passwordInDb string, incomingPassword string) error {
 	err := bcrypt.CompareHashAndPassword([]byte(passwordInDb), []byte(incomingPassword))
 	switch {
 	case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
-		uc.logger.ERRORf("%v", err)
+		su.logger.ERRORf("%v", err)
 		return domain.ServerError40003
 	case err != nil:
-		uc.logger.ERRORf("%v", err)
+		su.logger.ERRORf("%v", err)
 		return domain.ServerError50001
 	}
 	return nil
 }
 
-func (uc *Usecase) GenerateToken(ctx context.Context, store domain.Store, signKeyType string, expireTime time.Time) (encryptToken string, err error) {
+func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store, signKeyType string, expireTime time.Time) (encryptToken string, err error) {
 	randomUUID := uuid.New().String()
 	saltBytes, err := bcrypt.GenerateFromPassword([]byte(randomUUID), bcrypt.DefaultCost)
 	if err != nil {
-		uc.logger.ERRORf("%v", err)
+		su.logger.ERRORf("%v", err)
 		return "", domain.ServerError50001
 	}
 	signKey := &domain.SignKey{StoreId: store.ID, SignKey: string(saltBytes), SignKeyType: signKeyType}
-	err = uc.pgDBRepository.CreateSignKey(ctx, signKey)
+	err = su.pgDBSignKeyRepository.CreateSignKey(ctx, signKey)
 	if err != nil {
 		return "", err
 	}
@@ -382,16 +419,16 @@ func (uc *Usecase) GenerateToken(ctx context.Context, store domain.Store, signKe
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	encryptToken, err = token.SignedString([]byte(signKey.SignKey))
 	if err != nil {
-		uc.logger.ERRORf("%v", err)
+		su.logger.ERRORf("%v", err)
 		return encryptToken, domain.ServerError50001
 	}
 	return encryptToken, err
 }
 
-func (uc *Usecase) VerifyToken(ctx context.Context, encryptToken string, signKeyType string, withSignkeyPreserved bool) (tokenClaims domain.TokenClaims, err error) {
+func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string, signKeyType string, withSignkeyPreserved bool) (tokenClaims domain.TokenClaims, err error) {
 	_, _, err = new(jwt.Parser).ParseUnverified(encryptToken, &tokenClaims)
 	if err != nil {
-		uc.logger.ERRORf("%v", err)
+		su.logger.ERRORf("%v", err)
 		return domain.TokenClaims{}, domain.ServerError40101
 	}
 
@@ -399,9 +436,9 @@ func (uc *Usecase) VerifyToken(ctx context.Context, encryptToken string, signKey
 	token, err := jwt.ParseWithClaims(encryptToken, &tokenClaims, func(token *jwt.Token) (interface{}, error) {
 		var getSignKeyFunc func(context.Context, int, string) (domain.SignKey, error)
 		if withSignkeyPreserved == true {
-			getSignKeyFunc = uc.pgDBRepository.GetSignKeyByID
+			getSignKeyFunc = su.pgDBSignKeyRepository.GetSignKeyByID
 		} else {
-			getSignKeyFunc = uc.pgDBRepository.RemoveSignKeyByID
+			getSignKeyFunc = su.pgDBSignKeyRepository.RemoveSignKeyByID
 		}
 		signKey, err := getSignKeyFunc(ctx, tokenClaims.SignKeyID, signKeyType)
 		if err != nil {
@@ -410,7 +447,7 @@ func (uc *Usecase) VerifyToken(ctx context.Context, encryptToken string, signKey
 		return []byte(signKey.SignKey), nil
 	})
 	if err != nil {
-		uc.logger.ERRORf("%v", err)
+		su.logger.ERRORf("%v", err)
 		if err.(*jwt.ValidationError).Errors == jwt.ValidationErrorExpired {
 			return tokenClaims, domain.ServerError40104
 		}
@@ -421,27 +458,27 @@ func (uc *Usecase) VerifyToken(ctx context.Context, encryptToken string, signKey
 	}
 
 	if !token.Valid {
-		uc.logger.ERRORf("unvalid token")
+		su.logger.ERRORf("unvalid token")
 		return tokenClaims, domain.ServerError40103
 	}
 
 	return tokenClaims, nil
 }
 
-func (uc *Usecase) GenerateEmailContentOfForgetPassword(passwordToken string, store domain.Store) (subject string, content string) {
+func (su *storeUsecase) GenerateEmailContentOfForgetPassword(passwordToken string, store domain.Store) (subject string, content string) {
 	// TODO: update email content to html format.
-	resetPasswordUrl := fmt.Sprintf("%s/stores/%d/password/update?password_token=%s", uc.config.Domain, store.ID, passwordToken)
+	resetPasswordUrl := fmt.Sprintf("%s/stores/%d/password/update?password_token=%s", su.config.Domain, store.ID, passwordToken)
 	return "Queue-System Reset Password", fmt.Sprintf("Hello, %s, please click %s", store.Name, resetPasswordUrl)
 }
 
-func (uc *Usecase) GenerateEmailContentOfCloseStore(storeName string, storeCreatedAt string) (subject string, content string) {
+func (su *storeUsecase) GenerateEmailContentOfCloseStore(storeName string, storeCreatedAt string) (subject string, content string) {
 	// TODO: update email content to html format.
 	subject = fmt.Sprintf("Queue-System: Result of %s (%s)", storeName, storeCreatedAt)
 	content = fmt.Sprintf("Hello %s, The attached file is the result of %s.\n\nThank you", storeName, storeCreatedAt)
 	return subject, content
 }
 
-func (uc *Usecase) GenerateCsvFileNameAndContent(storeCreatedAt time.Time, storeName string, content [][]string) (date string, csvFileName string, csvContent []byte) {
+func (su *storeUsecase) GenerateCsvFileNameAndContent(storeCreatedAt time.Time, storeName string, content [][]string) (date string, csvFileName string, csvContent []byte) {
 	year, month, day := storeCreatedAt.Date()
 	date = fmt.Sprintf("%d-%d-%d", year, month, day)
 	csvFileName = fmt.Sprintf("%s-%s", date, storeName)
@@ -449,17 +486,17 @@ func (uc *Usecase) GenerateCsvFileNameAndContent(storeCreatedAt time.Time, store
 	return date, csvFileName, csvContent
 }
 
-func (uc *Usecase) TopicNameOfUpdateCustomer(storeId int) string {
+func (su *storeUsecase) TopicNameOfUpdateCustomer(storeId int) string {
 	return fmt.Sprintf("updateCustomer.%d", storeId)
 }
 
-func (uc *Usecase) GetStoreWithQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
-	store, err := uc.pgDBRepository.GetStoreWithQueuesAndCustomersById(ctx, storeId)
+func (su *storeUsecase) GetStoreWithQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
+	store, err := su.pgDBStoreRepository.GetStoreWithQueuesAndCustomersById(ctx, storeId)
 	if err != nil {
 		return store, err
 	}
 	if store.Queues == nil {
-		store, err = uc.pgDBRepository.GetStoreWithQueuesById(ctx, storeId)
+		store, err = su.pgDBStoreRepository.GetStoreWithQueuesById(ctx, storeId)
 		if err != nil {
 			return store, err
 		}
@@ -470,10 +507,10 @@ func (uc *Usecase) GetStoreWithQueuesAndCustomersById(ctx context.Context, store
 	return store, err
 }
 
-func (uc *Usecase) VerifyNormalToken(ctx context.Context, normalToken string) (tokenClaims domain.TokenClaims, err error) {
+func (su *storeUsecase) VerifyNormalToken(ctx context.Context, normalToken string) (tokenClaims domain.TokenClaims, err error) {
 	encryptToken := strings.Split(normalToken, " ")
 	if len(encryptToken) == 2 && strings.ToLower(encryptToken[0]) == "bearer" {
-		tokenClaims, err = uc.VerifyToken(
+		tokenClaims, err = su.VerifyToken(
 			ctx,
 			encryptToken[1],
 			domain.SignKeyTypes.NORMAL,
@@ -484,8 +521,8 @@ func (uc *Usecase) VerifyNormalToken(ctx context.Context, normalToken string) (t
 	return tokenClaims, domain.ServerError40102
 }
 
-func (uc *Usecase) VerifySessionToken(ctx context.Context, sessionToken string) (store domain.Store, err error) {
-	tokenClaims, err := uc.VerifyToken(
+func (su *storeUsecase) VerifySessionToken(ctx context.Context, sessionToken string) (store domain.Store, err error) {
+	tokenClaims, err := su.VerifyToken(
 		ctx,
 		sessionToken,
 		domain.SignKeyTypes.SESSION,

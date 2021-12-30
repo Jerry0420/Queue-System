@@ -16,12 +16,18 @@ import (
 )
 
 type Middleware struct {
-	usecase *usecase.Usecase
-	logger  logging.LoggerTool
+	storeUsecase   usecase.StoreUseCaseInterface
+	sessionUsecase usecase.SessionUseCaseInterface
+	logger         logging.LoggerTool
 }
 
-func NewMiddleware(router *mux.Router, logger logging.LoggerTool, usecase *usecase.Usecase) *Middleware {
-	mw := &Middleware{usecase, logger}
+func NewMiddleware(
+	router *mux.Router,
+	logger logging.LoggerTool,
+	storeUsecase usecase.StoreUseCaseInterface, 
+	sessionUsecase usecase.SessionUseCaseInterface,
+	) *Middleware {
+	mw := &Middleware{storeUsecase, sessionUsecase, logger}
 	router.Use(mw.LoggingMiddleware)
 	return mw
 }
@@ -54,7 +60,7 @@ func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		normalToken := r.Header.Get("Authorization")
-		tokenClaims, err := mw.usecase.VerifyNormalToken(r.Context(), normalToken)
+		tokenClaims, err := mw.storeUsecase.VerifyNormalToken(r.Context(), normalToken)
 		if err != nil {
 			presenter.JsonResponse(w, nil, err)
 			return
@@ -70,7 +76,7 @@ func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 func (mw *Middleware) SessionAuthenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionId := r.Header.Get("Authorization")
-		session, _, err := mw.usecase.GetSessionAndStoreBySessionId(r.Context(), sessionId)
+		session, _, err := mw.sessionUsecase.GetSessionAndStoreBySessionId(r.Context(), sessionId)
 		if err != nil {
 			presenter.JsonResponse(w, nil, err)
 			return
