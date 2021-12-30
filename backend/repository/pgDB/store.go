@@ -177,12 +177,12 @@ func (repo *PgDBRepository) UpdateStore(ctx context.Context, store *domain.Store
 	return nil
 }
 
-func (repo *PgDBRepository) RemoveStoreByID(ctx context.Context, id int) error {
+func (repo *PgDBRepository) RemoveStoreByID(ctx context.Context, tx *sql.Tx, id int) error {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
 	query := `DELETE FROM stores WHERE id=$1`
-	stmt, err := repo.db.PrepareContext(ctx, query)
+	stmt, err := tx.PrepareContext(ctx, query)
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
@@ -255,29 +255,28 @@ func (repo *PgDBRepository) GetAllIdsOfExpiredStores(ctx context.Context, tx *sq
 	return storesIds, nil
 }
 
-
-func (repo *PgDBRepository) GetAllExpiredStores(ctx context.Context, tx *sql.Tx, expiresTime time.Time) (storesWithMap map[int]*domain.StoreWithQueues, err error) {
+func (repo *PgDBRepository) GetAllExpiredStoresInSlice(ctx context.Context, tx *sql.Tx, expiresTime time.Time) (stores[][][]string, err error) {
 	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
 	defer cancel()
 
-	storesWithMap = make(map[int]*domain.StoreWithQueues)
+	storesWithMap := make(map[int][][]string)
 
 	query := `SELECT 
 					stores.id, stores.email, stores.name, stores.created_at, 
-					queues.id AS queue_id, queues.name AS queue_name, 
-					customers.id AS customer_id, customers.name AS customer_name, customers.phone AS customer_phone, 
+					queues.name AS queue_name, 
+					customers.name AS customer_name, customers.phone AS customer_phone, 
 					customers.status AS customer_status,
 					customers.created_at AS customer_created_at
 			FROM stores
 			INNER JOIN queues ON stores.id = queues.store_id
 			INNER JOIN customers ON queues.id = customers.queue_id
 			WHERE stores.created_at<=$1
-			ORDER BY stores.id ASC FOR UPDATE`
+			ORDER BY stores.id ASC, queues.id ASC, customers.id ASC FOR UPDATE`
 
 	rows, err := repo.db.QueryContext(ctx, query, expiresTime)
 	if err != nil {
 		repo.logger.ERRORf("error %v", err)
-		return storesWithMap, domain.ServerError50002
+		return stores, domain.ServerError50002
 	}
 
 	for rows.Next() {
@@ -286,49 +285,50 @@ func (repo *PgDBRepository) GetAllExpiredStores(ctx context.Context, tx *sql.Tx,
 		var customer domain.Customer
 		err := rows.Scan(
 			&store.ID, &store.Email, &store.Name, &store.CreatedAt,
-			&queue.ID, &queue.Name,
-			&customer.ID, &customer.Name, &customer.Phone, &customer.Status, &customer.CreatedAt,
+			&queue.Name,
+			&customer.Name, &customer.Phone, &customer.Status, &customer.CreatedAt,
 		)
 		if err != nil {
 			repo.logger.ERRORf("error %v", err)
-			return storesWithMap, domain.ServerError50002
+			return stores, domain.ServerError50002
 		}
-		if storeWithQueues, ok := storesWithMap[store.ID]; ok {
-			findQueue := false
-			for _, queueInStoreWithQueues := range storeWithQueues.Queues {
-				if queueInStoreWithQueues.ID == queue.ID {
-					queueInStoreWithQueues.Customers = append(queueInStoreWithQueues.Customers, &customer)
-					findQueue = true
-					break
-				}
-			}
-			if findQueue == false {
-				storeWithQueues.Queues = append(storeWithQueues.Queues, &domain.QueueWithCustomers{
-					ID:   queue.ID,
-					Name: queue.Name,
-					Customers: []*domain.Customer{
-						&customer,
-					},
-				})
-			}
+		if _, ok := storesWithMap[store.ID]; ok {
+			storesWithMap[store.ID] = append(storesWithMap[store.ID], []string{
+				queue.Name,
+				customer.Name,
+				customer.Phone,
+				customer.Status,
+				customer.CreatedAt.Local().String(),
+			})
 		} else {
-			storesWithMap[store.ID] = &domain.StoreWithQueues{
-				ID:        store.ID,
-				Email:     store.Email,
-				Name:      store.Name,
-				CreatedAt: store.CreatedAt,
-				Queues: []*domain.QueueWithCustomers{
-					&domain.QueueWithCustomers{
-						ID:   queue.ID,
-						Name: queue.Name,
-						Customers: []*domain.Customer{
-							&customer,
-						},
-					},
+			storesWithMap[store.ID] = [][]string{
+				[]string{
+					store.Name,
+					store.Email,
+					store.CreatedAt.Local().String(),
+				},
+				[]string{
+					"queue_name",
+					"customer_name",
+					"customer_phone",
+					"customer_status",
+					"customer_created_at",
+				},
+				[]string{
+					queue.Name,
+					customer.Name,
+					customer.Phone,
+					customer.Status,
+					customer.CreatedAt.Local().String(),
 				},
 			}
 		}
 	}
 	defer rows.Close()
-	return storesWithMap, nil
+
+	for  _, store := range storesWithMap {
+		stores = append(stores, store)
+	}
+
+	return stores, nil
 }

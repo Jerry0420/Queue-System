@@ -13,6 +13,7 @@ type UsecaseConfig struct {
 	StoreDuration         time.Duration
 	TokenDuration         time.Duration
 	PasswordTokenDuration time.Duration
+	GrpcReplicaCount      int
 }
 
 type Usecase struct {

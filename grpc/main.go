@@ -2,60 +2,126 @@ package main
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"path/filepath"
 	"time"
 
-	grpcServices "github.com/jerry0420/queue-system/grpc/proto"
 	"github.com/jerry0420/queue-system/grpc/config"
+	grpcServices "github.com/jerry0420/queue-system/grpc/proto"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/keepalive"
+	gomail "gopkg.in/gomail.v2"
 )
 
 type GrpcServicesServer struct {
+	csvDirPath string
+	dialer     *gomail.Dialer
+	fromEmail  string
 	grpcServices.UnimplementedGrpcServiceServer
+	emailContents chan Content
 }
 
-func (*GrpcServicesServer) GenerateCSV(ctx context.Context, req *grpcServices.GenerateCSVRequest) (*grpcServices.GenerateCSVResponse, error) {
-	fmt.Printf("GenerateCSV function is invoked with %v \n", req)
+type Content struct {
+	message  *gomail.Message
+	filePath string
+}
 
+func (grpcServicesServer *GrpcServicesServer) GenerateCSV(ctx context.Context, req *grpcServices.GenerateCSVRequest) (*grpcServices.GenerateCSVResponse, error) {
 	name := req.GetName()
-	fmt.Println(name)
+	csvFilePath := filepath.Join(grpcServicesServer.csvDirPath, name+".csv")
+	csvFile, err := os.Create(csvFilePath)
+	if err != nil {
+		return nil, err
+	}
+	defer csvFile.Close()
+
+	err = os.Chmod(csvFilePath, 0777)
+	if err != nil {
+		return nil, err
+	}
+
+	csvWriter := csv.NewWriter(csvFile)
+
 	content := req.GetContent()
-	fmt.Println(content)
-	var cotentMap map[string]interface{}
+	var cotentMap [][]string
 	json.Unmarshal(content, &cotentMap)
-	fmt.Println(cotentMap)
+	err = csvWriter.WriteAll(cotentMap)
+	if err != nil {
+		return nil, err
+	}
+	csvWriter.Flush()
+
+	err = csvWriter.Error()
+	if err != nil {
+		return nil, err
+	}
 
 	res := &grpcServices.GenerateCSVResponse{
-		Filepath: "xxxxxxx",
+		Filepath: csvFilePath,
 	}
 
 	return res, nil
 }
 
-func (*GrpcServicesServer) SendEmail(ctx context.Context, req *grpcServices.SendEmailRequest) (*grpcServices.SendEmailResponse, error) {
-	fmt.Printf("SendEmail function is invoked with %v \n", req)
+func (grpcServicesServer *GrpcServicesServer) SendEmail(ctx context.Context, req *grpcServices.SendEmailRequest) (*grpcServices.SendEmailResponse, error) {
+	message := gomail.NewMessage()
+	message.SetHeader("From", grpcServicesServer.fromEmail)
+
+	email := req.GetEmail()
+	message.SetHeader("To", email)
 
 	subject := req.GetSubject()
-	fmt.Println(subject)
+	message.SetHeader("Subject", subject)
+
 	content := req.GetContent()
-	fmt.Println(content)
-	email := req.GetEmail()
-	fmt.Println(email)
+	message.SetBody("text/html", content)
+
 	filePath := req.GetFilepath()
-	fmt.Println(filePath)
+
+	grpcServicesServer.emailContents <- Content{message: message, filePath: filePath}
 
 	res := &grpcServices.SendEmailResponse{
 		Result: true,
 	}
 
 	return res, nil
+}
+
+func initCsvDirPath(csvDirPath string) error {
+	if _, err := os.Stat(csvDirPath); os.IsNotExist(err) {
+		err := os.Mkdir(csvDirPath, 0777)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func dialAndSendEmail(grpcServicesServer *GrpcServicesServer) {
+	for {
+		content := <-grpcServicesServer.emailContents
+
+		if content.filePath != "" {
+			content.message.Attach(content.filePath)
+		}
+		
+		err := grpcServicesServer.dialer.DialAndSend(content.message)
+		if err != nil {
+			fmt.Println(err)
+		}
+		
+		if content.filePath != "" {
+			os.Remove(content.filePath)
+		}
+	}
 }
 
 func main() {
@@ -91,7 +157,25 @@ func main() {
 	}
 
 	grpcServer := grpc.NewServer(opts...)
-	grpcServices.RegisterGrpcServiceServer(grpcServer, &GrpcServicesServer{})
+	grpcServicesServer := GrpcServicesServer{
+		csvDirPath: "csvs", // /app/grpc/csvs
+		dialer: gomail.NewDialer(
+			config.ServerConfig.EMAIL_SERVER(),
+			config.ServerConfig.EMAIL_PORT(),
+			config.ServerConfig.EMAIL_USERNAME(),
+			config.ServerConfig.EMAIL_PASSWORD(),
+		),
+		fromEmail:     config.ServerConfig.EMAIL_FROM(),
+		emailContents: make(chan Content, 100),
+	}
+	err = initCsvDirPath(grpcServicesServer.csvDirPath)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+
+	go dialAndSendEmail(&grpcServicesServer)
+	
+	grpcServices.RegisterGrpcServiceServer(grpcServer, &grpcServicesServer)
 
 	healthcheck := health.NewServer()
 	healthpb.RegisterHealthServer(grpcServer, healthcheck)

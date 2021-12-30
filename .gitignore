@@ -48,6 +48,7 @@ logs
 *.key
 *.csr
 *.srl
+*.csv
 
 queue-system-*.tar
 
