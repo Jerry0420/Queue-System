@@ -1,12 +1,27 @@
 package pgDB
 
 import (
+	"context"
 	"database/sql"
 	"time"
 
 	"github.com/jerry0420/queue-system/backend/domain"
 	"github.com/jerry0420/queue-system/backend/logging"
 )
+
+// interface for sql.DB and sql.Tx
+type PgDbHandleInterface interface {
+	PrepareContext(ctx context.Context, query string) (*sql.Stmt, error)
+	Prepare(query string) (*sql.Stmt, error)
+	QueryRowContext(ctx context.Context, query string, args ...interface{}) *sql.Row
+	QueryRow(query string, args ...interface{}) *sql.Row
+	QueryContext(ctx context.Context, query string, args ...interface{}) (*sql.Rows, error)
+	Query(query string, args ...interface{}) (*sql.Rows, error)
+}
+
+type PgDbHandle struct {
+	db *sql.DB
+}
 
 type PgDBRepository struct {
 	db             *sql.DB

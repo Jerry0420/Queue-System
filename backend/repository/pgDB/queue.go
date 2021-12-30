@@ -5,12 +5,24 @@ import (
 	"context"
 	"database/sql"
 	"strconv"
+	"time"
 
 	"github.com/jerry0420/queue-system/backend/domain"
+	"github.com/jerry0420/queue-system/backend/logging"
 )
 
-func (repo *PgDBRepository) CreateQueues(ctx context.Context, tx *sql.Tx, storeID int, queues []domain.Queue) error {
-	ctx, cancel := context.WithTimeout(ctx, repo.contextTimeOut)
+type pgDBQueueRepository struct {
+	db             *sql.DB
+	logger         logging.LoggerTool
+	contextTimeOut time.Duration
+}
+
+func NewPgDBQueueRepository(db *sql.DB, logger logging.LoggerTool, contextTimeOut time.Duration) PgDBQueueRepositoryInterface {
+	return &pgDBQueueRepository{db, logger, contextTimeOut}
+}
+
+func (pqr *pgDBQueueRepository) CreateQueues(ctx context.Context, tx *sql.Tx, storeID int, queues []domain.Queue) error {
+	ctx, cancel := context.WithTimeout(ctx, pqr.contextTimeOut)
 	defer cancel()
 
 	variableCounts := 1
@@ -33,7 +45,7 @@ func (repo *PgDBRepository) CreateQueues(ctx context.Context, tx *sql.Tx, storeI
 
 	stmt, err := tx.PrepareContext(ctx, query.String())
 	if err != nil {
-		repo.logger.ERRORf("error %v", err)
+		pqr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
 	}
 	defer stmt.Close()
@@ -45,7 +57,7 @@ func (repo *PgDBRepository) CreateQueues(ctx context.Context, tx *sql.Tx, storeI
 		queue := domain.Queue{}
 		err = rows.Scan(&queue.ID, &queue.Name)
 		if err != nil {
-			repo.logger.ERRORf("error %v", err)
+			pqr.logger.ERRORf("error %v", err)
 			return domain.ServerError50002
 		}
 		queue.StoreID = storeID
