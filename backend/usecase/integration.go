@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -13,7 +14,6 @@ import (
 )
 
 type IntegrationUsecaseConfig struct {
-	Domain                string
 	StoreDuration         time.Duration
 	TokenDuration         time.Duration
 	PasswordTokenDuration time.Duration
@@ -26,10 +26,10 @@ type integrationUsecase struct {
 	pgDBSessionRepository  pgDB.PgDBSessionRepositoryInterface
 	pgDBCustomerRepository pgDB.PgDBCustomerRepositoryInterface
 	pgDBQueueRepository    pgDB.PgDBQueueRepositoryInterface
-	pgDBSignKeyRepository  pgDB.PgDBSignKeyRepositoryInterface
 	grpcServicesRepository grpcServices.GrpcServicesRepositoryInterface
+	storeUsecase           StoreUseCaseInterface
 	logger                 logging.LoggerTool
-	config                 StoreUsecaseConfig
+	config                 IntegrationUsecaseConfig
 }
 
 func NewIntegrationUsecase(
@@ -38,15 +38,31 @@ func NewIntegrationUsecase(
 	pgDBSessionRepository pgDB.PgDBSessionRepositoryInterface,
 	pgDBCustomerRepository pgDB.PgDBCustomerRepositoryInterface,
 	pgDBQueueRepository pgDB.PgDBQueueRepositoryInterface,
-	pgDBSignKeyRepository pgDB.PgDBSignKeyRepositoryInterface,
 	grpcServicesRepository grpcServices.GrpcServicesRepositoryInterface,
+	storeUsecase StoreUseCaseInterface,
 	logger logging.LoggerTool,
 	config IntegrationUsecaseConfig,
 ) IntegrationUseCaseInterface {
-	return &integrationUsecase{pgDBTx, pgDBStoreRepository, pgDBSessionRepository, pgDBCustomerRepository, pgDBQueueRepository, pgDBSignKeyRepository, grpcServicesRepository, logger, config}
+	return &integrationUsecase{
+		pgDBTx,
+		pgDBStoreRepository,
+		pgDBSessionRepository,
+		pgDBCustomerRepository,
+		pgDBQueueRepository,
+		grpcServicesRepository,
+		storeUsecase,
+		logger,
+		config,
+	}
 }
 
-func (iu *integrationUsecase) CreateCustomers(ctx context.Context, session domain.StoreSession, oldStatus string, newStatus string, customers []domain.Customer) error {
+func (iu *integrationUsecase) CreateCustomers(
+	ctx context.Context,
+	session domain.StoreSession,
+	oldStatus string,
+	newStatus string,
+	customers []domain.Customer,
+) error {
 	tx, err := iu.pgDBTx.BeginTx()
 	if err != nil {
 		return err
@@ -71,7 +87,7 @@ func (iu *integrationUsecase) CreateCustomers(ctx context.Context, session domai
 }
 
 func (iu *integrationUsecase) CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error {
-	encryptedPassword, err := iu.EncryptPassword(store.Password)
+	encryptedPassword, err := iu.storeUsecase.EncryptPassword(store.Password)
 	if err != nil {
 		return err
 	}
@@ -102,7 +118,7 @@ func (iu *integrationUsecase) CreateStore(ctx context.Context, store *domain.Sto
 
 func (iu *integrationUsecase) SigninStore(ctx context.Context, email string, password string) (store domain.Store, token string, refreshTokenExpiresAt time.Time, err error) {
 	store, err = iu.pgDBStoreRepository.GetStoreByEmail(ctx, email)
-	err = iu.ValidatePassword(store.Password, password)
+	err = iu.storeUsecase.ValidatePassword(store.Password, password)
 	if err != nil {
 		return store, token, refreshTokenExpiresAt, err
 	}
@@ -110,7 +126,7 @@ func (iu *integrationUsecase) SigninStore(ctx context.Context, email string, pas
 	// let crontab take responsibility of "closestore" tasks.
 	refreshTokenExpiresAt = time.Now().Add(iu.config.StoreDuration)
 	// refreshTokenExpiresAt = store.CreatedAt.Add(uc.config.StoreDuration)
-	token, err = iu.GenerateToken(
+	token, err = iu.storeUsecase.GenerateToken(
 		ctx,
 		store,
 		domain.SignKeyTypes.REFRESH,
@@ -130,7 +146,7 @@ func (iu *integrationUsecase) RefreshToken(ctx context.Context, encryptedRefresh
 	tokenExpiresAt time.Time,
 	err error,
 ) {
-	tokenClaims, err := iu.VerifyToken(
+	tokenClaims, err := iu.storeUsecase.VerifyToken(
 		ctx,
 		encryptedRefreshToken,
 		domain.SignKeyTypes.REFRESH,
@@ -148,7 +164,7 @@ func (iu *integrationUsecase) RefreshToken(ctx context.Context, encryptedRefresh
 
 	tokenExpiresAt = time.Now().Add(iu.config.TokenDuration)
 	// normal token
-	normalToken, err = iu.GenerateToken(
+	normalToken, err = iu.storeUsecase.GenerateToken(
 		ctx,
 		store,
 		domain.SignKeyTypes.NORMAL,
@@ -158,7 +174,7 @@ func (iu *integrationUsecase) RefreshToken(ctx context.Context, encryptedRefresh
 		return store, normalToken, sessionToken, tokenExpiresAt, err
 	}
 	// session token
-	sessionToken, err = iu.GenerateToken(
+	sessionToken, err = iu.storeUsecase.GenerateToken(
 		ctx,
 		store,
 		domain.SignKeyTypes.SESSION,
@@ -190,7 +206,7 @@ func (iu *integrationUsecase) CloseStore(ctx context.Context, store domain.Store
 	go func() {
 		defer wg.Done()
 		// skip all errs inside grpc service.
-		date, csvFileName, csvContent := iu.GenerateCsvFileNameAndContent(store.CreatedAt, store.Name, customers)
+		date, csvFileName, csvContent := iu.storeUsecase.GenerateCsvFileNameAndContent(store.CreatedAt, store.Name, customers)
 		filePath, err := iu.grpcServicesRepository.GenerateCSV(
 			ctx,
 			csvFileName,
@@ -199,7 +215,7 @@ func (iu *integrationUsecase) CloseStore(ctx context.Context, store domain.Store
 		if err != nil {
 			return
 		}
-		emailSubject, emailContent := iu.GenerateEmailContentOfCloseStore(store.Name, date)
+		emailSubject, emailContent := iu.storeUsecase.GenerateEmailContentOfCloseStore(store.Name, date)
 		_, err = iu.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, store.Email, filePath)
 	}()
 
@@ -250,7 +266,7 @@ func (iu *integrationUsecase) CloseStoreRoutine(ctx context.Context) error {
 	var wg sync.WaitGroup
 	errChan := make(chan error)
 	// GrpcReplicaCount numbers of grpc handler to handle tasks
-	chunckedStores := iu.ChunkStoresSlice(stores, iu.config.GrpcReplicaCount)
+	chunckedStores := iu.storeUsecase.ChunkStoresSlice(stores, iu.config.GrpcReplicaCount)
 
 	for _, stores := range chunckedStores {
 		wg.Add(1)
@@ -260,8 +276,11 @@ func (iu *integrationUsecase) CloseStoreRoutine(ctx context.Context) error {
 				storeInfo := store[0]
 				store = store[1:]
 				storeName, storeEmail, storeCreatedAtInstr := storeInfo[0], storeInfo[1], storeInfo[2]
-				storeCreatedAt, _ := time.Parse("2006-01-02 15:04:05.000000 +0000 UTC", storeCreatedAtInstr)
-				date, csvFileName, csvContent := iu.GenerateCsvFileNameAndContent(storeCreatedAt, storeName, store)
+				// str timestamp to int64 timestamp
+				storeCreatedAtInInt64, _ := strconv.ParseInt(storeCreatedAtInstr, 10, 64)
+				// timestamp to time
+				storeCreatedAt := time.Unix(storeCreatedAtInInt64, 0)
+				date, csvFileName, csvContent := iu.storeUsecase.GenerateCsvFileNameAndContent(storeCreatedAt, storeName, store)
 				// skip all errs inside grpc service.
 				filePath, err := iu.grpcServicesRepository.GenerateCSV(
 					ctx,
@@ -271,7 +290,7 @@ func (iu *integrationUsecase) CloseStoreRoutine(ctx context.Context) error {
 				if err != nil {
 					return
 				}
-				emailSubject, emailContent := iu.GenerateEmailContentOfCloseStore(storeName, date)
+				emailSubject, emailContent := iu.storeUsecase.GenerateEmailContentOfCloseStore(storeName, date)
 				_, _ = iu.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, storeEmail, filePath)
 			}
 		}(stores)
@@ -310,7 +329,7 @@ func (iu *integrationUsecase) ForgetPassword(ctx context.Context, email string) 
 	if err != nil {
 		return store, err
 	}
-	passwordToken, err := iu.GenerateToken(
+	passwordToken, err := iu.storeUsecase.GenerateToken(
 		ctx,
 		store,
 		domain.SignKeyTypes.PASSWORD,
@@ -320,14 +339,14 @@ func (iu *integrationUsecase) ForgetPassword(ctx context.Context, email string) 
 		return store, err
 	}
 
-	emailSubject, emailContent := iu.GenerateEmailContentOfForgetPassword(passwordToken, store)
+	emailSubject, emailContent := iu.storeUsecase.GenerateEmailContentOfForgetPassword(passwordToken, store)
 	_, err = iu.grpcServicesRepository.SendEmail(ctx, emailSubject, emailContent, email, "")
 
 	return store, err
 }
 
 func (iu *integrationUsecase) UpdatePassword(ctx context.Context, passwordToken string, newPassword string) (store domain.Store, err error) {
-	tokenClaims, err := iu.VerifyToken(
+	tokenClaims, err := iu.storeUsecase.VerifyToken(
 		ctx,
 		passwordToken,
 		domain.SignKeyTypes.PASSWORD,
@@ -343,7 +362,7 @@ func (iu *integrationUsecase) UpdatePassword(ctx context.Context, passwordToken 
 		CreatedAt: time.Unix(tokenClaims.StoreCreatedAt, 0),
 	}
 
-	encryptedPassword, err := iu.EncryptPassword(newPassword)
+	encryptedPassword, err := iu.storeUsecase.EncryptPassword(newPassword)
 	if err != nil {
 		return store, err
 	}
@@ -377,7 +396,7 @@ func (iu *integrationUsecase) GetStoreWithQueuesAndCustomersById(ctx context.Con
 func (iu *integrationUsecase) VerifyNormalToken(ctx context.Context, normalToken string) (tokenClaims domain.TokenClaims, err error) {
 	encryptToken := strings.Split(normalToken, " ")
 	if len(encryptToken) == 2 && strings.ToLower(encryptToken[0]) == "bearer" {
-		tokenClaims, err = iu.VerifyToken(
+		tokenClaims, err = iu.storeUsecase.VerifyToken(
 			ctx,
 			encryptToken[1],
 			domain.SignKeyTypes.NORMAL,
@@ -389,7 +408,7 @@ func (iu *integrationUsecase) VerifyNormalToken(ctx context.Context, normalToken
 }
 
 func (iu *integrationUsecase) VerifySessionToken(ctx context.Context, sessionToken string) (store domain.Store, err error) {
-	tokenClaims, err := iu.VerifyToken(
+	tokenClaims, err := iu.storeUsecase.VerifyToken(
 		ctx,
 		sessionToken,
 		domain.SignKeyTypes.SESSION,

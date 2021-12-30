@@ -15,7 +15,7 @@ func (had *httpAPIDelivery) customersCreate(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = had.customerUsecase.CreateCustomers(
+	err = had.integrationUsecase.CreateCustomers(
 		r.Context(),
 		session,
 		domain.StoreSessionStatus.SCANNED,

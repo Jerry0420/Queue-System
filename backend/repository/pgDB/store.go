@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -316,7 +317,7 @@ func (psr *pgDBStoreRepository) GetAllExpiredStoresInSlice(ctx context.Context, 
 				[]string{
 					store.Name,
 					store.Email,
-					store.CreatedAt.Local().String(),
+					strconv.FormatInt(store.CreatedAt.Unix(), 10),
 				},
 				[]string{
 					"queue_name",

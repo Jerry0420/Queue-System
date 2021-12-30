@@ -112,12 +112,11 @@ func dialAndSendEmail(grpcServicesServer *GrpcServicesServer) {
 		if content.filePath != "" {
 			content.message.Attach(content.filePath)
 		}
-		
 		err := grpcServicesServer.dialer.DialAndSend(content.message)
 		if err != nil {
 			fmt.Println(err)
 		}
-		
+
 		if content.filePath != "" {
 			os.Remove(content.filePath)
 		}
@@ -174,7 +173,7 @@ func main() {
 	}
 
 	go dialAndSendEmail(&grpcServicesServer)
-	
+
 	grpcServices.RegisterGrpcServiceServer(grpcServer, &grpcServicesServer)
 
 	healthcheck := health.NewServer()

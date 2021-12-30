@@ -16,7 +16,7 @@ func (had *httpAPIDelivery) createSession(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	store, err := had.storeUsecase.VerifySessionToken(r.Context(), sessionToken)
+	store, err := had.integrationUsecase.VerifySessionToken(r.Context(), sessionToken)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return

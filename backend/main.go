@@ -81,32 +81,35 @@ func main() {
 	storeUsecase := usecase.NewStoreUsecase(
 		pgDBTx,
 		pgDBStoreRepository,
-		pgDBSessionRepository,
-		pgDBCustomerRepository,
-		pgDBQueueRepository,
 		pgDBSignkeyRepository,
-		grpcServicesRepository,
 		logger,
 		usecase.StoreUsecaseConfig{
-			Domain:                config.ServerConfig.DOMAIN(),
-			StoreDuration:         config.ServerConfig.STOREDURATION(),
-			TokenDuration:         config.ServerConfig.TOKENDURATION(),
-			PasswordTokenDuration: config.ServerConfig.PASSWORDTOKENDURATION(),
-			GrpcReplicaCount:      config.ServerConfig.GRPCREPLICACOUNT(),
+			Domain: config.ServerConfig.DOMAIN(),
 		},
 	)
 	sessionUsecase := usecase.NewSessionUsecase(pgDBSessionRepository, logger)
-	customerUsecase := usecase.NewCustomerUsecase(
+	customerUsecase := usecase.NewCustomerUsecase(pgDBCustomerRepository, logger)
+	integrationUsecase := usecase.NewIntegrationUsecase(
 		pgDBTx,
+		pgDBStoreRepository,
 		pgDBSessionRepository,
 		pgDBCustomerRepository,
+		pgDBQueueRepository,
+		grpcServicesRepository,
+		storeUsecase,
 		logger,
+		usecase.IntegrationUsecaseConfig{
+			StoreDuration: config.ServerConfig.STOREDURATION(),
+			TokenDuration: config.ServerConfig.TOKENDURATION(),
+			PasswordTokenDuration: config.ServerConfig.PASSWORDTOKENDURATION(),
+			GrpcReplicaCount: config.ServerConfig.GRPCREPLICACOUNT(),
+		},
 	)
 
 	broker := broker.NewBroker(logger)
 	defer broker.CloseAll()
 
-	mw := middleware.NewMiddleware(router, logger, storeUsecase, sessionUsecase)
+	mw := middleware.NewMiddleware(router, logger, integrationUsecase, sessionUsecase)
 
 	httpAPI.NewHttpAPIDelivery(
 		router,
@@ -115,6 +118,7 @@ func main() {
 		customerUsecase,
 		sessionUsecase,
 		storeUsecase,
+		integrationUsecase,
 		broker,
 		httpAPI.HttpAPIDeliveryConfig{
 			StoreDuration:         config.ServerConfig.STOREDURATION(),
