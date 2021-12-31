@@ -10,7 +10,7 @@ type Customer struct {
 	ID        int       `json:"id"`
 	Name      string    `json:"name"`
 	Phone     string    `json:"phone"`
-	QueueID   int       `json:"queue_id"`
+	QueueID   int       `json:"-"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"created_at"`
 }

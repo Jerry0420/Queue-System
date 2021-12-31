@@ -68,6 +68,15 @@ func (su *storeUsecase) VerifyPasswordLength(password string) error {
 	return nil
 }
 
+func (su *storeUsecase) VerifyTimeZoneString(inputTimezone string) error {
+	_, err := time.LoadLocation(inputTimezone)
+	if err != nil {
+		su.logger.ERRORf("%v", err)
+		return domain.ServerError40006
+	}
+	return nil
+}
+
 func (su *storeUsecase) EncryptPassword(password string) (string, error) {
 	cryptedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -176,8 +185,9 @@ func (su *storeUsecase) GenerateEmailContentOfCloseStore(storeName string, store
 	return subject, content
 }
 
-func (su *storeUsecase) GenerateCsvFileNameAndContent(storeCreatedAt time.Time, storeName string, content [][]string) (date string, csvFileName string, csvContent []byte) {
-	year, month, day := storeCreatedAt.Date()
+func (su *storeUsecase) GenerateCsvFileNameAndContent(storeCreatedAt time.Time, storeTimezone string, storeName string, content [][]string) (date string, csvFileName string, csvContent []byte) {
+	timezone, _ := time.LoadLocation(storeTimezone)
+	year, month, day := storeCreatedAt.UTC().In(timezone).Date()
 	date = fmt.Sprintf("%d-%d-%d", year, month, day)
 	csvFileName = fmt.Sprintf("%s-%s", date, storeName)
 	csvContent, _ = json.Marshal(content)

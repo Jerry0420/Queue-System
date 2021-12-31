@@ -23,6 +23,12 @@ func (had *httpAPIDelivery) openStore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = had.storeUsecase.VerifyTimeZoneString(store.Timezone)
+	if err != nil {
+		presenter.JsonResponse(w, nil, err)
+		return
+	}
+
 	err = had.integrationUsecase.CreateStore(r.Context(), &store, queues)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)

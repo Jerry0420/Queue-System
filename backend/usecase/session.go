@@ -27,7 +27,7 @@ func (su *sessionUsecase) CreateSession(ctx context.Context, store domain.Store)
 }
 
 func (su *sessionUsecase) UpdateSessionStatus(ctx context.Context, session *domain.StoreSession, oldStatus string, newStatus string) error {
-	err := su.pgDBSessionRepository.UpdateSessionStatus(ctx, session, oldStatus, newStatus)
+	err := su.pgDBSessionRepository.UpdateSessionStatus(ctx, nil, session, oldStatus, newStatus)
 	session.StoreSessionStatus = newStatus
 	return err
 }
@@ -36,10 +36,10 @@ func (su *sessionUsecase) TopicNameOfUpdateSession(storeId int) string {
 	return fmt.Sprintf("updateSession.%d", storeId)
 }
 
-func (su *sessionUsecase) GetSessionAndStoreBySessionId(ctx context.Context, sessionId string) (session domain.StoreSession, store domain.Store, err error) {
+func (su *sessionUsecase) GetSessionById(ctx context.Context, sessionId string) (session domain.StoreSession, err error) {
 	if sessionId == "" {
-		return session, store, domain.ServerError40106
+		return session, domain.ServerError40106
 	}
-	session, store, err = su.pgDBSessionRepository.GetSessionAndStoreBySessionId(ctx, sessionId)
-	return session, store, nil
+	session, err = su.pgDBSessionRepository.GetSessionById(ctx, sessionId)
+	return session, err
 }

@@ -7,6 +7,6 @@ const StoreSessionString string = "session"
 
 type StoreSession struct {
 	ID                 string `json:"id"`
-	StoreId            int    `json:"store_id"`
+	StoreId            int    `json:"-"`
 	StoreSessionStatus string `json:"status"`
 }

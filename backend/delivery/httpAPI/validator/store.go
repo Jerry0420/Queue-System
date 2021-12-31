@@ -27,7 +27,11 @@ func StoreOpen(r *http.Request) (store domain.Store, queues []domain.Queue, err 
 	if !ok || password == "" {
 		return store, queues, domain.ServerError40001
 	}
-	store = domain.Store{Name: name, Email: email, Password: password}
+	timezone, ok := jsonBody["timezone"].(string)
+	if !ok || timezone == "" {
+		return store, queues, domain.ServerError40001
+	}
+	store = domain.Store{Name: name, Email: email, Password: password, Timezone: timezone}
 	
 	queueNames, ok := jsonBody["queue_names"].([]interface{})
 	if !ok || len(queueNames) <= 0 {

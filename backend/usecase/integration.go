@@ -58,7 +58,7 @@ func NewIntegrationUsecase(
 
 func (iu *integrationUsecase) CreateCustomers(
 	ctx context.Context,
-	session domain.StoreSession,
+	session *domain.StoreSession,
 	oldStatus string,
 	newStatus string,
 	customers []domain.Customer,
@@ -69,10 +69,11 @@ func (iu *integrationUsecase) CreateCustomers(
 	}
 	defer iu.pgDBTx.RollbackTx(tx)
 
-	err = iu.pgDBSessionRepository.UpdateSessionWithTx(ctx, tx, session, oldStatus, newStatus)
+	err = iu.pgDBSessionRepository.UpdateSessionStatus(ctx, tx, session, oldStatus, newStatus)
 	if err != nil {
 		return err
 	}
+	session.StoreSessionStatus = newStatus
 
 	err = iu.pgDBCustomerRepository.CreateCustomers(ctx, tx, customers)
 	if err != nil {
@@ -194,7 +195,7 @@ func (iu *integrationUsecase) CloseStore(ctx context.Context, store domain.Store
 	}
 	defer iu.pgDBTx.RollbackTx(tx)
 
-	customers, err := iu.pgDBCustomerRepository.GetCustomersWithQueuesByStoreId(ctx, tx, store.ID)
+	customers, err := iu.pgDBCustomerRepository.GetCustomersWithQueuesByStore(ctx, tx, &store)
 	if err != nil {
 		return err
 	}
@@ -206,7 +207,7 @@ func (iu *integrationUsecase) CloseStore(ctx context.Context, store domain.Store
 	go func() {
 		defer wg.Done()
 		// skip all errs inside grpc service.
-		date, csvFileName, csvContent := iu.storeUsecase.GenerateCsvFileNameAndContent(store.CreatedAt, store.Name, customers)
+		date, csvFileName, csvContent := iu.storeUsecase.GenerateCsvFileNameAndContent(store.CreatedAt, store.Timezone, store.Name, customers)
 		filePath, err := iu.grpcServicesRepository.GenerateCSV(
 			ctx,
 			csvFileName,
@@ -275,12 +276,12 @@ func (iu *integrationUsecase) CloseStoreRoutine(ctx context.Context) error {
 			for _, store := range stores {
 				storeInfo := store[0]
 				store = store[1:]
-				storeName, storeEmail, storeCreatedAtInstr := storeInfo[0], storeInfo[1], storeInfo[2]
+				storeName, storeEmail, storeCreatedAtInstr, timezone := storeInfo[0], storeInfo[1], storeInfo[2], storeInfo[3]
 				// str timestamp to int64 timestamp
 				storeCreatedAtInInt64, _ := strconv.ParseInt(storeCreatedAtInstr, 10, 64)
 				// timestamp to time
 				storeCreatedAt := time.Unix(storeCreatedAtInInt64, 0)
-				date, csvFileName, csvContent := iu.storeUsecase.GenerateCsvFileNameAndContent(storeCreatedAt, storeName, store)
+				date, csvFileName, csvContent := iu.storeUsecase.GenerateCsvFileNameAndContent(storeCreatedAt, timezone, storeName, store)
 				// skip all errs inside grpc service.
 				filePath, err := iu.grpcServicesRepository.GenerateCSV(
 					ctx,

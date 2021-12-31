@@ -76,7 +76,7 @@ func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 func (mw *Middleware) SessionAuthenticationMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		sessionId := r.Header.Get("Authorization")
-		session, _, err := mw.sessionUsecase.GetSessionAndStoreBySessionId(r.Context(), sessionId)
+		session, err := mw.sessionUsecase.GetSessionById(r.Context(), sessionId)
 		if err != nil {
 			presenter.JsonResponse(w, nil, err)
 			return

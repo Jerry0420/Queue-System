@@ -17,7 +17,7 @@ func (had *httpAPIDelivery) customersCreate(w http.ResponseWriter, r *http.Reque
 
 	err = had.integrationUsecase.CreateCustomers(
 		r.Context(),
-		session,
+		&session,
 		domain.StoreSessionStatus.SCANNED,
 		domain.StoreSessionStatus.USED,
 		customers,
@@ -26,7 +26,7 @@ func (had *httpAPIDelivery) customersCreate(w http.ResponseWriter, r *http.Reque
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
-	
+
 	go had.broker.Publish(
 		had.storeUsecase.TopicNameOfUpdateCustomer(session.StoreId),
 		map[string]interface{}{},

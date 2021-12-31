@@ -6,7 +6,7 @@ var SignKeyTypes signKeyTypes = signKeyTypes{NORMAL: "normal", PASSWORD: "passwo
 
 type SignKey struct {
 	ID          int    `json:"id"`
-	StoreId     int    `json:"store_id"`
+	StoreId     int    `json:"-"`
 	SignKey     string `json:"sign_key"`
 	SignKeyType string `json:"type"`
 }
