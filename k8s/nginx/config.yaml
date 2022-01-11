@@ -4,7 +4,7 @@ metadata:
   # name: ingress-nginx-controller
   # namespace: ingress-nginx
   name: nginx-ingress-tcp-microk8s-conf
-  namespawce: ingress
+  namespace: ingress
 data:
   use-http2: "true"
   use-gzip: "true"
