@@ -16,3 +16,7 @@ data:
   proxy-connect-timeout: "75"
   proxy-read-timeout: "86400"
   proxy-send-timeout: "75"
+  use-forwarded-headers: "true"
+  limit-req-status-code: "429"
+  limit-conn-status-code: "429"
+  
