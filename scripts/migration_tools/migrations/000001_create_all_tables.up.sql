@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS stores(
    email varchar(512) NOT NULL UNIQUE,
    password varchar(64) NOT NULL,
    name varchar(64) NOT NULL,
+   timezone varchar(64) NOT NULL,
    description text DEFAULT '',
    created_at timestamp NOT NULL DEFAULT clock_timestamp()
 );

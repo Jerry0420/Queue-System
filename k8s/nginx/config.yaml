@@ -3,8 +3,8 @@ kind: ConfigMap
 metadata:
   # name: ingress-nginx-controller
   # namespace: ingress-nginx
-  name: nginx-ingress-tcp-microk8s-conf
-  namespawce: ingress
+  name: nginx-load-balancer-microk8s-conf
+  namespace: ingress
 data:
   use-http2: "true"
   use-gzip: "true"
@@ -16,3 +16,7 @@ data:
   proxy-connect-timeout: "75"
   proxy-read-timeout: "86400"
   proxy-send-timeout: "75"
+  use-forwarded-headers: "true"
+  limit-req-status-code: "429"
+  limit-conn-status-code: "429"
+  

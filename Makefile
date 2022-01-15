@@ -1,19 +1,19 @@
 up_db:
-	docker-compose -f ./docker-compose/docker-compose.db.yml up -d --build
+	docker-compose -f ./compose/docker-compose.db.yml up -d --build
 
 exec_db:
 	docker exec -it migration_tools sh
 
 down_db:
-	docker-compose -f ./docker-compose/docker-compose.db.yml down
+	docker-compose -f ./compose/docker-compose.db.yml down
 
 # ========================================================
 
 up_build_dev:
-	docker-compose -f ./docker-compose/docker-compose.dev.yml up -d --build
+	docker-compose -f ./compose/docker-compose.dev.yml up -d --build
 
 down_dev:
-	docker-compose -f ./docker-compose/docker-compose.dev.yml down
+	docker-compose -f ./compose/docker-compose.dev.yml down
 
 exec_backend:
 	docker exec -it backend sh
@@ -21,10 +21,10 @@ exec_backend:
 # =========================================================
 
 up_build:
-	docker-compose -f ./docker-compose/docker-compose.yml up -d --build
+	docker-compose -f ./compose/docker-compose.yml up -d --build
 
 down:
-	docker-compose -f ./docker-compose/docker-compose.yml down
+	docker-compose -f ./compose/docker-compose.yml down
 
 # ==========================================================
 

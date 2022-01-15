@@ -27,7 +27,7 @@ func CustomerCreate(r *http.Request) (session domain.StoreSession, customers []d
 	if !ok || len(customersInfo) <= 0 {
 		return session, customers, domain.ServerError40001
 	}
-
+// exceed 5 customers at a req is forbidden.
 	if len(customersInfo) > 5 {
 		return session, customers, domain.ServerError40005
 	}

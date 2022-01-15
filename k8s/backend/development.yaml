@@ -42,6 +42,37 @@ spec:
         ports:
           - name: backend-port
             containerPort: 8000
+        
+        # startupProbe:
+        #   httpGet:
+        #     path: /routine/liveness
+        #     port: backend-port
+        #   initialDelaySeconds: 15
+        #   periodSeconds: 15
+        #   timeoutSeconds: 30  
+        #   successThreshold: 1
+        #   failureThreshold: 3
+
+        # livenessProbe:
+        #   httpGet:
+        #     path: /routine/liveness
+        #     port: backend-port
+        #   initialDelaySeconds: 15
+        #   periodSeconds: 15
+        #   timeoutSeconds: 30  
+        #   successThreshold: 1
+        #   failureThreshold: 3
+        
+        # readinessProbe:
+        #   httpGet:
+        #     path: /routine/readness
+        #     port: backend-port
+        #   initialDelaySeconds: 15
+        #   periodSeconds: 15
+        #   timeoutSeconds: 30  
+        #   successThreshold: 1
+        #   failureThreshold: 3
+
         volumeMounts:
           - mountPath: /app/backend/logs
             name: backend-log-dir

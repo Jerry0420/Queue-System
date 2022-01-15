@@ -104,22 +104,24 @@ func (pcr *pgDBCustomerRepository) UpdateCustomer(ctx context.Context, oldStatus
 	return nil
 }
 
-func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStoreId(ctx context.Context, tx PgDBInterface, storeId int) (customers [][]string, err error) {
+func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStore(ctx context.Context, tx PgDBInterface, store *domain.Store) (customers [][]string, err error) {
 	ctx, cancel := context.WithTimeout(ctx, pcr.contextTimeOut)
 	defer cancel()
 
 	customers = make([][]string, 0)
 
 	query := `SELECT 
+					stores.timezone AS timezone, 
 					queues.name AS queue_name, 
 					customers.name AS customer_name, customers.phone AS customer_phone,
 					customers.status AS customer_status, customers.created_at AS customer_created_at
 				FROM queues
 				INNER JOIN customers ON queues.id = customers.queue_id
+				INNER JOIN stores ON stores.id = queues.store_id
 				WHERE queues.store_id=$1
 				ORDER BY queues.id ASC, customers.id ASC FOR UPDATE`
 
-	rows, err := tx.QueryContext(ctx, query, storeId)
+	rows, err := tx.QueryContext(ctx, query, store.ID)
 	if err != nil {
 		pcr.logger.ERRORf("error %v", err)
 		return customers, domain.ServerError50002
@@ -128,7 +130,9 @@ func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStoreId(ctx context.C
 	for rows.Next() {
 		var queue domain.Queue
 		var customer domain.Customer
+
 		err := rows.Scan(
+			&store.Timezone,
 			&queue.Name,
 			&customer.Name, &customer.Phone, &customer.Status, &customer.CreatedAt,
 		)
@@ -136,6 +140,9 @@ func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStoreId(ctx context.C
 			pcr.logger.ERRORf("error %v", err)
 			return customers, domain.ServerError50002
 		}
+		
+		timezone, _ := time.LoadLocation(store.Timezone)
+		
 		if len(customers) == 0 {
 			customers = [][]string{
 				[]string{
@@ -150,7 +157,7 @@ func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStoreId(ctx context.C
 					customer.Name,
 					customer.Phone,
 					customer.Status,
-					customer.CreatedAt.Local().String(),
+					customer.CreatedAt.UTC().In(timezone).String(),
 				},
 			}
 		} else {
@@ -159,7 +166,7 @@ func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStoreId(ctx context.C
 				customer.Name,
 				customer.Phone,
 				customer.Status,
-				customer.CreatedAt.Local().String(),
+				customer.CreatedAt.UTC().In(timezone).String(),
 			})
 		}
 	}

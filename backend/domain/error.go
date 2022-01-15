@@ -25,6 +25,8 @@ var (
 	ServerError40004 = &ServerError{Code: 40004, Description: "wrong params"}
 	// the count of customers is more than 5
 	ServerError40005 = &ServerError{Code: 40005, Description: "the count of customers is more than 5"}
+	// timezone not exist
+	ServerError40006 = &ServerError{Code: 40006, Description: "timezone not exist"}
 
 	// ============================================================
 

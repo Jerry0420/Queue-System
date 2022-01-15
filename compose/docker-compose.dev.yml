@@ -57,18 +57,6 @@ services:
       - ../envs/.env:/etc/config/.env
       - ../backend/logs/:/app/backend/logs/
 
-  db_admin:
-    image: dpage/pgadmin4:5
-    ports:
-      - '8001:80'
-    networks:
-      - queue_system
-    environment:
-      - PGADMIN_DEFAULT_EMAIL=jeerywa@gmail.com
-      - PGADMIN_DEFAULT_PASSWORD=jerry0315
-    volumes:
-      - ../db_admin/servers.json:/pgadmin4/servers.json
-
 networks: 
   queue_system:
     external: true

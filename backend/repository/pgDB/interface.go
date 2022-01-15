@@ -49,12 +49,11 @@ type PgDBQueueRepositoryInterface interface {
 type PgDBCustomerRepositoryInterface interface {
 	CreateCustomers(ctx context.Context, tx PgDBInterface, customers []domain.Customer) error
 	UpdateCustomer(ctx context.Context, oldStatus string, newStatus string, customer *domain.Customer) error
-	GetCustomersWithQueuesByStoreId(ctx context.Context, tx PgDBInterface, storeId int) (customers [][]string, err error)
+	GetCustomersWithQueuesByStore(ctx context.Context, tx PgDBInterface, store *domain.Store) (customers [][]string, err error)
 }
 
 type PgDBSessionRepositoryInterface interface {
 	CreateSession(ctx context.Context, store domain.Store) (domain.StoreSession, error)
-	UpdateSessionStatus(ctx context.Context, session *domain.StoreSession, oldStatus string, newStatus string) error
-	UpdateSessionWithTx(ctx context.Context, tx PgDBInterface, session domain.StoreSession, oldStatus string, newStatus string) error
-	GetSessionAndStoreBySessionId(ctx context.Context, sessionId string) (domain.StoreSession, domain.Store, error)
+	UpdateSessionStatus(ctx context.Context, tx PgDBInterface, session *domain.StoreSession, oldStatus string, newStatus string) error
+	GetSessionById(ctx context.Context, sessionId string) (domain.StoreSession, error)
 }
