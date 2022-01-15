@@ -3,7 +3,7 @@ kind: ConfigMap
 metadata:
   # name: ingress-nginx-controller
   # namespace: ingress-nginx
-  name: nginx-ingress-tcp-microk8s-conf
+  name: nginx-load-balancer-microk8s-conf
   namespace: ingress
 data:
   use-http2: "true"
