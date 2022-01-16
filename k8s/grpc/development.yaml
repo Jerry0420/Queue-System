@@ -43,6 +43,8 @@ spec:
           - name: grpc-port
             containerPort: 8002
 
+        # /bin/grpc_health_probe -addr=:8002 -tls -tls-ca-cert /run/secrets/ca-crt/.ca-crt -tls-server-name=queue-system
+        
         # livenessProbe:
         #   exec:
         #     command: ["/bin/grpc_health_probe", "-addr=:8002", "-tls", "-tls-ca-cert=/path/to/testdata/ca.pem"]
@@ -70,6 +72,8 @@ spec:
             mountPath: "/run/secrets/server-crt"
           - name: server-key
             mountPath: "/run/secrets/server-key"
+          - name: ca-crt
+            mountPath: "/run/secrets/ca-crt"
           - name: grpc-env
             mountPath: /etc/config
             readOnly: true
@@ -98,6 +102,13 @@ spec:
             items:
             - key: SERVER-KEY
               path: .server-key
+              mode: 0444
+        - name: ca-crt
+          secret:
+            secretName: ca-crt
+            items:
+            - key: CA-CRT
+              path: .ca-crt
               mode: 0444
         - name: grpc-env
           configMap: 
