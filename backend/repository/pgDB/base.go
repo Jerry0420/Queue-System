@@ -85,7 +85,6 @@ func (dbw *DbWrapper) CheckAndRenewDb() {
 			dbw.db = db
 			dbw.Unlock()
 			dbw.leaseRevocableChan <- true
-			dbw.leaseRevocableChan = leaseRevocableChan
 		}
 		<- credExpireChan
 	}
