@@ -2,11 +2,11 @@ apiVersion: v1
 kind: Pod 
 metadata: 
   namespace: queue-system
-  name: curlimages
+  name: alpine
 spec: 
   containers: 
-  - name: curlimages 
-    image: curlimages/curl:latest
+  - name: alpine 
+    image: alpine:3.14
     resources:
           requests:
             memory: "32Mi"
