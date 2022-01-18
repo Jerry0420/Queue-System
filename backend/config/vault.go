@@ -12,10 +12,10 @@ import (
 )
 
 type VaultConnectionConfig struct {
-	Address string
+	Address             string
 	WrappedTokenAddress string
-	RoleID string
-	CredName string
+	RoleID              string
+	CredName            string
 }
 
 func NewVaultConnection(logger logging.LoggerTool, vaultConnectionConfig *VaultConnectionConfig) (*api.Logical, *api.TokenAuth, *api.Sys) {
@@ -31,15 +31,15 @@ func NewVaultConnection(logger logging.LoggerTool, vaultConnectionConfig *VaultC
 	params := map[string]string{"roleName": vaultConnectionConfig.CredName}
 	json_params, _ := json.Marshal(params)
 	httpClient := http.Client{Timeout: 10 * time.Second}
-	
+
 	// Everytime, when server start up, get wrapped token from vault server.
-	response, err := httpClient.Post(vaultConnectionConfig.WrappedTokenAddress + "/wrappedToken", "application/json", bytes.NewBuffer(json_params))
-	if err != nil || response.StatusCode != http.StatusOK{
-        logger.FATALf("Fail to get wrapped token.")
-    }
+	response, err := httpClient.Post(vaultConnectionConfig.WrappedTokenAddress+"/wrappedToken", "application/json", bytes.NewBuffer(json_params))
+	if err != nil || response.StatusCode != http.StatusOK {
+		logger.FATALf("Fail to get wrapped token.")
+	}
 
 	var decodedResponse map[string]interface{}
-    json.NewDecoder(response.Body).Decode(&decodedResponse)
+	json.NewDecoder(response.Body).Decode(&decodedResponse)
 	wrappedToken := decodedResponse["wrappedToken"].(string)
 
 	logical := client.Logical()
@@ -70,25 +70,25 @@ func NewVaultConnection(logger logging.LoggerTool, vaultConnectionConfig *VaultC
 }
 
 type VaultWrapper struct {
-	logical *api.Logical
-	token *api.TokenAuth
-	sys *api.Sys
+	logical  *api.Logical
+	token    *api.TokenAuth
+	sys      *api.Sys
 	credName string
-	logger logging.LoggerTool
+	logger   logging.LoggerTool
 }
 
 func NewVaultWrapper(credName string, logical *api.Logical, token *api.TokenAuth, sys *api.Sys, logger logging.LoggerTool) *VaultWrapper {
 	vault := &VaultWrapper{
 		credName: credName,
-		logical: logical,
-		token: token,
-		sys: sys,
-		logger: logger,
+		logical:  logical,
+		token:    token,
+		sys:      sys,
+		logger:   logger,
 	}
-	
+
 	go vault.checkAndRenewToken()
 
-	return vault 
+	return vault
 }
 
 func (vault *VaultWrapper) checkAndRenewToken() {
@@ -102,14 +102,14 @@ func (vault *VaultWrapper) checkAndRenewToken() {
 			vault.logger.FATALf("Fail to lookup token info. %v", err)
 		}
 		ttl, _ = tokenInfo.TokenTTL()
-		if ttl <= time.Minute * 30 {
+		if ttl <= time.Minute*30 {
 			_, err = vault.token.RenewSelf(3600)
 			if err != nil {
 				vault.logger.FATALf("Fail to renew token. %v", err)
 			}
 		} else {
 			// May be some delay after the server running long period of time.
-			time.Sleep(ttl - time.Minute * 30)
+			time.Sleep(ttl - time.Minute*30)
 		}
 	}
 }
@@ -128,8 +128,8 @@ func (vault *VaultWrapper) checkAndRenewCred(leaseID string, credExpireChan chan
 		}
 		currentExpireTime, _ = time.Parse(time.RFC3339Nano, credInfo.Data["expire_time"].(string))
 		ttl, _ = credInfo.TokenTTL()
-		
-		if ttl <= time.Minute * 30 {
+
+		if ttl <= time.Minute*30 {
 			_, err = vault.sys.Renew(leaseID, 3600)
 			if err != nil {
 				vault.logger.FATALf("Fail to renew cred %s %v", leaseID, err)
@@ -140,15 +140,15 @@ func (vault *VaultWrapper) checkAndRenewCred(leaseID string, credExpireChan chan
 			}
 			renewExpireTime, _ = time.Parse(time.RFC3339Nano, credInfo.Data["expire_time"].(string))
 			// when renewExpireTime and currentExpireTime are approximately the same, mark this cred as expired!
-			if renewExpireTime.Sub(currentExpireTime) <= time.Minute * 1 {
+			if renewExpireTime.Sub(currentExpireTime) <= time.Minute*1 {
 				credExpireChan <- true
-				<- leaseRevocableChan
+				<-leaseRevocableChan
 				vault.revokeLease(leaseID)
 				return
 			}
 		} else {
 			// May be some delay after the server running long period of time.
-			time.Sleep(ttl - time.Minute * 30)
+			time.Sleep(ttl - time.Minute*30)
 		}
 	}
 }

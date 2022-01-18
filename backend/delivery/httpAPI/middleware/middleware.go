@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -38,22 +39,26 @@ func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Headers", "*")
 
-		start := time.Now()
+		if !strings.Contains(r.URL.RequestURI(), "/routine") {
+			start := time.Now()
 
-		randomUUID := uuid.New().String()
-		ctx := context.WithValue(r.Context(), "requestID", randomUUID)
-		r = r.WithContext(ctx)
-		next.ServeHTTP(w, r)
+			randomUUID := uuid.New().String()
+			ctx := context.WithValue(r.Context(), "requestID", randomUUID)
+			r = r.WithContext(ctx)
+			next.ServeHTTP(w, r)
 
-		ctx = context.WithValue(r.Context(), "duration", time.Since(start).Truncate(1*time.Millisecond))
-		if errorCode := w.Header().Get("Server-Code"); errorCode != "" {
-			ctx = context.WithValue(ctx, "code", errorCode)
+		    ctx = context.WithValue(r.Context(), "duration", time.Since(start).Truncate(1*time.Millisecond))
+		    if errorCode := w.Header().Get("Server-Code"); errorCode != "" {
+			    ctx = context.WithValue(ctx, "code", errorCode)
+		    } else {
+			    ctx = context.WithValue(ctx, "code", strconv.Itoa(200))
+		    }
+
+		    r = r.WithContext(ctx)
+		    mw.logger.INFOf(r.Context(), "response")
 		} else {
-			ctx = context.WithValue(ctx, "code", strconv.Itoa(200))
+			next.ServeHTTP(w, r)
 		}
-
-		r = r.WithContext(ctx)
-		mw.logger.INFOf(r.Context(), "response")
 	})
 }
 

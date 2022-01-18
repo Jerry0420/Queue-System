@@ -42,26 +42,19 @@ spec:
         ports:
           - name: grpc-port
             containerPort: 8002
-
-        # /bin/grpc_health_probe -addr=:8002 -tls -tls-ca-cert /run/secrets/ca-crt/.ca-crt -tls-server-name=queue-system
+ 
+        livenessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:8002", "-tls=true", "-tls-ca-cert=/run/secrets/ca-crt/.ca-crt", "-tls-server-name=queue-system"]
+          initialDelaySeconds: 5
+          periodSeconds: 5
         
-        # livenessProbe:
-        #   exec:
-        #     command: ["/bin/grpc_health_probe", "-addr=:8002", "-tls", "-tls-ca-cert=/path/to/testdata/ca.pem"]
-        #   initialDelaySeconds: 15
-        #   periodSeconds: 15
-        #   timeoutSeconds: 30  
-        #   successThreshold: 1
-        #   failureThreshold: 3
-        
-        # readinessProbe:
-        #   exec:
-        #     command: ["/bin/grpc_health_probe", "-addr=:8002"]
-        #   initialDelaySeconds: 15
-        #   periodSeconds: 15
-        #   timeoutSeconds: 30  
-        #   successThreshold: 1
-        #   failureThreshold: 3
+        readinessProbe:
+          exec:
+            command: ["/bin/grpc_health_probe", "-addr=:8002", "-tls=true", "-tls-ca-cert=/run/secrets/ca-crt/.ca-crt", "-tls-server-name=queue-system"]
+          initialDelaySeconds: 10
+          periodSeconds: 15  
+          failureThreshold: 5
 
         volumeMounts:
           - mountPath: /app/grpc/logs

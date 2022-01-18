@@ -43,25 +43,22 @@ spec:
           - name: frontend-port
             containerPort: 3000
         
-        # livenessProbe:
-        #   httpGet:
-        #     path: /routine/liveness
-        #     port: frontend-port
-        #   initialDelaySeconds: 15
-        #   periodSeconds: 15
-        #   timeoutSeconds: 30  
-        #   successThreshold: 1
-        #   failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /routine/liveness
+            port: frontend-port
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 1  
         
-        # readinessProbe:
-        #   httpGet:
-        #     path: /routine/readness
-        #     port: frontend-port
-        #   initialDelaySeconds: 15
-        #   periodSeconds: 15
-        #   timeoutSeconds: 30  
-        #   successThreshold: 1
-        #   failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /routine/readness
+            port: frontend-port
+          initialDelaySeconds: 15
+          periodSeconds: 20
+          timeoutSeconds: 1
+          failureThreshold: 3
           
         volumeMounts:
           - mountPath: /var/log/nginx

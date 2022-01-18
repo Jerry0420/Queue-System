@@ -100,10 +100,10 @@ func main() {
 		storeUsecase,
 		logger,
 		usecase.IntegrationUsecaseConfig{
-			StoreDuration: config.ServerConfig.STOREDURATION(),
-			TokenDuration: config.ServerConfig.TOKENDURATION(),
+			StoreDuration:         config.ServerConfig.STOREDURATION(),
+			TokenDuration:         config.ServerConfig.TOKENDURATION(),
 			PasswordTokenDuration: config.ServerConfig.PASSWORDTOKENDURATION(),
-			GrpcReplicaCount: config.ServerConfig.GRPCREPLICACOUNT(),
+			GrpcReplicaCount:      config.ServerConfig.GRPCREPLICACOUNT(),
 		},
 	)
 
@@ -128,6 +128,9 @@ func main() {
 			Domain:                config.ServerConfig.DOMAIN(),
 		},
 	)
+
+	// for health check
+	httpAPI.NewHttpAPIHealthProbes(router, db, grpcConn, config.ServerConfig.VAULT_SERVER())
 
 	server := &http.Server{
 		Addr:         "0.0.0.0:8000",
