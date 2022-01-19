@@ -100,7 +100,7 @@ func (iu *integrationUsecase) CreateStore(ctx context.Context, store *domain.Sto
 	}
 	defer iu.pgDBTx.RollbackTx(tx)
 
-	err = iu.pgDBStoreRepository.CreateStore(ctx, tx, store, queues)
+	err = iu.pgDBStoreRepository.CreateStore(ctx, tx, store)
 	if err != nil {
 		return err
 	}

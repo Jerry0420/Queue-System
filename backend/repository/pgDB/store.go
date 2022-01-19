@@ -147,7 +147,7 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesById(ctx context.Context, stor
 	return storeWithQueues, nil
 }
 
-func (psr *pgDBStoreRepository) CreateStore(ctx context.Context, tx PgDBInterface, store *domain.Store, queues []domain.Queue) error {
+func (psr *pgDBStoreRepository) CreateStore(ctx context.Context, tx PgDBInterface, store *domain.Store) error {
 	ctx, cancel := context.WithTimeout(ctx, psr.contextTimeOut)
 	defer cancel()
 

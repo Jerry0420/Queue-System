@@ -28,7 +28,7 @@ type PgDBStoreRepositoryInterface interface {
 	GetStoreByEmail(ctx context.Context, email string) (domain.Store, error)
 	GetStoreWithQueuesAndCustomersById(ctx context.Context, storeId int) (domain.StoreWithQueues, error)
 	GetStoreWithQueuesById(ctx context.Context, storeId int) (domain.StoreWithQueues, error)
-	CreateStore(ctx context.Context, tx PgDBInterface, store *domain.Store, queues []domain.Queue) error
+	CreateStore(ctx context.Context, tx PgDBInterface, store *domain.Store) error
 	UpdateStore(ctx context.Context, store *domain.Store, fieldName string, newFieldValue string) error
 	RemoveStoreByID(ctx context.Context, tx PgDBInterface, id int) error
 	RemoveStoreByIDs(ctx context.Context, tx PgDBInterface, storeIds []string) error
