@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -99,10 +100,10 @@ func main() {
 		storeUsecase,
 		logger,
 		usecase.IntegrationUsecaseConfig{
-			StoreDuration: config.ServerConfig.STOREDURATION(),
-			TokenDuration: config.ServerConfig.TOKENDURATION(),
+			StoreDuration:         config.ServerConfig.STOREDURATION(),
+			TokenDuration:         config.ServerConfig.TOKENDURATION(),
 			PasswordTokenDuration: config.ServerConfig.PASSWORDTOKENDURATION(),
-			GrpcReplicaCount: config.ServerConfig.GRPCREPLICACOUNT(),
+			GrpcReplicaCount:      config.ServerConfig.GRPCREPLICACOUNT(),
 		},
 	)
 
@@ -128,6 +129,9 @@ func main() {
 		},
 	)
 
+	// for health check
+	httpAPI.NewHttpAPIHealthProbes(router, db, grpcConn, config.ServerConfig.VAULT_SERVER())
+
 	server := &http.Server{
 		Addr:         "0.0.0.0:8000",
 		WriteTimeout: time.Hour * 24,
@@ -144,7 +148,7 @@ func main() {
 	}()
 
 	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 
 	// Block until receive signal...
 	<-quit

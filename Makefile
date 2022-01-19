@@ -107,4 +107,3 @@ microk8s_enable_addons:
 # hostname -I | awk '{print $1}'
 # multipass find
 # multipass info --all
-# docker run -it --rm curlimages/curl:latest curl --max-time 30 --connect-timeout 5 -X DELETE --url {{server}}/api/v1/routine/stores

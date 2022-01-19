@@ -7,6 +7,12 @@ metadata:
     app: backend
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
   selector:
     matchLabels:
       app: backend
@@ -42,36 +48,22 @@ spec:
         ports:
           - name: backend-port
             containerPort: 8000
-        
-        # startupProbe:
-        #   httpGet:
-        #     path: /routine/liveness
-        #     port: backend-port
-        #   initialDelaySeconds: 15
-        #   periodSeconds: 15
-        #   timeoutSeconds: 30  
-        #   successThreshold: 1
-        #   failureThreshold: 3
 
-        # livenessProbe:
-        #   httpGet:
-        #     path: /routine/liveness
-        #     port: backend-port
-        #   initialDelaySeconds: 15
-        #   periodSeconds: 15
-        #   timeoutSeconds: 30  
-        #   successThreshold: 1
-        #   failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/routine/liveness
+            port: backend-port
+          initialDelaySeconds: 5
+          periodSeconds: 5  
         
-        # readinessProbe:
-        #   httpGet:
-        #     path: /routine/readness
-        #     port: backend-port
-        #   initialDelaySeconds: 15
-        #   periodSeconds: 15
-        #   timeoutSeconds: 30  
-        #   successThreshold: 1
-        #   failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/routine/readiness
+            port: backend-port
+          initialDelaySeconds: 8
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 5
 
         volumeMounts:
           - mountPath: /app/backend/logs

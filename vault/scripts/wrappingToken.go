@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-// Run this server for other services to get wrapped token.
+// Run this server for other services to get wrapped token. (wrapped secret id)
 // Like vault server, every time when vault restart, it's status is set to be sealed. This server is not implementing restart mechanism too. 
 func main() {
 	http.HandleFunc("/wrappedToken", func (w http.ResponseWriter, r *http.Request)  {

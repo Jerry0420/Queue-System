@@ -43,6 +43,11 @@ services:
         uid: '1000'
         gid: '1001'
         mode: 0444
+      - source: ca-crt
+        target: /run/secrets/ca-crt/.ca-crt
+        uid: '1000'
+        gid: '1001'
+        mode: 0444
     ports:
       - "8002:8002"
     volumes:

@@ -34,6 +34,7 @@ services:
       - ../envs/.secret_grpc:/run/secrets/grpc-secret/.grpc-secret
       - ../cert/server.crt:/run/secrets/server-crt/.server-crt
       - ../cert/server.key:/run/secrets/server-key/.server-key
+      - ../cert/ca.crt:/run/secrets/ca-crt/.ca-crt
       - ../envs/.env.grpc:/etc/config/.env.grpc
       - ../grpc/logs/:/app/grpc/logs/
 

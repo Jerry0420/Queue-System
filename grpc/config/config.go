@@ -107,3 +107,8 @@ func (config Config) SERVER_KEY() string {
 	content := config.get("SERVER_KEY")
 	return content
 }
+
+func (config Config) CA_CRT() string {
+	content := config.get("CA_CRT")
+	return content
+}
