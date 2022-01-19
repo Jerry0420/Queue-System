@@ -58,7 +58,7 @@ spec:
         
         readinessProbe:
           httpGet:
-            path: /routine/readness
+            path: /routine/readiness
             port: frontend-port
           initialDelaySeconds: 8
           periodSeconds: 10
