@@ -63,3 +63,5 @@ test.go
 test.pgsql
 test.js
 test.html
+report.out
+report.html

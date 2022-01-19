@@ -71,6 +71,14 @@ func rotateLogFile(lt *loggerTool) {
 func NewLogger(contextKeys []string, disable bool) *loggerTool {
 	var lt *loggerTool
 
+	if disable == true {
+		lt = &loggerTool{
+			logger: log.New(ioutil.Discard, "", log.Ldate),
+			receiveMessage: make(chan bool, 10000),
+		}
+		return lt
+	}
+
 	logFilePath := getLogFilePathOfToday()
 	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
@@ -82,10 +90,6 @@ func NewLogger(contextKeys []string, disable bool) *loggerTool {
 		logFile:        logFile,
 		contextKeys:    contextKeys,
 		receiveMessage: make(chan bool, 10000),
-	}
-
-	if disable == true {
-		lt.logger = log.New(ioutil.Discard, "", log.Ldate)
 	}
 
 	go rotateLogFile(lt)
