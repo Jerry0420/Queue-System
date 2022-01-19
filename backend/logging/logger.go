@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -73,7 +72,7 @@ func NewLogger(contextKeys []string, disable bool) *loggerTool {
 
 	if disable == true {
 		lt = &loggerTool{
-			logger: log.New(ioutil.Discard, "", log.Ldate),
+			logger:         log.New(os.Stdout, "", log.Ldate),
 			receiveMessage: make(chan bool, 10000),
 		}
 		return lt

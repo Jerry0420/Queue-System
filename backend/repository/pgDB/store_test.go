@@ -50,21 +50,25 @@ func TestGetStoreByEmail(t *testing.T) {
 }
 
 func TestCreateStore(t *testing.T) {
-	db, mock, err := sqlmock.New()
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {
 		t.Fatalf("error sqlmock new %v", err)
 	}
 	mockStore := domain.Store{
-		Email:       "email 1",
-		Password:    "password 1",
-		Name:        "name 1",
+		Email:       "email1",
+		Password:    "password1",
+		Name:        "name1",
 		Description: "",
 		Timezone:    "Asia/Taipei",
 	}
 	
-	query := `INSERT INTO stores (name, email, password, timezone) VALUES (\\?, \\?, \\?, \\?) RETURNING id,created_at`
-	prep := mock.ExpectPrepare(query)
-	prep.ExpectExec().WithArgs(mockStore.Name, mockStore.Email, mockStore.Password, mockStore.Timezone).WillReturnResult(sqlmock.NewResult(1, 1))
+	query := `INSERT INTO stores (name, email, password, timezone) VALUES ($ww, $2, $3, $4) RETURNING id,created_at`
+	mock.ExpectQuery(query).
+	    WithArgs(mockStore.Name, mockStore.Email, mockStore.Password, mockStore.Timezone).
+    	WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(3, time.Now()))
+
+	// prep := mock.ExpectPrepare(query)
+	// prep.ExpectExec().WithArgs(mockStore.Name, mockStore.Email, mockStore.Password, mockStore.Timezone).WillReturnResult(sqlmock.NewResult(2, 1))
 
 	logger := logging.NewLogger([]string{}, true)
 	pgDBStoreRepository := pgDB.NewPgDBStoreRepository(db, logger, time.Duration(2*time.Second))
