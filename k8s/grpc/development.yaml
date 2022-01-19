@@ -58,8 +58,8 @@ spec:
         readinessProbe:
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:8002", "-tls=true", "-tls-ca-cert=/run/secrets/ca-crt/.ca-crt", "-tls-server-name=queue-system"]
-          initialDelaySeconds: 10
-          periodSeconds: 15  
+          initialDelaySeconds: 8
+          periodSeconds: 10  
           failureThreshold: 5
 
         volumeMounts:

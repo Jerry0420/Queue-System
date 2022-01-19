@@ -12,7 +12,7 @@ spec:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 1
-  minReadySeconds: 10
+  minReadySeconds: 5
   selector:
     matchLabels:
       app: frontend
@@ -53,18 +53,17 @@ spec:
           httpGet:
             path: /routine/liveness
             port: frontend-port
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 1  
+          initialDelaySeconds: 5
+          periodSeconds: 5  
         
         readinessProbe:
           httpGet:
             path: /routine/readness
             port: frontend-port
-          initialDelaySeconds: 15
-          periodSeconds: 20
-          timeoutSeconds: 1
-          failureThreshold: 3
+          initialDelaySeconds: 8
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 5
           
         volumeMounts:
           - mountPath: /var/log/nginx
