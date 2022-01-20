@@ -80,7 +80,6 @@ func main() {
 	grpcServicesRepository := grpcServices.NewGrpcServicesRepository(grpcClient, logger, config.ServerConfig.CONTEXT_TIMEOUT()*4)
 
 	storeUsecase := usecase.NewStoreUsecase(
-		pgDBTx,
 		pgDBStoreRepository,
 		pgDBSignkeyRepository,
 		logger,

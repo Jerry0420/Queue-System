@@ -21,7 +21,6 @@ type StoreUsecaseConfig struct {
 }
 
 type storeUsecase struct {
-	pgDBTx                pgDB.PgDBTxInterface
 	pgDBStoreRepository   pgDB.PgDBStoreRepositoryInterface
 	pgDBSignKeyRepository pgDB.PgDBSignKeyRepositoryInterface
 	logger                logging.LoggerTool
@@ -29,13 +28,12 @@ type storeUsecase struct {
 }
 
 func NewStoreUsecase(
-	pgDBTx pgDB.PgDBTxInterface,
 	pgDBStoreRepository pgDB.PgDBStoreRepositoryInterface,
 	pgDBSignKeyRepository pgDB.PgDBSignKeyRepositoryInterface,
 	logger logging.LoggerTool,
 	config StoreUsecaseConfig,
 ) StoreUseCaseInterface {
-	return &storeUsecase{pgDBTx, pgDBStoreRepository, pgDBSignKeyRepository, logger, config}
+	return &storeUsecase{pgDBStoreRepository, pgDBSignKeyRepository, logger, config}
 }
 
 func (su *storeUsecase) ChunkStoresSlice(items [][][]string, chunkSize int) (chunks [][][][]string) {
