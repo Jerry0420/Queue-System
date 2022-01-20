@@ -63,7 +63,7 @@ func TestCreateStore(t *testing.T) {
 		Password:    "password1",
 		Name:        "name1",
 		Description: "description1",
-		Timezone: "Asia/Taipei",
+		Timezone:    "Asia/Taipei",
 	}
 	mockQueues := []domain.Queue{
 		{
@@ -87,4 +87,5 @@ func TestCreateStore(t *testing.T) {
 
 	err := integrationUsecase.CreateStore(context.TODO(), &mockStore, mockQueues)
 	assert.NoError(t, err)
+	assert.Equal(t, "encryptPassword1", mockStore.Password)
 }
