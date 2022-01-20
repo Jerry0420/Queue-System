@@ -72,7 +72,7 @@ func NewLogger(contextKeys []string, disable bool) *loggerTool {
 
 	if disable == true {
 		lt = &loggerTool{
-			logger:         log.New(os.Stdout, "", log.Ldate),
+			logger:         log.New(os.Stdout, "", 0),
 			receiveMessage: make(chan bool, 10000),
 		}
 		return lt
