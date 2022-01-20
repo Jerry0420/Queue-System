@@ -2,6 +2,7 @@ package usecase_test
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -58,21 +59,19 @@ func setUpIntegrationTest() (
 func TestCreateStore(t *testing.T) {
 	pgDBTx, pgDBStoreRepository, _, _, pgDBQueueRepository, _, storeUseCase, integrationUsecase, pgDB := setUpIntegrationTest()
 	mockStore := domain.Store{
-		ID:          1,
 		Email:       "email1",
 		Password:    "password1",
 		Name:        "name1",
 		Description: "description1",
 		Timezone:    "Asia/Taipei",
 	}
+	mockStoreID := 1
 	mockQueues := []domain.Queue{
 		{
-			ID:      1,
 			Name:    "queue1",
 			StoreID: 1,
 		},
 		{
-			ID:      2,
 			Name:    "queue2",
 			StoreID: 1,
 		},
@@ -81,11 +80,22 @@ func TestCreateStore(t *testing.T) {
 	storeUseCase.On("EncryptPassword", "password1").Return("encryptPassword1", nil).Once()
 	pgDBTx.On("BeginTx").Return(pgDB, nil).Once()
 	pgDBTx.On("RollbackTx", pgDB).Once()
-	pgDBStoreRepository.On("CreateStore", mock.Anything, pgDB, &mockStore).Return(nil).Once()
-	pgDBQueueRepository.On("CreateQueues", mock.Anything, pgDB, 1, mockQueues).Return(nil).Once()
+	pgDBStoreRepository.On("CreateStore", mock.Anything, pgDB, &mockStore).Return(nil).Run(func(args mock.Arguments) {
+		arg := args.Get(2).(*domain.Store)
+		arg.ID = mockStoreID
+		arg.CreatedAt = time.Now()
+	}).Once()
+
+	pgDBQueueRepository.On("CreateQueues", mock.Anything, pgDB, mockStoreID, mockQueues).Return(nil).Run(func(args mock.Arguments) {
+		arg := args.Get(3).([]domain.Queue)
+		arg[0].ID = 1
+		arg[1].ID = 2
+	}).Once()
 	pgDBTx.On("CommitTx", pgDB).Return(nil).Once()
 
 	err := integrationUsecase.CreateStore(context.TODO(), &mockStore, mockQueues)
+	fmt.Println(mockStore)
+	fmt.Println(mockQueues)
 	assert.NoError(t, err)
 	assert.Equal(t, "encryptPassword1", mockStore.Password)
 }
