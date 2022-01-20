@@ -64,38 +64,40 @@ func TestCreateStore(t *testing.T) {
 		Description: "description1",
 		Timezone:    "Asia/Taipei",
 	}
-	mockStoreID := 1
+	expectedMockStoreID := 1
 	mockQueues := []domain.Queue{
 		{
 			Name:    "queue1",
-			StoreID: 1,
 		},
 		{
 			Name:    "queue2",
-			StoreID: 1,
 		},
 	}
+	expectedMockQueueID1 := 1
+	expectedMockQueueID2 := 2
 
 	storeUseCase.On("EncryptPassword", "password1").Return("encryptPassword1", nil).Once()
 	pgDBTx.On("BeginTx").Return(pgDB, nil).Once()
 	pgDBTx.On("RollbackTx", pgDB).Once()
 	pgDBStoreRepository.On("CreateStore", mock.Anything, pgDB, &mockStore).Return(nil).Run(func(args mock.Arguments) {
-		arg := args.Get(2).(*domain.Store)
-		arg.ID = mockStoreID
-		arg.CreatedAt = time.Now()
+		store := args.Get(2).(*domain.Store)
+		store.ID = expectedMockStoreID
+		store.CreatedAt = time.Now()
 	}).Once()
 
-	pgDBQueueRepository.On("CreateQueues", mock.Anything, pgDB, mockStoreID, mockQueues).Return(nil).Run(func(args mock.Arguments) {
-		arg := args.Get(3).([]domain.Queue)
-		arg[0].ID = 1
-		arg[1].ID = 2
+	pgDBQueueRepository.On("CreateQueues", mock.Anything, pgDB, expectedMockStoreID, mockQueues).Return(nil).Run(func(args mock.Arguments) {
+		queues := args.Get(3).([]domain.Queue)
+		queues[0].ID = expectedMockQueueID1
+		queues[0].StoreID = expectedMockStoreID
+		queues[1].ID = expectedMockQueueID2
+		queues[1].StoreID = expectedMockStoreID
 	}).Once()
 	pgDBTx.On("CommitTx", pgDB).Return(nil).Once()
 
 	err := integrationUsecase.CreateStore(context.TODO(), &mockStore, mockQueues)
 	assert.NoError(t, err)
 	assert.Equal(t, "encryptPassword1", mockStore.Password)
-	assert.Equal(t, mockStoreID, mockStore.ID)
-	assert.Equal(t, 1, mockQueues[0].ID)
-	assert.Equal(t, 2, mockQueues[1].ID)
+	assert.Equal(t, expectedMockStoreID, mockStore.ID)
+	assert.Equal(t, expectedMockQueueID1, mockQueues[0].ID)
+	assert.Equal(t, expectedMockQueueID2, mockQueues[1].ID)
 }

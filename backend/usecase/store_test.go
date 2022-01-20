@@ -40,13 +40,19 @@ func TestUpdateStoreDescription(t *testing.T) {
 		Email:       "email1",
 		Password:    "password1",
 		Name:        "name1",
-		Description: "description1",
+		Description: "",
 		CreatedAt:   time.Now(),
 		Timezone:    "Asia/Taipei",
 	}
-	pgDBStoreRepository.On("UpdateStore", mock.Anything, &mockStore, "description", "description1").
-		Return(nil).Once()
+	expectedMockStoreDescription := "description1"
+	pgDBStoreRepository.On("UpdateStore", mock.Anything, &mockStore, "description", expectedMockStoreDescription).
+		Return(nil).Run(func(args mock.Arguments) {
+			store := args.Get(1).(*domain.Store)
+			description := args.Get(3).(string)
+			store.Description = description
+		}).Once()
 
-	err := storeUsecase.UpdateStoreDescription(context.TODO(), "description1", &mockStore)
+	err := storeUsecase.UpdateStoreDescription(context.TODO(), expectedMockStoreDescription, &mockStore)
 	assert.NoError(t, err)
+	assert.Equal(t, expectedMockStoreDescription, mockStore.Description)
 }
