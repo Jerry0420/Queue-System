@@ -62,9 +62,7 @@ func TestCreateStore(t *testing.T) {
 	}
 
 	query := `INSERT INTO stores (name, email, password, timezone) VALUES ($1, $2, $3, $4) RETURNING id,created_at`
-
-	prep := mock.ExpectPrepare(query)
-	prep.ExpectQuery().
+	mock.ExpectQuery(query).
 		WithArgs(mockStore.Name, mockStore.Email, mockStore.Password, mockStore.Timezone).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at"}).AddRow(66, time.Now()))
 
