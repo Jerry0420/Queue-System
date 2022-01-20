@@ -152,15 +152,8 @@ func (psr *pgDBStoreRepository) CreateStore(ctx context.Context, tx PgDBInterfac
 	defer cancel()
 
 	query := `INSERT INTO stores (name, email, password, timezone) VALUES ($1, $2, $3, $4) RETURNING id,created_at`
-	stmt, err := tx.PrepareContext(ctx, query)
-	if err != nil {
-		psr.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
-	defer stmt.Close()
-
-	row := stmt.QueryRowContext(ctx, store.Name, store.Email, store.Password, store.Timezone)
-	err = row.Scan(&store.ID, &store.CreatedAt)
+	row := tx.QueryRowContext(ctx, query, store.Name, store.Email, store.Password, store.Timezone)
+	err := row.Scan(&store.ID, &store.CreatedAt)
 	if err != nil {
 		psr.logger.ERRORf("error %v", err)
 		return domain.ServerError40901
@@ -173,15 +166,8 @@ func (psr *pgDBStoreRepository) UpdateStore(ctx context.Context, store *domain.S
 	defer cancel()
 
 	query := fmt.Sprintf("UPDATE stores SET %s=$1 WHERE id=$2 RETURNING description,created_at", fieldName)
-	stmt, err := psr.db.PrepareContext(ctx, query)
-	if err != nil {
-		psr.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
-	defer stmt.Close()
-
-	row := stmt.QueryRowContext(ctx, newFieldValue, store.ID)
-	err = row.Scan(&store.Description, &store.CreatedAt)
+	row := psr.db.QueryRowContext(ctx, query, newFieldValue, store.ID)
+	err := row.Scan(&store.Description, &store.CreatedAt)
 	if err != nil {
 		psr.logger.ERRORf("error %v", err)
 		return domain.ServerError40402
@@ -194,14 +180,7 @@ func (psr *pgDBStoreRepository) RemoveStoreByID(ctx context.Context, tx PgDBInte
 	defer cancel()
 
 	query := `DELETE FROM stores WHERE id=$1`
-	stmt, err := tx.PrepareContext(ctx, query)
-	if err != nil {
-		psr.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
-	defer stmt.Close()
-
-	result, err := stmt.ExecContext(ctx, id)
+	result, err := tx.ExecContext(ctx, query, id)
 	if err != nil {
 		psr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
@@ -225,14 +204,7 @@ func (psr *pgDBStoreRepository) RemoveStoreByIDs(ctx context.Context, tx PgDBInt
 	param := "(" + strings.Join(storeIds, ",") + ")"
 
 	query := fmt.Sprintf(`DELETE FROM stores WHERE id IN %s`, param)
-	stmt, err := tx.PrepareContext(ctx, query)
-	if err != nil {
-		psr.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
-	defer stmt.Close()
-
-	_, err = stmt.ExecContext(ctx)
+	_, err := tx.ExecContext(ctx, query)
 	if err != nil {
 		psr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
@@ -246,9 +218,9 @@ func (psr *pgDBStoreRepository) GetAllIdsOfExpiredStores(ctx context.Context, tx
 
 	storesIds = make([]string, 0)
 
-	query := `SELECT id FROM stores WHERE created_at<=$1 FOR UPDATE`
+	query := `SELECT id FROM stores WHERE created_at<=$1 FOR UPDATE` //row block
 
-	rows, err := psr.db.QueryContext(ctx, query, expiresTime)
+	rows, err := tx.QueryContext(ctx, query, expiresTime)
 	if err != nil {
 		psr.logger.ERRORf("error %v", err)
 		return storesIds, domain.ServerError50002
@@ -285,7 +257,7 @@ func (psr *pgDBStoreRepository) GetAllExpiredStoresInSlice(ctx context.Context, 
 			WHERE stores.created_at<=$1
 			ORDER BY stores.id ASC, queues.id ASC, customers.id ASC FOR UPDATE`
 
-	rows, err := psr.db.QueryContext(ctx, query, expiresTime)
+	rows, err := tx.QueryContext(ctx, query, expiresTime)
 	if err != nil {
 		psr.logger.ERRORf("error %v", err)
 		return stores, domain.ServerError50002
