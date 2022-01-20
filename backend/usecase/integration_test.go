@@ -2,7 +2,6 @@ package usecase_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -94,8 +93,9 @@ func TestCreateStore(t *testing.T) {
 	pgDBTx.On("CommitTx", pgDB).Return(nil).Once()
 
 	err := integrationUsecase.CreateStore(context.TODO(), &mockStore, mockQueues)
-	fmt.Println(mockStore)
-	fmt.Println(mockQueues)
 	assert.NoError(t, err)
 	assert.Equal(t, "encryptPassword1", mockStore.Password)
+	assert.Equal(t, mockStoreID, mockStore.ID)
+	assert.Equal(t, 1, mockQueues[0].ID)
+	assert.Equal(t, 2, mockQueues[1].ID)
 }
