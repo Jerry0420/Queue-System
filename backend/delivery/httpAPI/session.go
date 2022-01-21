@@ -9,7 +9,7 @@ import (
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-func (had *httpAPIDelivery) createSession(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) CreateSession(w http.ResponseWriter, r *http.Request) {
 	sessionToken, err := validator.SessionCreate(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -57,7 +57,7 @@ func (had *httpAPIDelivery) createSession(w http.ResponseWriter, r *http.Request
 	}
 }
 
-func (had *httpAPIDelivery) scannedSession(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) ScannedSession(w http.ResponseWriter, r *http.Request) {
 	session, err := validator.SessionScanned(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)

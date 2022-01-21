@@ -8,7 +8,7 @@ import (
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-func (had *httpAPIDelivery) customersCreate(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) CustomersCreate(w http.ResponseWriter, r *http.Request) {
 	session, customers, err := validator.CustomerCreate(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -36,7 +36,7 @@ func (had *httpAPIDelivery) customersCreate(w http.ResponseWriter, r *http.Reque
 }
 
 // for used in store...
-func (had *httpAPIDelivery) customerUpdate(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) CustomerUpdate(w http.ResponseWriter, r *http.Request) {
 	storeId, oldCustomerStatus, newCustomerStatus, customer, err := validator.CustomerUpdate(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)

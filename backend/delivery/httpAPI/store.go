@@ -10,7 +10,7 @@ import (
 	"github.com/jerry0420/queue-system/backend/domain"
 )
 
-func (had *httpAPIDelivery) openStore(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) OpenStore(w http.ResponseWriter, r *http.Request) {
 	store, queues, err := validator.StoreOpen(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -38,7 +38,7 @@ func (had *httpAPIDelivery) openStore(w http.ResponseWriter, r *http.Request) {
 	presenter.JsonResponseOK(w, presenter.StoreWithQueuesForResponse(store, queues))
 }
 
-func (had *httpAPIDelivery) signinStore(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) SigninStore(w http.ResponseWriter, r *http.Request) {
 	incomingStore, err := validator.StoreSignin(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -68,7 +68,7 @@ func (had *httpAPIDelivery) signinStore(w http.ResponseWriter, r *http.Request) 
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
-func (had *httpAPIDelivery) refreshToken(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	encryptedRefreshToken, err := validator.StoreTokenRefresh(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -83,7 +83,7 @@ func (had *httpAPIDelivery) refreshToken(w http.ResponseWriter, r *http.Request)
 	presenter.JsonResponseOK(w, presenter.StoreToken(store, normalToken, tokenExpiresAt, sessionToken))
 }
 
-func (had *httpAPIDelivery) closeStore(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) CloseStore(w http.ResponseWriter, r *http.Request) {
 	tokenClaims, err := validator.StoreClose(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -104,7 +104,7 @@ func (had *httpAPIDelivery) closeStore(w http.ResponseWriter, r *http.Request) {
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
-func (had *httpAPIDelivery) closeStorerRoutine(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) CloseStorerRoutine(w http.ResponseWriter, r *http.Request) {
 	err := had.integrationUsecase.CloseStoreRoutine(r.Context())
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -113,7 +113,7 @@ func (had *httpAPIDelivery) closeStorerRoutine(w http.ResponseWriter, r *http.Re
 	presenter.JsonResponseOK(w, nil)
 }
 
-func (had *httpAPIDelivery) forgotPassword(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) ForgotPassword(w http.ResponseWriter, r *http.Request) {
 	store, err := validator.StorePasswordForgot(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -129,7 +129,7 @@ func (had *httpAPIDelivery) forgotPassword(w http.ResponseWriter, r *http.Reques
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
-func (had *httpAPIDelivery) updatePassword(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) UpdatePassword(w http.ResponseWriter, r *http.Request) {
 	jsonBody, _, err := validator.StorePasswordUpdate(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -154,7 +154,7 @@ func (had *httpAPIDelivery) updatePassword(w http.ResponseWriter, r *http.Reques
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
-func (had *httpAPIDelivery) getStoreInfoWithSSE(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) GetStoreInfoWithSSE(w http.ResponseWriter, r *http.Request) {
 	storeId, err := validator.StoreInfoGet(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -194,7 +194,7 @@ func (had *httpAPIDelivery) getStoreInfoWithSSE(w http.ResponseWriter, r *http.R
 	}
 }
 
-func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) GetStoreInfo(w http.ResponseWriter, r *http.Request) {
 	storeId, err := validator.StoreInfoGet(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
@@ -209,7 +209,7 @@ func (had *httpAPIDelivery) getStoreInfo(w http.ResponseWriter, r *http.Request)
 	presenter.JsonResponseOK(w, presenter.StoreGet(store))
 }
 
-func (had *httpAPIDelivery) updateStoreDescription(w http.ResponseWriter, r *http.Request) {
+func (had *HttpAPIDelivery) UpdateStoreDescription(w http.ResponseWriter, r *http.Request) {
 	store, err := validator.StoreDescriptionUpdate(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
