@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/jerry0420/queue-system/backend/config"
 	"google.golang.org/grpc"
 	_ "google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -17,6 +18,7 @@ type HttpAPIHealthProbes struct {
 	db          *sql.DB
 	grpcConn    *grpc.ClientConn
 	vaultServer string
+	env         string
 }
 
 func NewHttpAPIHealthProbes(
@@ -24,8 +26,9 @@ func NewHttpAPIHealthProbes(
 	db *sql.DB,
 	grpcConn *grpc.ClientConn,
 	vaultServer string,
+	env string,
 ) {
-	hahp := &HttpAPIHealthProbes{db, grpcConn, vaultServer}
+	hahp := &HttpAPIHealthProbes{db, grpcConn, vaultServer, env}
 
 	router.HandleFunc(
 		"/api/routine/liveness",
@@ -72,26 +75,28 @@ func (hahp *HttpAPIHealthProbes) readiness(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// check vault
-	httpClient := http.Client{Timeout: 3 * time.Second}
-	response, err := httpClient.Get(hahp.vaultServer + "/v1/sys/health") // url in vault server.
-	if err != nil || response.StatusCode != http.StatusOK {
-		ok = false
-		errMsg += "vault not ok."
-		http.Error(w, errMsg, http.StatusServiceUnavailable)
-		return
-	}
-
-	var decodedResponse map[string]interface{}
-	json.NewDecoder(response.Body).Decode(&decodedResponse)
-	initialized := decodedResponse["initialized"].(bool)
-	sealed := decodedResponse["sealed"].(bool)
-	standby := decodedResponse["standby"].(bool)
-	if initialized == false || sealed == true || standby == true {
-		ok = false
-		errMsg += "vault not ok."
-		http.Error(w, errMsg, http.StatusServiceUnavailable)
-		return
+	// check vault only in production
+	if hahp.env == config.EnvStatus.PROD {
+		httpClient := http.Client{Timeout: 3 * time.Second}
+		response, err := httpClient.Get(hahp.vaultServer + "/v1/sys/health") // url in vault server.
+		if err != nil || response.StatusCode != http.StatusOK {
+			ok = false
+			errMsg += "vault not ok."
+			http.Error(w, errMsg, http.StatusServiceUnavailable)
+			return
+		}
+	
+		var decodedResponse map[string]interface{}
+		json.NewDecoder(response.Body).Decode(&decodedResponse)
+		initialized := decodedResponse["initialized"].(bool)
+		sealed := decodedResponse["sealed"].(bool)
+		standby := decodedResponse["standby"].(bool)
+		if initialized == false || sealed == true || standby == true {
+			ok = false
+			errMsg += "vault not ok."
+			http.Error(w, errMsg, http.StatusServiceUnavailable)
+			return
+		}	
 	}
 
 	if ok {

@@ -127,7 +127,7 @@ func main() {
 	mw := middleware.NewMiddleware(router, logger, integrationUsecase, sessionUsecase)
 	httpAPI.NewHttpAPIRoutes(router, mw, httpAPIDelivery)
 	// for health check
-	httpAPI.NewHttpAPIHealthProbes(router, db, grpcConn, config.ServerConfig.VAULT_SERVER())
+	httpAPI.NewHttpAPIHealthProbes(router, db, grpcConn, config.ServerConfig.VAULT_SERVER(), config.ServerConfig.ENV())
 
 	server := &http.Server{
 		Addr:         "0.0.0.0:8000",
