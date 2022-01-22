@@ -27,15 +27,8 @@ func (psr *pgDBSessionRepository) CreateSession(ctx context.Context, store domai
 	session := domain.StoreSession{StoreId: store.ID, StoreSessionStatus: domain.StoreSessionStatus.NORMAL}
 
 	query := `INSERT INTO store_sessions (store_id) VALUES ($1) RETURNING id`
-	stmt, err := psr.db.PrepareContext(ctx, query)
-	if err != nil {
-		psr.logger.ERRORf("error %v", err)
-		return session, domain.ServerError50002
-	}
-	defer stmt.Close()
-
-	row := stmt.QueryRowContext(ctx, store.ID)
-	err = row.Scan(&session.ID)
+	row := psr.db.QueryRowContext(ctx, query, store.ID)
+	err := row.Scan(&session.ID)
 	if err != nil {
 		psr.logger.ERRORf("error %v", err)
 		return session, domain.ServerError40904
@@ -47,22 +40,14 @@ func (psr *pgDBSessionRepository) UpdateSessionStatus(ctx context.Context, tx Pg
 	ctx, cancel := context.WithTimeout(ctx, psr.contextTimeOut)
 	defer cancel()
 	query := `UPDATE store_sessions SET status=$1 WHERE id=$2 and status=$3`
-
-	var stmt *sql.Stmt
+	var result sql.Result
 	var err error
 	if tx == nil {
-		stmt, err = psr.db.PrepareContext(ctx, query)
+		result, err = psr.db.ExecContext(ctx, query, newStatus, session.ID, oldStatus)
 	} else {
-		stmt, err = tx.PrepareContext(ctx, query)
+		result, err = tx.ExecContext(ctx, query, newStatus, session.ID, oldStatus)
 	}
 
-	if err != nil {
-		psr.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
-	defer stmt.Close()
-
-	result, err := stmt.ExecContext(ctx, newStatus, session.ID, oldStatus)
 	if err != nil {
 		psr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002

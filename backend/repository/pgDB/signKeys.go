@@ -25,15 +25,8 @@ func (pskr *pgDBSignKeyRepository) CreateSignKey(ctx context.Context, signKey *d
 	defer cancel()
 
 	query := `INSERT INTO sign_keys (store_id, sign_key, type) VALUES ($1, $2, $3) RETURNING id`
-	stmt, err := pskr.db.PrepareContext(ctx, query)
-	if err != nil {
-		pskr.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
-	defer stmt.Close()
-
-	row := stmt.QueryRowContext(ctx, signKey.StoreId, signKey.SignKey, signKey.SignKeyType)
-	err = row.Scan(&signKey.ID)
+	row := pskr.db.QueryRowContext(ctx, query, signKey.StoreId, signKey.SignKey, signKey.SignKeyType)
+	err := row.Scan(&signKey.ID)
 	if err != nil {
 		pskr.logger.ERRORf("error %v", err)
 		return domain.ServerError40902
@@ -64,14 +57,7 @@ func (pskr *pgDBSignKeyRepository) RemoveSignKeyByID(ctx context.Context, id int
 	defer cancel()
 
 	query := `DELETE FROM sign_keys WHERE id=$1,type=$2 RETURNING id,sign_key`
-	stmt, err := pskr.db.PrepareContext(ctx, query)
-	if err != nil {
-		pskr.logger.ERRORf("error %v", err)
-		return signKey, domain.ServerError50002
-	}
-	defer stmt.Close()
-
-	row := stmt.QueryRowContext(ctx, id, signKeyType)
+	row := pskr.db.QueryRowContext(ctx, query, id, signKeyType)
 	err = row.Scan(&signKey.ID, &signKey.SignKey)
 	if err != nil || signKey.ID != id {
 		pskr.logger.ERRORf("error %v", err)

@@ -80,7 +80,6 @@ func main() {
 	grpcServicesRepository := grpcServices.NewGrpcServicesRepository(grpcClient, logger, config.ServerConfig.CONTEXT_TIMEOUT()*4)
 
 	storeUsecase := usecase.NewStoreUsecase(
-		pgDBTx,
 		pgDBStoreRepository,
 		pgDBSignkeyRepository,
 		logger,
@@ -110,12 +109,8 @@ func main() {
 	broker := broker.NewBroker(logger)
 	defer broker.CloseAll()
 
-	mw := middleware.NewMiddleware(router, logger, integrationUsecase, sessionUsecase)
-
-	httpAPI.NewHttpAPIDelivery(
-		router,
+	httpAPIDelivery := httpAPI.NewHttpAPIDelivery(
 		logger,
-		mw,
 		customerUsecase,
 		sessionUsecase,
 		storeUsecase,
@@ -129,6 +124,8 @@ func main() {
 		},
 	)
 
+	mw := middleware.NewMiddleware(router, logger, integrationUsecase, sessionUsecase)
+	httpAPI.NewHttpAPIRoutes(router, mw, httpAPIDelivery)
 	// for health check
 	httpAPI.NewHttpAPIHealthProbes(router, db, grpcConn, config.ServerConfig.VAULT_SERVER())
 

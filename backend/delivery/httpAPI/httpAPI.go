@@ -18,7 +18,7 @@ type HttpAPIDeliveryConfig struct {
 	Domain                string
 }
 
-type httpAPIDelivery struct {
+type HttpAPIDelivery struct {
 	logger             logging.LoggerTool
 	customerUsecase    usecase.CustomerUseCaseInterface
 	sessionUsecase     usecase.SessionUseCaseInterface
@@ -29,67 +29,72 @@ type httpAPIDelivery struct {
 }
 
 func NewHttpAPIDelivery(
-	router *mux.Router,
 	logger logging.LoggerTool,
-	mw *middleware.Middleware,
 	customerUsecase usecase.CustomerUseCaseInterface,
 	sessionUsecase usecase.SessionUseCaseInterface,
 	storeUsecase usecase.StoreUseCaseInterface,
 	integrationUsecase usecase.IntegrationUseCaseInterface,
 	broker *broker.Broker,
 	config HttpAPIDeliveryConfig,
-) {
-	had := &httpAPIDelivery{logger, customerUsecase, sessionUsecase, storeUsecase, integrationUsecase, broker, config}
+) *HttpAPIDelivery {
+	had := &HttpAPIDelivery{logger, customerUsecase, sessionUsecase, storeUsecase, integrationUsecase, broker, config}
+	return had
+}
 
+func NewHttpAPIRoutes(
+	router *mux.Router,
+	mw *middleware.Middleware,
+	had *HttpAPIDelivery,
+) {
 	// stores
 	router.HandleFunc(
 		V_1("/stores"),
-		had.openStore,
+		had.OpenStore,
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
 		V_1("/stores/signin"),
-		had.signinStore,
+		had.SigninStore,
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
 		V_1("/stores/token"),
-		had.refreshToken,
+		had.RefreshToken,
 	).Methods(http.MethodPut)
 
 	router.Handle(
 		V_1("/stores/{id:[0-9]+}"),
-		mw.AuthenticationMiddleware(http.HandlerFunc(had.closeStore)),
+		mw.AuthenticationMiddleware(http.HandlerFunc(had.CloseStore)),
 	).Methods(http.MethodDelete)
 
 	router.HandleFunc(
 		V_1("/stores/password/forgot"),
-		had.forgotPassword,
+		had.ForgotPassword,
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
 		V_1("/stores/{id:[0-9]+}/password"),
-		had.updatePassword,
+		had.UpdatePassword,
 	).Methods(http.MethodPatch).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
 		V_1("/stores/{id:[0-9]+}/sse"),
-		had.getStoreInfoWithSSE,
+		had.GetStoreInfoWithSSE,
 	).Methods(http.MethodGet) // get method for sse.
 
 	router.HandleFunc(
 		V_1("/stores/{id:[0-9]+}"),
-		had.getStoreInfo,
+		had.GetStoreInfo,
 	).Methods(http.MethodGet)
 
 	router.Handle(
 		V_1("/stores/{id:[0-9]+}"),
-		mw.AuthenticationMiddleware(http.HandlerFunc(had.updateStoreDescription)),
+		mw.AuthenticationMiddleware(http.HandlerFunc(had.UpdateStoreDescription)),
 	).Methods(http.MethodPut)
 
 	router.HandleFunc(
 		V_1("/routine/stores"),
-		had.closeStorerRoutine,
+		had.CloseStorerRoutine,
 	).Methods(http.MethodDelete)
 
 	//queues
@@ -97,23 +102,23 @@ func NewHttpAPIDelivery(
 	// sessions
 	router.HandleFunc(
 		V_1("/sessions/sse"),
-		had.createSession,
+		had.CreateSession,
 	).Methods(http.MethodGet) // get method for sse.
 
 	router.Handle(
 		V_1("/sessions/{id}"),
-		mw.SessionAuthenticationMiddleware(http.HandlerFunc(had.scannedSession)),
+		mw.SessionAuthenticationMiddleware(http.HandlerFunc(had.ScannedSession)),
 	).Methods(http.MethodPut).Headers("Content-Type", "application/json")
 
 	//customers
 	router.Handle(
 		V_1("/customers"),
-		mw.SessionAuthenticationMiddleware(http.HandlerFunc(had.customersCreate)),
+		mw.SessionAuthenticationMiddleware(http.HandlerFunc(had.CustomersCreate)),
 	).Methods(http.MethodPost).Headers("Content-Type", "application/json")
 
 	router.Handle(
 		V_1("/customers/{id:[0-9]+}"),
-		mw.AuthenticationMiddleware(http.HandlerFunc(had.customerUpdate)),
+		mw.AuthenticationMiddleware(http.HandlerFunc(had.CustomerUpdate)),
 	).Methods(http.MethodPut)
 
 	// base routes

@@ -46,14 +46,7 @@ func (pcr *pgDBCustomerRepository) CreateCustomers(ctx context.Context, tx PgDBI
 	}
 	query.WriteString(" RETURNING id,name,phone,queue_id,created_at")
 
-	stmt, err := tx.PrepareContext(ctx, query.String())
-	if err != nil {
-		pcr.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.QueryContext(ctx, queryRowParams...)
+	rows, err := tx.QueryContext(ctx, query.String(), queryRowParams...)
 	if err != nil {
 		pcr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
@@ -81,14 +74,7 @@ func (pcr *pgDBCustomerRepository) UpdateCustomer(ctx context.Context, oldStatus
 	defer cancel()
 
 	query := `UPDATE customers SET status=$1 WHERE id=$2 and status=$3`
-	stmt, err := pcr.db.PrepareContext(ctx, query)
-	if err != nil {
-		pcr.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
-	defer stmt.Close()
-
-	result, err := stmt.ExecContext(ctx, newStatus, customer.ID, oldStatus)
+	result, err := pcr.db.ExecContext(ctx, query, newStatus, customer.ID, oldStatus)
 	if err != nil {
 		pcr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
@@ -119,7 +105,7 @@ func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStore(ctx context.Con
 				INNER JOIN customers ON queues.id = customers.queue_id
 				INNER JOIN stores ON stores.id = queues.store_id
 				WHERE queues.store_id=$1
-				ORDER BY queues.id ASC, customers.id ASC FOR UPDATE`
+				ORDER BY queues.id ASC, customers.id ASC FOR UPDATE` // row block
 
 	rows, err := tx.QueryContext(ctx, query, store.ID)
 	if err != nil {

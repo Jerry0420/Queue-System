@@ -41,15 +41,7 @@ func (pqr *pgDBQueueRepository) CreateQueues(ctx context.Context, tx PgDBInterfa
 		}
 	}
 	query.WriteString(" RETURNING id,name")
-
-	stmt, err := tx.PrepareContext(ctx, query.String())
-	if err != nil {
-		pqr.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
-	defer stmt.Close()
-
-	rows, err := stmt.QueryContext(ctx, queryRowParams...)
+	rows, err := tx.QueryContext(ctx, query.String(), queryRowParams...)
 	queues = queues[:0] // clear queues slice
 
 	for rows.Next() {

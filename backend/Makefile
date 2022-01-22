@@ -1,0 +1,6 @@
+test_only:
+	go test -v -cover -vet=off $(path)...
+
+test_with_report:
+	go test -v -cover -coverprofile=report.out -vet=off $(path)...
+	go tool cover -html=report.out -o report.html
