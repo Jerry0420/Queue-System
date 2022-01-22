@@ -1,0 +1,23 @@
+version: "3.7"
+
+services: 
+  db_test:
+    image: postgres:14.0-alpine
+    environment:
+      POSTGRES_DB: queue_system
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: root
+    ports:
+      - 5432:5432
+
+  backend_test:
+    image: golang:1.17.1-alpine
+    container_name: backend_test
+    working_dir: /__w/queue-system/queue-system/backend
+    stdin_open: true
+    tty: true
+    environment:
+      SECRET_PATH: /__w/queue-system/queue-system/envs/secret_test
+      ENV_PATH: /__w/queue-system/queue-system/envs/env_test
+    volumes:
+      - ../:/__w/queue-system/queue-system

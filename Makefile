@@ -9,6 +9,17 @@ down_db:
 
 # ========================================================
 
+up_test:
+	docker-compose -f ./compose/docker-compose.test.yml up -d --build
+
+exec_test:
+	docker exec -it backend_test sh
+
+down_test:
+	docker-compose -f ./compose/docker-compose.test.yml down
+
+# ========================================================
+
 up_build_dev:
 	docker-compose -f ./compose/docker-compose.dev.yml up -d --build
 

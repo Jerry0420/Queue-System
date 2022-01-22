@@ -1,0 +1,8 @@
+{
+    "ENV": "test",
+    "CONTEXT_TIMEOUT": "2",
+    "POSTGRES_SSL": "disable",
+    "POSTGRES_DEV_USER": "root",
+    "POSTGRES_DEV_PASSWORD": "root",
+    "DOMAIN": "https://queue-system.com"
+}
