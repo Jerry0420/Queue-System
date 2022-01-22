@@ -1,13 +1,7 @@
 name: ci_cd
 
-# on:
-#   push:
-#     branches: [ main ]
-#   pull_request:
-#     branches: [ main ]
-
 on:
-  - push
+  - pull_request
 
 jobs:
 
@@ -42,4 +36,4 @@ jobs:
         ENV_PATH: /__w/queue-system/queue-system/envs/env_test
       run: |
         cd backend/
-        make test_only path=./integration_tests/
+        make test_only path=./
