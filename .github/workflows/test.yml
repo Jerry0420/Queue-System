@@ -1,11 +1,11 @@
-name: ci_cd
+name: Run Tests
 
 on:
   - pull_request
 
 jobs:
 
-  ci:
+  test:
     runs-on: ubuntu-latest
     container: golang:1.17.1-alpine
     services:
