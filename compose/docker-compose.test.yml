@@ -8,8 +8,6 @@ services:
       POSTGRES_DB: queue_system
       POSTGRES_USER: root
       POSTGRES_PASSWORD: root
-    ports:
-      - 5432:5432
 
   backend_test:
     image: golang:1.17.1-alpine

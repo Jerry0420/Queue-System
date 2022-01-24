@@ -186,7 +186,7 @@ func TestGetStoreInfoWithSSE(t *testing.T) {
 	}()
 
 	go func() {
-		time.Sleep(450 * time.Millisecond)
+		time.Sleep(450 * time.Millisecond) // smaller than getContext timeout (450 < 500)
 		params := map[string]interface{}{
 			"description": expectedMockStoreDescription,
 		}
