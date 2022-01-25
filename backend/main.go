@@ -125,6 +125,12 @@ func main() {
 	)
 
 	mw := middleware.NewMiddleware(router, logger, integrationUsecase, sessionUsecase)
+	// only for dev
+	// the real cors headers will be set in proxy server.
+	if config.ServerConfig.ENV() != config.EnvStatus.PROD {
+		router.Use(mw.CORSEnableMiddleware)
+	}
+
 	httpAPI.NewHttpAPIRoutes(router, mw, httpAPIDelivery)
 	// for health check
 	httpAPI.NewHttpAPIHealthProbes(router, db, grpcConn, config.ServerConfig.VAULT_SERVER(), config.ServerConfig.ENV())

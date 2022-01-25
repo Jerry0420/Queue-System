@@ -14,3 +14,7 @@ func (had *HttpAPIDelivery) methodNotAllow(w http.ResponseWriter, r *http.Reques
 func (had *HttpAPIDelivery) notFound(w http.ResponseWriter, r *http.Request) {
 	presenter.JsonResponse(w, nil, domain.ServerError40401)
 }
+
+func (had *HttpAPIDelivery) preflightHandler(w http.ResponseWriter, r *http.Request) {
+	presenter.JsonResponseOK(w, nil)
+}

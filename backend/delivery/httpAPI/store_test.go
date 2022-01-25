@@ -172,11 +172,9 @@ func TestGetStoreInfoWithSSE(t *testing.T) {
 	).Methods(http.MethodPut)
 
 	getContext, _ := context.WithTimeout(context.Background(), time.Duration(500*time.Millisecond))
-	putContext := context.Background()
 	getW := httptest.NewRecorder()
 	putW := httptest.NewRecorder()
 	getDoneChan := make(chan bool)
-	putDoneChan := make(chan bool)
 
 	go func() {
 		req, err := http.NewRequestWithContext(getContext, http.MethodGet, "/api/v1/stores/1/sse", nil)
@@ -185,24 +183,20 @@ func TestGetStoreInfoWithSSE(t *testing.T) {
 		getDoneChan <- true
 	}()
 
-	go func() {
-		time.Sleep(450 * time.Millisecond)
-		params := map[string]interface{}{
-			"description": expectedMockStoreDescription,
-		}
-		jsonBody, _ := json.Marshal(params)
-		putContext = context.WithValue(putContext, domain.SignKeyTypes.NORMAL, domain.TokenClaims{
-			StoreID: mockStoreWithQueue.ID,
-			Email:   mockStoreWithQueue.Email,
-			Name:    mockStoreWithQueue.Name,
-		})
-		req, err := http.NewRequestWithContext(putContext, http.MethodPut, "/api/v1/stores/1", bytes.NewBuffer(jsonBody))
-		assert.NoError(t, err)
-		router.ServeHTTP(putW, req)
-		putDoneChan <- true
-	}()
+	time.Sleep(450 * time.Millisecond ) // smaller than getContext timeout (450 < 500)
+	params := map[string]interface{}{
+		"description": expectedMockStoreDescription,
+	}
+	jsonBody, _ := json.Marshal(params)
+	putContext := context.WithValue(context.Background(), domain.SignKeyTypes.NORMAL, domain.TokenClaims{
+		StoreID: mockStoreWithQueue.ID,
+		Email:   mockStoreWithQueue.Email,
+		Name:    mockStoreWithQueue.Name,
+	})
+	req, err := http.NewRequestWithContext(putContext, http.MethodPut, "/api/v1/stores/1", bytes.NewBuffer(jsonBody))
+	assert.NoError(t, err)
+	router.ServeHTTP(putW, req)
 
-	<-putDoneChan
 	<-getDoneChan
 
 	re := regexp.MustCompile("data: ")

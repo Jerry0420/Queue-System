@@ -1,9 +1,9 @@
 package integrationtest_test
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
+	_ "github.com/lib/pq"
 )
 
 type Config struct {
@@ -64,10 +65,13 @@ func (config Config) POSTGRES_LOCATION() string {
 
 type BackendTestSuite struct {
 	suite.Suite
+	ServerBaseURL string
+	db            *sql.DB
 }
 
 func TestBackendTestSuite(t *testing.T) {
 	backendTestSuite := &BackendTestSuite{}
+	backendTestSuite.ServerBaseURL = "http://127.0.0.1:8000/api/v1"
 	backendTestSuite.SetT(t)
 	suite.Run(t, backendTestSuite)
 }
@@ -77,7 +81,7 @@ func (suite *BackendTestSuite) SetupSuite() {
 		grpcCMD := exec.Command("sh", "-c", "go run /__w/queue-system/queue-system/backend/integration_tests/mock_grpc/main.go")
 		_, err := grpcCMD.Output()
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
 		}
 	}()
 
@@ -85,7 +89,7 @@ func (suite *BackendTestSuite) SetupSuite() {
 		backendCMD := exec.Command("sh", "-c", "go run /__w/queue-system/queue-system/backend/main.go")
 		_, err := backendCMD.Output()
 		if err != nil {
-			panic(err)
+			fmt.Println(err)
 		}
 	}()
 
@@ -95,8 +99,6 @@ func (suite *BackendTestSuite) SetupSuite() {
 		for {
 			response, _ := httpClient.Get("http://127.0.0.1:8000" + "/api/routine/readiness")
 			if response != nil && response.StatusCode == 200 {
-				bodyBytes, _ := io.ReadAll(response.Body)
-				fmt.Println(string(bodyBytes))
 				break
 			}
 		}
@@ -110,21 +112,31 @@ func (suite *BackendTestSuite) SetupSuite() {
 	os.Setenv("POSTGRES_HOST", testConfig.get("POSTGRES_HOST"))
 	os.Setenv("POSTGRES_PORT", testConfig.get("POSTGRES_PORT"))
 	os.Setenv("POSTGRES_BACKEND_DB", testConfig.get("POSTGRES_BACKEND_DB"))
+
+	db, err := sql.Open("postgres", testConfig.POSTGRES_LOCATION())
+    if err != nil {
+        panic(err)
+    }
+	suite.db = db
 }
 
 func (suite *BackendTestSuite) TearDownSuite() {
 }
 
 func (suite *BackendTestSuite) SetupTest() {
+	cmd := "/__w/queue-system/queue-system/scripts/migration_tools/migration.sh up"
+	dbDown := exec.Command("sh", "-c", cmd)
+	_, err := dbDown.Output()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (suite *BackendTestSuite) TearDownTest() {
-}
-
-func (suite *BackendTestSuite) Test_aaa() {
-	suite.Equal(1, 1)
-}
-
-func (suite *BackendTestSuite) Test_bbb() {
-	suite.Equal(1, 1)
+	cmd := "echo y | /__w/queue-system/queue-system/scripts/migration_tools/migration.sh down"
+	dbDown := exec.Command("sh", "-c", cmd)
+	_, err := dbDown.Output()
+	if err != nil {
+		panic(err)
+	}
 }

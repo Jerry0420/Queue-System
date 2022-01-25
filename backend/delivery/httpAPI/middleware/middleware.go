@@ -33,12 +33,23 @@ func NewMiddleware(
 	return mw
 }
 
+func (mw *Middleware) CORSEnableMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers for the preflight request
+		if r.Method == http.MethodOptions {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE, PATCH")
+			w.Header().Set("Access-Control-Allow-Headers", "DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Connection,Authorization")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO: remove after dev...
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-
 		if !strings.Contains(r.URL.RequestURI(), "/routine") {
 			start := time.Now()
 
@@ -47,15 +58,15 @@ func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
 
-		    ctx = context.WithValue(r.Context(), "duration", time.Since(start).Truncate(1*time.Millisecond))
-		    if errorCode := w.Header().Get("Server-Code"); errorCode != "" {
-			    ctx = context.WithValue(ctx, "code", errorCode)
-		    } else {
-			    ctx = context.WithValue(ctx, "code", strconv.Itoa(200))
-		    }
+			ctx = context.WithValue(r.Context(), "duration", time.Since(start).Truncate(1*time.Millisecond))
+			if errorCode := w.Header().Get("Server-Code"); errorCode != "" {
+				ctx = context.WithValue(ctx, "code", errorCode)
+			} else {
+				ctx = context.WithValue(ctx, "code", strconv.Itoa(200))
+			}
 
-		    r = r.WithContext(ctx)
-		    mw.logger.INFOf(r.Context(), "response")
+			r = r.WithContext(ctx)
+			mw.logger.INFOf(r.Context(), "response")
 		} else {
 			next.ServeHTTP(w, r)
 		}
