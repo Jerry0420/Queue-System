@@ -77,21 +77,21 @@ func TestBackendTestSuite(t *testing.T) {
 }
 
 func (suite *BackendTestSuite) SetupSuite() {
-	// go func() {
-	// 	grpcCMD := exec.Command("sh", "-c", "go run /__w/queue-system/queue-system/backend/integration_tests/mock_grpc/main.go")
-	// 	_, err := grpcCMD.Output()
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 	}
-	// }()
+	go func() {
+		grpcCMD := exec.Command("sh", "-c", "go run /__w/queue-system/queue-system/backend/integration_tests/mock_grpc/main.go")
+		_, err := grpcCMD.Output()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 
-	// go func() {
-	// 	backendCMD := exec.Command("sh", "-c", "go run /__w/queue-system/queue-system/backend/main.go")
-	// 	_, err := backendCMD.Output()
-	// 	if err != nil {
-	// 		fmt.Println(err)
-	// 	}
-	// }()
+	go func() {
+		backendCMD := exec.Command("sh", "-c", "go run /__w/queue-system/queue-system/backend/main.go")
+		_, err := backendCMD.Output()
+		if err != nil {
+			fmt.Println(err)
+		}
+	}()
 
 	allDoneChan := make(chan bool)
 	go func() {
