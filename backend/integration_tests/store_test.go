@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -13,20 +12,10 @@ import (
 	"time"
 )
 
-func (suite *BackendTestSuite) Test_XXXXX() {
-	httpClient := http.Client{Timeout: 3 * time.Second}
- 
-	request, _ := http.NewRequest(http.MethodOptions, suite.ServerBaseURL+"/aaa/bbbb", nil)
-	response, _ := httpClient.Do(request)
-	fmt.Println(response)
-	// suite.Equal(204, response.StatusCode)
-}
-
 func (suite *BackendTestSuite) Test_GetStoreInfoWithSSE() {
-	suite.T().Skip()
 	httpClient := http.Client{Timeout: 3 * time.Second}
 
-	// ========================== open store ========================== 
+	// ========================== open store ==========================
 	encodedPassword := base64.StdEncoding.EncodeToString([]byte("im_password"))
 	params := map[string]interface{}{
 		"email":    "test@gmail.com",
@@ -47,7 +36,7 @@ func (suite *BackendTestSuite) Test_GetStoreInfoWithSSE() {
 	suite.Equal(1, int(decodedResponse["id"].(float64)))
 	suite.Equal(2, len(decodedResponse["queues"].([]interface{})))
 
-	//  ========================== signin store ========================== 
+	// ========================== signin store ==========================
 	params = map[string]interface{}{
 		"email":    "test@gmail.com",
 		"password": encodedPassword,
@@ -64,7 +53,7 @@ func (suite *BackendTestSuite) Test_GetStoreInfoWithSSE() {
 
 	refreshCookie := response.Cookies()[0]
 
-	//  ========================== get store jwt token ========================== 
+	// ========================== get store jwt token ==========================
 	request, _ := http.NewRequest(http.MethodPut, suite.ServerBaseURL+"/stores/token", nil)
 	request.AddCookie(refreshCookie)
 	response, _ = httpClient.Do(request)
@@ -75,7 +64,7 @@ func (suite *BackendTestSuite) Test_GetStoreInfoWithSSE() {
 	sessionToken := decodedResponse["session_token"].(string)
 	// token := decodedResponse["token"].(string)
 
-	//  ========================== get session sse ========================== 
+	// ========================== get session sse ==========================
 	sessionSSEContext, _ := context.WithTimeout(context.Background(), time.Duration(300*time.Millisecond))
 	var sessionSSEResponse *http.Response
 	sessionSSEDoneChan := make(chan bool)
@@ -99,7 +88,7 @@ func (suite *BackendTestSuite) Test_GetStoreInfoWithSSE() {
 	json.Unmarshal([]byte(sessionSSEResponseString), &decodedResponse)
 	sessionID := decodedResponse["id"].(string)
 
-	//  ========================== scan session ========================== 
+	// ========================== scan session ==========================
 	params = map[string]interface{}{
 		"store_id": 1,
 	}
@@ -112,7 +101,7 @@ func (suite *BackendTestSuite) Test_GetStoreInfoWithSSE() {
 	decodedResponse = map[string]interface{}{}
 	json.NewDecoder(response.Body).Decode(&decodedResponse)
 
-	//  ========================== get store sse ========================== 
+	// ========================== get store sse ==========================
 	getStoreSSEContext, _ := context.WithTimeout(context.Background(), time.Duration(500*time.Millisecond))
 	var getStoreSSEResponse *http.Response
 	getStoreSSEDoneChan := make(chan bool)
@@ -123,7 +112,7 @@ func (suite *BackendTestSuite) Test_GetStoreInfoWithSSE() {
 		getStoreSSEDoneChan <- true
 	}()
 
-	//  ========================== create customers ========================== 
+	// ========================== create customers ==========================
 	params = map[string]interface{}{
 		"store_id": 1,
 		"customers": []map[string]interface{}{
@@ -163,7 +152,7 @@ func (suite *BackendTestSuite) Test_GetStoreInfoWithSSE() {
 	matches := re.FindAllStringIndex(getStoreSSEResponseString, -1)
 	suite.Equal(2, len(matches))
 
-	//  ========================== check store_sesisons in db ========================== 
+	// ========================== check store_sesisons in db ==========================
 	query := `SELECT status 
 				FROM store_sessions
 				WHERE id=$1`

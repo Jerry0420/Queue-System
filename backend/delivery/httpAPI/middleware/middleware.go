@@ -2,7 +2,6 @@ package middleware
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -11,7 +10,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 
-	"github.com/jerry0420/queue-system/backend/config"
 	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/presenter"
 	"github.com/jerry0420/queue-system/backend/domain"
 	"github.com/jerry0420/queue-system/backend/logging"
@@ -22,24 +20,15 @@ type Middleware struct {
 	integrationUsecase usecase.IntegrationUseCaseInterface
 	sessionUsecase     usecase.SessionUseCaseInterface
 	logger             logging.LoggerTool
-	env                string
 }
 
 func NewMiddleware(
 	router *mux.Router,
 	logger logging.LoggerTool,
-	env string,
 	integrationUsecase usecase.IntegrationUseCaseInterface,
 	sessionUsecase usecase.SessionUseCaseInterface,
 ) *Middleware {
-	mw := &Middleware{integrationUsecase, sessionUsecase, logger, env}
-
-	// only for dev
-	// the real cors headers will set in proxy server.
-	if env != config.EnvStatus.PROD {
-		router.Use(mw.CORSEnableMiddleware)
-	}
-
+	mw := &Middleware{integrationUsecase, sessionUsecase, logger}
 	router.Use(mw.LoggingMiddleware)
 	return mw
 }
@@ -47,7 +36,6 @@ func NewMiddleware(
 func (mw *Middleware) CORSEnableMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Set CORS headers for the preflight request
-		fmt.Println(r)
 		if r.Method == http.MethodOptions {
 			w.Header().Set("Access-Control-Allow-Origin", "*")
 			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE, PATCH")
