@@ -1,6 +1,7 @@
 package integrationtest_test
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
+	_ "github.com/lib/pq"
 )
 
 type Config struct {
@@ -64,6 +66,7 @@ func (config Config) POSTGRES_LOCATION() string {
 type BackendTestSuite struct {
 	suite.Suite
 	ServerBaseURL string
+	db            *sql.DB
 }
 
 func TestBackendTestSuite(t *testing.T) {
@@ -109,6 +112,12 @@ func (suite *BackendTestSuite) SetupSuite() {
 	os.Setenv("POSTGRES_HOST", testConfig.get("POSTGRES_HOST"))
 	os.Setenv("POSTGRES_PORT", testConfig.get("POSTGRES_PORT"))
 	os.Setenv("POSTGRES_BACKEND_DB", testConfig.get("POSTGRES_BACKEND_DB"))
+
+	db, err := sql.Open("postgres", testConfig.POSTGRES_LOCATION())
+    if err != nil {
+        panic(err)
+    }
+	suite.db = db
 }
 
 func (suite *BackendTestSuite) TearDownSuite() {

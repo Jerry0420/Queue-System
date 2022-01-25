@@ -124,7 +124,7 @@ func main() {
 		},
 	)
 
-	mw := middleware.NewMiddleware(router, logger, integrationUsecase, sessionUsecase)
+	mw := middleware.NewMiddleware(router, logger, config.ServerConfig.ENV(), integrationUsecase, sessionUsecase)
 	httpAPI.NewHttpAPIRoutes(router, mw, httpAPIDelivery)
 	// for health check
 	httpAPI.NewHttpAPIHealthProbes(router, db, grpcConn, config.ServerConfig.VAULT_SERVER(), config.ServerConfig.ENV())

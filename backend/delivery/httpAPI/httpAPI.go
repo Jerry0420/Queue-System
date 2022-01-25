@@ -125,4 +125,9 @@ func NewHttpAPIRoutes(
 	// these two routes will just response to the client directly, and will not go into any middleware.
 	router.MethodNotAllowedHandler = http.HandlerFunc(had.methodNotAllow)
 	router.NotFoundHandler = http.HandlerFunc(had.notFound)
+
+	// for cors preflight
+	router.PathPrefix(V_1("")).HandlerFunc(
+		had.preflightHandler,
+	).Methods(http.MethodOptions)
 }

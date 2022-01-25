@@ -4,17 +4,21 @@ metadata:
   name: queue-system-ingress
   namespace: queue-system
   annotations:
+    # tlw
     # cert-manager.io/cluster-issuer: "letsencrypt-issuer"
     # cert-manager.io/acme-challenge-type: http01
+    # rate limit
     nginx.ingress.kubernetes.io/limit-connections: "5"
     nginx.ingress.kubernetes.io/limit-rps: "5"
     nginx.ingress.kubernetes.io/limit-burst-multiplier: "10"
+    # cors
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://queue.com"
+    nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS, PUT, DELETE, PATCH"
+    nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Connection,Authorization"
+    nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    # others
     nginx.ingress.kubernetes.io/configuration-snippet: |
-      add_header Access-Control-Allow-Origin https://queue.com;
-      add_header Access-Control-Allow-Methods 'GET, POST, OPTIONS, PUT, DELETE, PATCH';
-      add_header Access-Control-Allow-Headers 'DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Connection,Authorization';
-      add_header Access-Control-Allow-Credentials true;
-
       send_timeout 75s;
       keepalive_timeout 75s 75s;
       keepalive_requests 10000;

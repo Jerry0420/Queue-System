@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 
+	"github.com/jerry0420/queue-system/backend/config"
 	"github.com/jerry0420/queue-system/backend/delivery/httpAPI/presenter"
 	"github.com/jerry0420/queue-system/backend/domain"
 	"github.com/jerry0420/queue-system/backend/logging"
@@ -20,25 +22,46 @@ type Middleware struct {
 	integrationUsecase usecase.IntegrationUseCaseInterface
 	sessionUsecase     usecase.SessionUseCaseInterface
 	logger             logging.LoggerTool
+	env                string
 }
 
 func NewMiddleware(
 	router *mux.Router,
 	logger logging.LoggerTool,
+	env string,
 	integrationUsecase usecase.IntegrationUseCaseInterface,
 	sessionUsecase usecase.SessionUseCaseInterface,
 ) *Middleware {
-	mw := &Middleware{integrationUsecase, sessionUsecase, logger}
+	mw := &Middleware{integrationUsecase, sessionUsecase, logger, env}
+
+	// only for dev
+	// the real cors headers will set in proxy server.
+	if env != config.EnvStatus.PROD {
+		router.Use(mw.CORSEnableMiddleware)
+	}
+
 	router.Use(mw.LoggingMiddleware)
 	return mw
 }
 
+func (mw *Middleware) CORSEnableMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Set CORS headers for the preflight request
+		fmt.Println(r)
+		if r.Method == http.MethodOptions {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PUT, DELETE, PATCH")
+			w.Header().Set("Access-Control-Allow-Headers", "DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Connection,Authorization")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO: remove after dev...
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-
 		if !strings.Contains(r.URL.RequestURI(), "/routine") {
 			start := time.Now()
 
@@ -47,15 +70,15 @@ func (mw *Middleware) LoggingMiddleware(next http.Handler) http.Handler {
 			r = r.WithContext(ctx)
 			next.ServeHTTP(w, r)
 
-		    ctx = context.WithValue(r.Context(), "duration", time.Since(start).Truncate(1*time.Millisecond))
-		    if errorCode := w.Header().Get("Server-Code"); errorCode != "" {
-			    ctx = context.WithValue(ctx, "code", errorCode)
-		    } else {
-			    ctx = context.WithValue(ctx, "code", strconv.Itoa(200))
-		    }
+			ctx = context.WithValue(r.Context(), "duration", time.Since(start).Truncate(1*time.Millisecond))
+			if errorCode := w.Header().Get("Server-Code"); errorCode != "" {
+				ctx = context.WithValue(ctx, "code", errorCode)
+			} else {
+				ctx = context.WithValue(ctx, "code", strconv.Itoa(200))
+			}
 
-		    r = r.WithContext(ctx)
-		    mw.logger.INFOf(r.Context(), "response")
+			r = r.WithContext(ctx)
+			mw.logger.INFOf(r.Context(), "response")
 		} else {
 			next.ServeHTTP(w, r)
 		}
