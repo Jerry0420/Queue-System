@@ -31,7 +31,7 @@ func (psr *pgDBSessionRepository) CreateSession(ctx context.Context, store domai
 	err := row.Scan(&session.ID)
 	if err != nil {
 		psr.logger.ERRORf("error %v", err)
-		return session, domain.ServerError40904
+		return session, domain.ServerError40903
 	}
 	return session, nil
 }

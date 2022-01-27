@@ -1,18 +1,33 @@
 - [API Document of Queue System](#api-document-of-queue-system)
+  - [TODO](#todo)
   - [Basics](#basics)
-  - [Errors](#errors)
+  - [Rate Limiting](#rate-limiting)
+    - [Rules](#rules)
+  - [Status Codes](#status-codes)
     - [HTTP Status Codes](#http-status-codes)
-    - [Error Codes](#error-codes)
+    - [Custome Status Codes](#custome-status-codes)
 
 ---
 
 # API Document of Queue System
 
+## TODO
+* authentication
+* resources
+* sse
+
 ## Basics
 * Prefix all URLs with `/api/v1`, except the URLs for health checking.
 * `v1` is a version tag and `/api` is for backend api.
 
-## Errors
+## Rate Limiting
+* Rate Limiting can be used to mitigate DDoS Attacks.
+### Rules
+* The number of concurrent connections allowed from a single IP address is 5.
+* The number of requests accepted from a given IP each second is 5.
+* Return HTTP Status code 429, when breaking the rate limiting rules.
+
+## Status Codes
 
 ### HTTP Status Codes
 <table>
@@ -58,7 +73,7 @@
 
   <tr>
     <td>429</td>
-    <td>Too Many Requests</td>
+    <td>Too Many Requests <br> Check <a href="#rules">Rate Limiting Rules</a></td>
   </tr>
 
   <tr>
@@ -67,16 +82,27 @@
   </tr>
 </table>
 
-### Error Codes
-* `Error Codes` are custom error codes of this system, and the first three digits is `HTTP Status Code`.
+### Custome Status Codes
+* `Custome Status Codes` are custom error codes of this system, and the first three digits is `HTTP Status Code`.
+* The format of all non-2xx response, will be like: 
+```json
+{
+    "error_code": {{custom_status_code}}
+}
+
+ex: 
+{
+    "error_code": 40401
+} 
+``` 
 
 <table>
   <tr>
-    <th>Error Code</th>
+    <th>Code - 400XX</th>
     <th>Description</th>
   </tr>
 
-  <tr style='border-top: 2px solid #f00;'>
+  <tr>
     <td>40001</td>
     <td>Lack of required params.</td>
   </tr>
@@ -105,105 +131,124 @@
     <td>40006</td>
     <td>The requested timezone is not exist.</td>
   </tr>
+<table>
 
-  <tr style='border-top: 2px solid #f00;'>
+<table>
+  <tr>
+    <th>Code - 401XX</th>
+    <th>Description</th>
+  </tr>
+  <tr>
     <td>40101</td>
-    <td></td>
+    <td>Fail to parse jwt token.</td>
   </tr>
 
   <tr>
     <td>40102</td>
-    <td></td>
+    <td>Lack of jwt token.</td>
   </tr>
 
   <tr>
     <td>40103</td>
-    <td></td>
+    <td>Other error of parsing jwt token.</td>
   </tr>
 
   <tr>
     <td>40104</td>
-    <td></td>
+    <td>Jwt token expired.</td>
   </tr>
 
   <tr>
     <td>40105</td>
-    <td></td>
+    <td>Lack of store session.</td>
   </tr>
+<table>
 
+<table>
   <tr>
-    <td>40106</td>
-    <td></td>
+    <th>Code - 404XX</th>
+    <th>Description</th>
   </tr>
-
-  <tr style='border-top: 2px solid #f00;'>
+  <tr>
     <td>40401</td>
-    <td></td>
+    <td>Unsupported url route.</td>
   </tr>
 
   <tr>
     <td>40402</td>
-    <td></td>
+    <td>Store not exist.</td>
   </tr>
 
   <tr>
     <td>40403</td>
-    <td></td>
+    <td>Sign_key not exist.</td>
   </tr>
 
   <tr>
     <td>40404</td>
-    <td></td>
+    <td>Store_session not exist.</td>
   </tr>
 
   <tr>
     <td>40405</td>
-    <td></td>
+    <td>Customer not exist.</td>
   </tr>
+<table>
 
-  <tr style='border-top: 2px solid #f00;'>
+<table>
+  <tr>
+    <th>Code - 405XX</th>
+    <th>Description</th>
+  </tr>
+  <tr>
     <td>40501</td>
-    <td></td>
+    <td>Method Not Allowed</td>
   </tr>
+<table>
 
-  <tr style='border-top: 2px solid #f00;'>
+<table>
+  <tr>
+    <th>Code - 409XX</th>
+    <th>Description</th>
+  </tr>
+  <tr>
     <td>40901</td>
-    <td></td>
+    <td>store already exist. (not exceed 24 hrs)</td>
   </tr>
 
   <tr>
     <td>40902</td>
-    <td></td>
+    <td>Sign_key already exist.</td>
   </tr>
 
   <tr>
     <td>40903</td>
-    <td></td>
+    <td>Store_session already exist.</td>
   </tr>
+<table>
 
+<table>
   <tr>
-    <td>40904</td>
-    <td></td>
+    <th>Code - 500XX</th>
+    <th>Description</th>
   </tr>
-
-  <tr style='border-top: 2px solid #f00;'>
+  <tr>
     <td>50001</td>
-    <td></td>
+    <td>Other internal server error.</td>
   </tr>
 
   <tr>
     <td>50002</td>
-    <td></td>
+    <td>Unexpected database error.</td>
   </tr>
 
   <tr>
     <td>50003</td>
-    <td></td>
+    <td>The client not support flushing.</td>
   </tr>
 
   <tr>
     <td>50004</td>
-    <td></td>
+    <td>Unexpected grpc server error.</td>
   </tr>
-
 </table>
