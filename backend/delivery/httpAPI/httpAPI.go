@@ -90,7 +90,7 @@ func NewHttpAPIRoutes(
 	router.Handle(
 		V_1("/stores/{id:[0-9]+}"),
 		mw.AuthenticationMiddleware(http.HandlerFunc(had.UpdateStoreDescription)),
-	).Methods(http.MethodPut)
+	).Methods(http.MethodPut).Headers("Content-Type", "application/json")
 
 	router.HandleFunc(
 		V_1("/routine/stores"),
@@ -119,7 +119,7 @@ func NewHttpAPIRoutes(
 	router.Handle(
 		V_1("/customers/{id:[0-9]+}"),
 		mw.AuthenticationMiddleware(http.HandlerFunc(had.CustomerUpdate)),
-	).Methods(http.MethodPut)
+	).Methods(http.MethodPut).Headers("Content-Type", "application/json")
 
 	// base routes
 	// these two routes will just response to the client directly, and will not go into any middleware.
