@@ -2,7 +2,7 @@
   - [TODO](#todo)
   - [Basics](#basics)
   - [Rate Limiting](#rate-limiting)
-    - [Rules](#rules)
+    - [Rate Limiting Rules](#rate-limiting-rules)
   - [Status Codes](#status-codes)
     - [HTTP Status Codes](#http-status-codes)
     - [Custome Status Codes](#custome-status-codes)
@@ -22,10 +22,10 @@
 
 ## Rate Limiting
 * Rate Limiting can be used to mitigate DDoS Attacks.
-### Rules
-* The number of concurrent connections allowed from a single IP address is 5.
-* The number of requests accepted from a given IP each second is 5.
-* Return HTTP Status code 429, when breaking the rate limiting rules.
+### Rate Limiting Rules
+* The number of concurrent connections allowed from a single IP address is `5`.
+* The number of requests accepted from a given IP each second is `5`.
+* Return HTTP Status code `429`, when breaking the rate limiting rules.
 
 ## Status Codes
 
