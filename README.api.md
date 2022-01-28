@@ -1,33 +1,56 @@
 - [API Document of Queue System](#api-document-of-queue-system)
-  - [TODO](#todo)
-  - [Basics](#basics)
-  - [Rate Limiting](#rate-limiting)
-    - [Rate Limiting Rules](#rate-limiting-rules)
-  - [Status Codes](#status-codes)
+  - [Overview](#overview)
+  - [Requests](#requests)
+    - [HTTP Request Headers](#http-request-headers)
+      - [Content-Type](#content-type)
+      - [Authorization](#authorization)
+    - [Rate Limiting](#rate-limiting)
+  - [Responses](#responses)
     - [HTTP Status Codes](#http-status-codes)
     - [Custome Status Codes](#custome-status-codes)
+  - [Authentication Rules](#authentication-rules)
+  - [Resources](#resources)
+    - [Stores](#stores)
+    - [Sessions](#sessions)
+    - [Customers](#customers)
+    - [Health Check](#health-check)
+  - [Server Sent Event (SSE)](#server-sent-event-sse)
 
 ---
 
 # API Document of Queue System
 
-## TODO
-* authentication
-* resources
-* sse
+## Overview
 
-## Basics
-* Prefix all URLs with `/api/v1`, except the URLs for health checking.
-* `v1` is a version tag and `/api` is for backend api.
+## Requests
+To make a REST API request, you combine the HTTP `GET`, `POST`, `PUT`, `PATCH`, or `DELETE` method, the URL, the query string to the URI, request body, and some HTTP request headers. 
 
-## Rate Limiting
-* Rate Limiting can be used to mitigate DDoS Attacks.
-### Rate Limiting Rules
+All URIs are prefixed with `/api/v1`, except the URLs for [Health Checking](#health-check). The `/v1` is a version tag and `/api` is for backend api.
+* normal: `/api/v1/stores`
+* health checking: `/api/routine/liveness`
+
+### HTTP Request Headers
+#### Content-Type
+Most `POST`, `PUT`, and `PATCH` calls require a JSON request body and `Content-Type=application/json` HTTP request header. The syntax is:
+```
+Content-Type: application/json
+```
+
+#### Authorization
+Most API calls require an jwt token to access. More authentication rules please check [Health Checking](#health-check).
+
+Include the jwt token in the Authorization header with the Bearer authentication scheme:
+```
+Authorization: Bearer {{jwt-token}}
+```
+
+
+### Rate Limiting
 * The number of concurrent connections allowed from a single IP address is `5`.
 * The number of requests accepted from a given IP each second is `5`.
 * Return HTTP Status code `429`, when breaking the rate limiting rules.
 
-## Status Codes
+## Responses
 
 ### HTTP Status Codes
 <table>
@@ -252,3 +275,17 @@ ex:
     <td>Unexpected grpc server error.</td>
   </tr>
 </table>
+
+## Authentication Rules
+
+## Resources
+
+### Stores
+
+### Sessions
+
+### Customers
+
+### Health Check
+
+## Server Sent Event (SSE)
