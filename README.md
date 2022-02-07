@@ -7,7 +7,7 @@ Queue System 是一個商店排隊管理平台，提供商店管理目前正在�
 ## Screenshots
 
 ## Architecture
-[](./images/architecture.png)
+![](./images/architecture.png)
 
 ## Technologies & Deployment 
 
