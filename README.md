@@ -9,7 +9,36 @@ Queue System 是一個商店排隊管理平台，提供商店管理目前正在�
 ## Architecture
 ![](./images/architecture.png)
 
-## Technologies & Deployment 
+### Deployment
+Queue System 在 AWS EC2 內使用 MicroK8s 架設 k8s 群集，並使用 `Nginx Ingress Controller` 及 `MetalLB` (Load-Balancer) 讓群集內的服務與外部進行溝通。
+
+k8s 群集內部屬了以下資源：
+* Deployments:
+  * Backend
+  * Frontend
+  * gRPC
+* Services
+  * Backend
+  * Frontend
+  * gRPC
+* CronJob
+  * 設定每分鐘執行程式以對 Backend Service 發送 REST API，檢查是否有開店已經 24 小時的商店，將其帳號停止，並寄送 csv 報表給商家，紀錄當日所有顧客的詳細資訊。
+* Ingress
+  * Nginx Ingress Controller
+  * Ingress
+
+### PostgreSQL
+Queue System 內所有資料儲存在 PostgreSQL 資料庫內，並且 PostgreSQL 資料庫沒有部屬於 k8s 群集之內。PostgreSQL 內預設會有
+
+### Vault
+
+### Backend
+
+### Frontend
+
+### gRPC
+
+### Client (Store) and Client (Customer)
 
 ## TODO
 * sse
