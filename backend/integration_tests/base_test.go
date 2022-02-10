@@ -77,6 +77,7 @@ func TestBackendTestSuite(t *testing.T) {
 }
 
 func (suite *BackendTestSuite) SetupSuite() {
+	// TODO: comment it!
 	go func() {
 		grpcCMD := exec.Command("sh", "-c", "go run /__w/queue-system/queue-system/backend/integration_tests/mock_grpc/main.go")
 		_, err := grpcCMD.Output()

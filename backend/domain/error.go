@@ -38,10 +38,8 @@ var (
 	ServerError40103 = &ServerError{Code: 40103, Description: "other jwt token parse error"}
 	// jwt token expired
 	ServerError40104 = &ServerError{Code: 40104, Description: "jwt token expired"}
-	// store( refresh jwt token) expired
-	ServerError40105 = &ServerError{Code: 40105, Description: "store( refresh jwt token) expired"}
 	// lack of session
-	ServerError40106 = &ServerError{Code: 40106, Description: "lack of session"}
+	ServerError40105 = &ServerError{Code: 40105, Description: "lack of session"}
 	
 	// ============================================================
 
@@ -67,10 +65,8 @@ var (
 	ServerError40901 = &ServerError{Code: 40901, Description: "store already exist. (not exceed 24 hrs)"}
 	// sign_key already exist.
 	ServerError40902 = &ServerError{Code: 40902, Description: "sign_key already exist."}
-	// store already exist. (but exceed 24 hrs, and already auto close this store.)
-	ServerError40903 = &ServerError{Code: 40903, Description: "store already exist. (but exceed 24 hrs, and already auto close this store.)"}
 	// store_session already exist.
-	ServerError40904 = &ServerError{Code: 40904, Description: "store_session already exist."}
+	ServerError40903 = &ServerError{Code: 40903, Description: "store_session already exist."}
 
 	// ============================================================
 
@@ -78,8 +74,8 @@ var (
 	ServerError50001 = &ServerError{Code: 50001, Description: "other internal server error"}
 	// unexpected database error
 	ServerError50002 = &ServerError{Code: 50002, Description: "unexpected database error"}
-	// server not support flushing
-	ServerError50003 = &ServerError{Code: 50003, Description: "server not support flushing"}
+	// The client not support flushing
+	ServerError50003 = &ServerError{Code: 50003, Description: "The client not support flushing"}
 	// unexpected grpc server error
 	ServerError50004 = &ServerError{Code: 50004, Description: "unexpected grpc server error"}
 )

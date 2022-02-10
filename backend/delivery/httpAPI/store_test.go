@@ -10,52 +10,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/gorilla/mux"
-	"github.com/jerry0420/queue-system/backend/broker"
 	"github.com/jerry0420/queue-system/backend/delivery/httpAPI"
 	"github.com/jerry0420/queue-system/backend/domain"
-	"github.com/jerry0420/queue-system/backend/logging"
-	usecaseMocks "github.com/jerry0420/queue-system/backend/usecase/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-func setUpStoreTest() (
-	customerUseCase *usecaseMocks.CustomerUseCaseInterface,
-	sessionUseCase *usecaseMocks.SessionUseCaseInterface,
-	storeUseCase *usecaseMocks.StoreUseCaseInterface,
-	integrationUseCase *usecaseMocks.IntegrationUseCaseInterface,
-	httpAPIDelivery *httpAPI.HttpAPIDelivery,
-	router *mux.Router,
-	brokerTool *broker.Broker,
-) {
-	logger := logging.NewLogger([]string{}, true)
-	customerUseCase = new(usecaseMocks.CustomerUseCaseInterface)
-	sessionUseCase = new(usecaseMocks.SessionUseCaseInterface)
-	storeUseCase = new(usecaseMocks.StoreUseCaseInterface)
-	integrationUseCase = new(usecaseMocks.IntegrationUseCaseInterface)
-	brokerTool = broker.NewBroker(logger)
-	httpAPIDelivery = httpAPI.NewHttpAPIDelivery(
-		logger,
-		customerUseCase,
-		sessionUseCase,
-		storeUseCase,
-		integrationUseCase,
-		brokerTool,
-		httpAPI.HttpAPIDeliveryConfig{
-			StoreDuration:         time.Duration(2 * time.Second),
-			TokenDuration:         time.Duration(2 * time.Second),
-			PasswordTokenDuration: time.Duration(2 * time.Second),
-			Domain:                "http://localhost.com",
-		},
-	)
-
-	router = mux.NewRouter()
-	return customerUseCase, sessionUseCase, storeUseCase, integrationUseCase, httpAPIDelivery, router, brokerTool
-}
-
 func TestOpenStore(t *testing.T) {
-	_, _, storeUseCase, integrationUseCase, httpAPIDelivery, router, broker := setUpStoreTest()
+	_, _, storeUseCase, integrationUseCase, httpAPIDelivery, router, broker := setUpHttpAPITest()
 	defer broker.CloseAll()
 
 	mockStore := domain.Store{
@@ -115,7 +77,7 @@ func TestOpenStore(t *testing.T) {
 }
 
 func TestGetStoreInfoWithSSE(t *testing.T) {
-	_, _, storeUseCase, integrationUseCase, httpAPIDelivery, router, broker := setUpStoreTest()
+	_, _, storeUseCase, integrationUseCase, httpAPIDelivery, router, broker := setUpHttpAPITest()
 	defer broker.CloseAll()
 
 	expectedMockStoreDescription := "description2"
@@ -183,7 +145,7 @@ func TestGetStoreInfoWithSSE(t *testing.T) {
 		getDoneChan <- true
 	}()
 
-	time.Sleep(450 * time.Millisecond ) // smaller than getContext timeout (450 < 500)
+	time.Sleep(450 * time.Millisecond) // smaller than getContext timeout (450 < 500)
 	params := map[string]interface{}{
 		"description": expectedMockStoreDescription,
 	}
