@@ -5,6 +5,7 @@ npm install webpack webpack-cli --save-dev
 touch webpack.config.js
 
 npm install eslint --save-dev
+npx eslint --init
 
 npm install @babel/runtime --save-dev
 npm install @babel/polyfill --save-dev
