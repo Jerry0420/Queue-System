@@ -5,9 +5,9 @@ import './index.scss'
 
 function Main() {
   return (
-    <p className="main">
-        Hi JSX！
-    </p>
+    <div className="main text-3xl font-bold underline">
+      hello world
+    </div>
     )
 }
 
