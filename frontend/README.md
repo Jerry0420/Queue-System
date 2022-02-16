@@ -29,5 +29,5 @@ npm install @babel/preset-typescript  --save-dev
 npm install @types/react @types/react-dom --save-dev
 npm install @types/react-redux @types/react-router-dom --save-dev
 
-npm install tailwindcss postcss postcss-loader autoprefixer --save-dev
+npm install tailwindcss postcss postcss-loader postcss-import autoprefixer --save-dev
 ```
