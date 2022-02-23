@@ -1,6 +1,17 @@
 import React from 'react'
 import ReactDom from 'react-dom'
-import Main from './Main/Main'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import Store from './components/Store'
 import './tailwind.scss'
 
-ReactDom.render(<Main />, document.getElementById('root'))
+const App = () => {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Store />} />
+      </Routes>
+    </BrowserRouter>
+  )
+}
+
+ReactDom.render(<App />, document.getElementById('root'))
