@@ -1,11 +1,17 @@
 import React from "react"
-import { openStore } from "../apis/StoreAPIs"
+import * as storeAPIs from "../apis/StoreAPIs"
 
 const Store = () => {
   return (
-    <button onClick={() => openStore("email", "YXRlbjEyMzQ=", "name", "Asia/Taipei", ["queue_a", "queue_b"])}>
-      openStore
-    </button>
+    <>
+      <button onClick={() => storeAPIs.openStore("email", "YXRlbjEyMzQ=", "name", "Asia/Taipei", ["queue_a", "queue_b"])}>
+        openStore
+      </button>
+      <br />
+      <button onClick={() => storeAPIs.signInStore("email", "YXRlbjEyMzQ=")}>
+        signInStore
+      </button>
+    </>
   )
 }
 

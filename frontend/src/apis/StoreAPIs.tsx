@@ -1,4 +1,6 @@
-const openStore = (email: string, password: string, name: string, timezone: string, queue_names: string[]) => {
+import * as httpTools from './base'
+
+const openStore = (email: string, password: string, name: string, timezone: string, queue_names: string[]): Promise<any> => {
     const jsonBody: string = JSON.stringify({
         "email": email,
         "password": password,
@@ -6,16 +8,10 @@ const openStore = (email: string, password: string, name: string, timezone: stri
         "timezone": timezone,
         "queue_names": queue_names
     })
-    const backendHost: string = (process.env.BACKEND_HOST as string)
-    const backendPort: string = (process.env.BACKEND_PORT as string)
-    const url: string = "http://".concat(backendHost, ":", backendPort, "/api/v1/stores")
-    
     return fetch(
-        url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
+        httpTools.generateURL("/stores"), {
+            method: httpTools.HTTPMETHOD.POST,
+            headers: httpTools.CONTENT_TYPE_JSON,
             body: jsonBody 
         }
     )
@@ -30,4 +26,30 @@ const openStore = (email: string, password: string, name: string, timezone: stri
       })
 }
 
-export {openStore}
+const signInStore = (email: string, password: string): Promise<any> => {
+    const jsonBody: string = JSON.stringify({
+        "email": email,
+        "password": password,
+    })
+    return fetch(
+        httpTools.generateURL("/stores/signin"), {
+            method: httpTools.HTTPMETHOD.POST,
+            headers: httpTools.CONTENT_TYPE_JSON,
+            body: jsonBody 
+        }
+    )
+      .then(response => response.json())
+      .then(jsonResponse => {
+          console.log(jsonResponse)
+          return jsonResponse
+      })
+      .catch(error => {
+          console.error(error)
+          throw new Error("openStore error")  
+      })
+}
+
+export {
+    openStore,
+    signInStore
+}
