@@ -4,7 +4,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import Store from './components/Store'
 import './tailwind.scss'
 
-const App = () => {
+function App() {
   return (
     <BrowserRouter>
       <Routes>
