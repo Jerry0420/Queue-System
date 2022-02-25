@@ -45,11 +45,29 @@ const signInStore = (email: string, password: string): Promise<any> => {
       })
       .catch(error => {
           console.error(error)
-          throw new Error("openStore error")  
+          throw new Error("signInStore error")  
+      })
+}
+
+const refreshToken = (): Promise<any> => {
+    return fetch(
+        httpTools.generateURL("/stores/token"), {
+            method: httpTools.HTTPMETHOD.PUT,
+        }
+    )
+      .then(response => response.json())
+      .then(jsonResponse => {
+          console.log(jsonResponse)
+          return jsonResponse
+      })
+      .catch(error => {
+          console.error(error)
+          throw new Error("refreshToken error")  
       })
 }
 
 export {
     openStore,
-    signInStore
+    signInStore,
+    refreshToken
 }

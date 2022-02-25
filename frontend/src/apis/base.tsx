@@ -9,7 +9,8 @@ const generateURL = (route: string): string => {
 
 const HTTPMETHOD = {
     "GET": "GET",
-    "POST": "POST"
+    "POST": "POST",
+    "PUT": "PUT" 
 }
 
 const CONTENT_TYPE_JSON = {

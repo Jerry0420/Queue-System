@@ -55,10 +55,16 @@ func (had *HttpAPIDelivery) SigninStore(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	cookieSecure := false
+	
+	if had.config.IsProdEnv == true {
+		cookieSecure = true
+	}
+
 	cookie := http.Cookie{
 		Name:     domain.SignKeyTypes.REFRESH,
 		Value:    token,
-		Secure:   true,
+		Secure:   cookieSecure,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		Path:     V_1("/stores/token"),

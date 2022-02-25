@@ -11,6 +11,10 @@ const Store = () => {
       <button onClick={() => storeAPIs.signInStore("email", "YXRlbjEyMzQ=")}>
         signInStore
       </button>
+      <br />
+      <button onClick={() => storeAPIs.refreshToken()}>
+      refreshToken
+      </button>
     </>
   )
 }

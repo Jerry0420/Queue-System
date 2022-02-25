@@ -42,6 +42,7 @@ yarn-error.log*
 .env.db
 .env.frontend
 .env.grpc
+.env.nginx
 logs
 .secret
 .secret_grpc

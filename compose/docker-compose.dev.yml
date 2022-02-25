@@ -58,6 +58,21 @@ services:
       - ../envs/.env:/etc/config/.env
       - ../backend/logs/:/app/backend/logs/
 
+  nginx:
+    image: nginx:1.18-alpine
+    ports:
+    - '80:80'
+    env_file: 
+      - ../envs/.env.nginx
+    container_name: nginx
+    command: >
+      sh -c "/nginx.conf.sh
+      && nginx -g 'daemon off;' -c /nginx.conf"
+    volumes:
+        - ../scripts/nginx/nginx.conf.sh:/nginx.conf.sh
+    networks:
+      - queue_system
+
 networks: 
   queue_system:
     external: true
