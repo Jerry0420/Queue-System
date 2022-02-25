@@ -13,7 +13,11 @@ const Store = () => {
       </button>
       <br />
       <button onClick={() => storeAPIs.refreshToken()}>
-      refreshToken
+        refreshToken
+      </button>
+      <br />
+      <button onClick={() => storeAPIs.closeStore(8, "xxxxx")}>
+        closeStore
       </button>
     </>
   )

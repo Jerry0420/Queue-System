@@ -66,8 +66,28 @@ const refreshToken = (): Promise<any> => {
       })
 }
 
+const closeStore = (storeId: number, normalToken: string): Promise<any> => {
+    const route = "/stores/".concat(storeId.toString())
+    return fetch(
+        httpTools.generateURL(route), { 
+            method: httpTools.HTTPMETHOD.DELETE,
+            headers: httpTools.generateAuth(normalToken)
+        }
+    )
+      .then(response => response.json())
+      .then(jsonResponse => {
+          console.log(jsonResponse)
+          return jsonResponse
+      })
+      .catch(error => {
+          console.error(error)
+          throw new Error("refreshToken error")  
+      })
+}
+
 export {
     openStore,
     signInStore,
-    refreshToken
+    refreshToken,
+    closeStore
 }

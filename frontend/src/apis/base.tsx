@@ -10,18 +10,25 @@ const generateURL = (route: string): string => {
 const HTTPMETHOD = {
     "GET": "GET",
     "POST": "POST",
-    "PUT": "PUT" 
+    "PUT": "PUT",
+    "DELETE": "DELETE",
+    "PATCH": "PATCH" 
 }
 
 const CONTENT_TYPE_JSON = {
     "Content-Type": "application/json"
 }
 
-const AUTHORIZATION = "Authorization"
+const generateAuth = (token: string) => {
+    token = "Bearer ".concat(token)
+    return {
+        "Authorization": token
+    }
+}
 
 export {
     generateURL,
     HTTPMETHOD,
     CONTENT_TYPE_JSON,
-    AUTHORIZATION
+    generateAuth
 }
