@@ -1,9 +1,9 @@
 const version: string = "/api/v1"
 
 const generateURL = (route: string): string => {
-    const backendHost: string = (process.env.BACKEND_HOST as string)
-    const backendPort: string = (process.env.BACKEND_PORT as string)
-    let url = "http://".concat(backendHost, ":", backendPort, version, route)
+    const serverHost: string = (process.env.SERVER_HOST as string)
+    const serverPort: string = (process.env.SERVER_PORT as string)
+    let url = "http://".concat(serverHost, ":", serverPort, version, route)
     return url
 }
 
@@ -19,8 +19,10 @@ const CONTENT_TYPE_JSON = {
     "Content-Type": "application/json"
 }
 
-const generateAuth = (token: string) => {
-    token = "Bearer ".concat(token)
+const generateAuth = (token: string, withBearer: boolean=true) => {
+    if (withBearer === true){
+        token = "Bearer ".concat(token)
+    }
     return {
         "Authorization": token
     }
