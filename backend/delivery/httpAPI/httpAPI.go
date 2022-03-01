@@ -16,6 +16,7 @@ type HttpAPIDeliveryConfig struct {
 	TokenDuration         time.Duration
 	PasswordTokenDuration time.Duration
 	Domain                string
+	IsProdEnv             bool
 }
 
 type HttpAPIDelivery struct {

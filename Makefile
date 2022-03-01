@@ -23,6 +23,9 @@ down_test:
 up_build_dev:
 	docker-compose -f ./compose/docker-compose.dev.yml up -d --build
 
+re_build_nginx:
+	docker-compose -f ./compose/docker-compose.dev.yml up -d --force-recreate --build nginx
+
 down_dev:
 	docker-compose -f ./compose/docker-compose.dev.yml down
 
@@ -71,7 +74,7 @@ docker_build_backend:
 docker_build_frontend:
 	mkdir frontend_temp frontend_temp/scripts frontend_temp/scripts/nginx
 	cp -r ./frontend ./frontend_temp/frontend
-	cp ./scripts/nginx/nginx.conf ./frontend_temp/scripts/nginx/nginx.conf
+	cp ./scripts/nginx/nginx.frontend.conf ./frontend_temp/scripts/nginx/nginx.frontend.conf
 	docker build -f Dockerfile.frontend -t queue-system-frontend:v$(ver) --no-cache ./frontend_temp
 	rm -r frontend_temp
 	docker save queue-system-frontend:v$(ver) > queue-system-frontend.tar

@@ -224,11 +224,11 @@ func (iu *integrationUsecase) CloseStore(ctx context.Context, store domain.Store
 	go func(errChan chan error) {
 		defer wg.Done()
 		// TODO: open it later...
-		// err := iu.pgDBStoreRepository.RemoveStoreByID(ctx, tx, store.ID)
-		// if err != nil {
-		// 	errChan <- err
-		// 	return
-		// }
+		err := iu.pgDBStoreRepository.RemoveStoreByID(ctx, tx, store.ID)
+		if err != nil {
+			errChan <- err
+			return
+		}
 
 		err = iu.pgDBTx.CommitTx(tx)
 		if err != nil {
@@ -303,11 +303,11 @@ func (iu *integrationUsecase) CloseStoreRoutine(ctx context.Context) error {
 		defer wg.Done()
 		if len(storeIds) > 0 {
 			// TODO: open it later... 
-			// err := iu.pgDBStoreRepository.RemoveStoreByIDs(ctx, tx, storeIds)
-			// if err != nil {
-			// 	errChan <- err
-			// 	return
-			// }
+			err := iu.pgDBStoreRepository.RemoveStoreByIDs(ctx, tx, storeIds)
+			if err != nil {
+				errChan <- err
+				return
+			}
 
 			err = iu.pgDBTx.CommitTx(tx)
 			if err != nil {
