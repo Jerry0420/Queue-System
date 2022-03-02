@@ -15,6 +15,10 @@ const Store = () => {
     setStoreId(value)
   }
 
+  const getCookie = () => {
+    console.log(document.cookie)
+  }
+
   return (
     <>
       <button onClick={() => storeAPIs.openStore("jeerywa@gmail.com", "YXRlbjEyMzQ=", "name", "Asia/Taipei", ["queue_a", "queue_b"])}>
@@ -42,6 +46,11 @@ const Store = () => {
         />
       <button onClick={() => storeAPIs.closeStore(storeId, normalToken)}>
         closeStore
+      </button>
+
+      <br />
+      <button onClick={getCookie}>
+        get refresh token (cookie)
       </button>
     </>
   )
