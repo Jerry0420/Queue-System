@@ -77,6 +77,8 @@ func (had *HttpAPIDelivery) SigninStore(w http.ResponseWriter, r *http.Request) 
 	cookie = http.Cookie{
 		Name:     domain.SignKeyTypes.REFRESH + "able",
 		Value:    "true",
+		Secure:   cookieSecure,
+		SameSite: http.SameSiteLaxMode,
 		Path:     "/",
 		MaxAge:   cookieMaxAge,
 	}
