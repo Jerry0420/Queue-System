@@ -28,6 +28,7 @@ const generateAuth = (token: string, withBearer: boolean=true) => {
 }
 
 interface RequestParams {
+    endpoint: string
     method: string
     headers?: object
     body?: string

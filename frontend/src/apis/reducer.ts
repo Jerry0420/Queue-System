@@ -36,14 +36,13 @@ const reducer = (state = initialState, { actionType, response, exception }: Acti
     }
 }
 
-const useApiRequest = (endpoint: string, requestParams: RequestParams): [Action, () => Promise<any>] => {
+const useApiRequest = (requestParams: RequestParams): [Action, () => Promise<any>] => {
     const [action, dispatch] = useReducer(reducer, initialState)
   
     const makeRequest = useCallback(async () => {
       dispatch(doRunning())
-
       try {
-        const response = await fetch(endpoint, requestParams)
+        const response = await fetch(requestParams.endpoint, requestParams)
           .then(response => response.json())
           .then(jsonResponse => {
               return jsonResponse
@@ -52,15 +51,11 @@ const useApiRequest = (endpoint: string, requestParams: RequestParams): [Action,
               console.error(error)
               throw error  
           })
-
         dispatch(doSuccess(response))
-      
       } catch (error) {
-        
         dispatch(doError(error));
-      
       }
-    }, [endpoint, requestParams]);
+    }, [requestParams]);
   
     return [action, makeRequest];
   }
