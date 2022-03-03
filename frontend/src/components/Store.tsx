@@ -20,10 +20,10 @@ const Store = () => {
     console.log(document.cookie)
   }
   
-  const [openStoreAction, makeOpenStoreRequest] = useApiRequest(storeAPIs.openStore("jeerywa@gmail.com", "YXRlbjEyMzQ=", "name", "Asia/Taipei", ["queue_a", "queue_b"]))
-  const [signInStoreAction, makeSignInStoreRequest] = useApiRequest(storeAPIs.signInStore("jeerywa@gmail.com", "YXRlbjEyMzQ="))
-  const [refreshTokenAction, makeRefreshTokenRequest] = useApiRequest(storeAPIs.refreshToken())
-  const [closeStoreAction, makeCloseStoreRequest] = useApiRequest(storeAPIs.closeStore(storeId, normalToken))
+  const [openStoreAction, makeOpenStoreRequest] = useApiRequest(...storeAPIs.openStore("jeerywa@gmail.com", "YXRlbjEyMzQ=", "name", "Asia/Taipei", ["queue_a", "queue_b"]))
+  const [signInStoreAction, makeSignInStoreRequest] = useApiRequest(...storeAPIs.signInStore("jeerywa@gmail.com", "YXRlbjEyMzQ="))
+  const [refreshTokenAction, makeRefreshTokenRequest] = useApiRequest(...storeAPIs.refreshToken())
+  const [closeStoreAction, makeCloseStoreRequest] = useApiRequest(...storeAPIs.closeStore(storeId, normalToken))
 
   return (
     <>

@@ -10,17 +10,19 @@ const createSessionWithSSE = (sessionToken: string): EventSource => {
     return sse
 }
 
-const scanSession = (sessionId: string, storeId: number): httpTools.RequestParams => {
+const scanSession = (sessionId: string, storeId: number): [url: string, requestParams: RequestInit] => {
     const route = "/sessions/".concat(sessionId)
     const jsonBody: string = JSON.stringify({
         "store_id": storeId,
     })
-    return { 
-        endpoint: httpTools.generateURL(route),
-        method: httpTools.HTTPMETHOD.PUT,
-        headers: {...httpTools.CONTENT_TYPE_JSON, ...httpTools.generateAuth(sessionId, false)},
-        body: jsonBody
-    }
+    return [
+        httpTools.generateURL(route),
+        {
+            method: httpTools.HTTPMETHOD.PUT,
+            headers: {...httpTools.CONTENT_TYPE_JSON, ...httpTools.generateAuth(sessionId, false)},
+            body: jsonBody
+        }
+    ]
 }
 
 export {

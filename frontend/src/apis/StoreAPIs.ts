@@ -1,6 +1,6 @@
 import * as httpTools from './base'
 
-const openStore = (email: string, password: string, name: string, timezone: string, queueNames: string[]): httpTools.RequestParams => {
+const openStore = (email: string, password: string, name: string, timezone: string, queueNames: string[]): [url: string, requestParams: RequestInit] => {
     const jsonBody: string = JSON.stringify({
         "email": email,
         "password": password,
@@ -8,67 +8,79 @@ const openStore = (email: string, password: string, name: string, timezone: stri
         "timezone": timezone,
         "queue_names": queueNames
     })
-    return {
-        endpoint: httpTools.generateURL("/stores"),
-        method: httpTools.HTTPMETHOD.POST,
-        headers: httpTools.CONTENT_TYPE_JSON,
-        body: jsonBody 
-    }
+    return [
+        httpTools.generateURL("/stores"),
+        {
+            method: httpTools.HTTPMETHOD.POST,
+            headers: httpTools.CONTENT_TYPE_JSON,
+            body: jsonBody 
+        }
+    ]
 }
 
-const signInStore = (email: string, password: string): httpTools.RequestParams => {
+const signInStore = (email: string, password: string): [url: string, requestParams: RequestInit] => {
     const jsonBody: string = JSON.stringify({
         "email": email,
         "password": password,
     })
-    return {
-        endpoint: httpTools.generateURL("/stores/signin"),
-        method: httpTools.HTTPMETHOD.POST,
-        headers: httpTools.CONTENT_TYPE_JSON,
-        body: jsonBody 
-    }
+    return [
+        httpTools.generateURL("/stores/signin"),
+        {
+            method: httpTools.HTTPMETHOD.POST,
+            headers: httpTools.CONTENT_TYPE_JSON,
+            body: jsonBody 
+        }
+    ]
 }
 
-const refreshToken = (): httpTools.RequestParams => {
-    return {
-        endpoint: httpTools.generateURL("/stores/token"),
-        method: httpTools.HTTPMETHOD.PUT 
-    }
+const refreshToken = (): [url: string, requestParams: RequestInit] => {
+    return [
+        httpTools.generateURL("/stores/token"),
+        {
+            method: httpTools.HTTPMETHOD.PUT
+        }
+    ]
 }
 
-const closeStore = (storeId: number, normalToken: string): httpTools.RequestParams => {
+const closeStore = (storeId: number, normalToken: string): [url: string, requestParams: RequestInit] => {
     const route = "/stores/".concat(storeId.toString())
-    return { 
-        endpoint: httpTools.generateURL(route),
-        method: httpTools.HTTPMETHOD.DELETE,
-        headers: httpTools.generateAuth(normalToken)
-    }
+    return [
+        httpTools.generateURL(route),
+        {
+            method: httpTools.HTTPMETHOD.DELETE,
+            headers: httpTools.generateAuth(normalToken)
+        }
+    ]
 }
 
-const forgetPassword = (email: string): httpTools.RequestParams => {
+const forgetPassword = (email: string): [url: string, requestParams: RequestInit] => {
     const jsonBody: string = JSON.stringify({
         "email": email,
     })
-    return { 
-        endpoint: httpTools.generateURL("/stores/password/forgot"),
-        method: httpTools.HTTPMETHOD.POST,
-        headers: httpTools.CONTENT_TYPE_JSON,
-        body: jsonBody
-    }
+    return [
+        httpTools.generateURL("/stores/password/forgot"),
+        {
+            method: httpTools.HTTPMETHOD.POST,
+            headers: httpTools.CONTENT_TYPE_JSON,
+            body: jsonBody
+        }
+    ]
 }
 
-const updatePassword = (storeId: number, passwordToken: string, password: string): httpTools.RequestParams => {
+const updatePassword = (storeId: number, passwordToken: string, password: string): [url: string, requestParams: RequestInit] => {
     const route = "/stores/".concat(storeId.toString(), "/password")
     const jsonBody: string = JSON.stringify({
         "password_token": passwordToken,
         "password": password,
     })
-    return { 
-        endpoint: httpTools.generateURL(route), 
-        method: httpTools.HTTPMETHOD.PATCH,
-        headers: httpTools.CONTENT_TYPE_JSON,
-        body: jsonBody
-    }
+    return [
+        httpTools.generateURL(route), 
+        {
+            method: httpTools.HTTPMETHOD.PATCH,
+            headers: httpTools.CONTENT_TYPE_JSON,
+            body: jsonBody   
+        }
+    ]
 }
 
 const getStoreInfoWithSSE = (storeId: number): EventSource => {
@@ -81,17 +93,19 @@ const getStoreInfoWithSSE = (storeId: number): EventSource => {
     return sse
 }
 
-const updateStoreDescription = (storeId: number, normalToken: string, description: string): httpTools.RequestParams => {
+const updateStoreDescription = (storeId: number, normalToken: string, description: string): [url: string, requestParams: RequestInit] => {
     const route = "/stores/".concat(storeId.toString())
     const jsonBody: string = JSON.stringify({
         "description": description,
     })
-    return { 
-        endpoint: httpTools.generateURL(route), 
-        method: httpTools.HTTPMETHOD.PUT,
-        headers: {...httpTools.CONTENT_TYPE_JSON, ...httpTools.generateAuth(normalToken)},
-        body: jsonBody
-    }
+    return [
+        httpTools.generateURL(route), 
+        {
+            method: httpTools.HTTPMETHOD.PUT,
+            headers: {...httpTools.CONTENT_TYPE_JSON, ...httpTools.generateAuth(normalToken)},
+            body: jsonBody
+        }
+    ]
 }
 
 export {
