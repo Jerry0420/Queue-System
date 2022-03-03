@@ -27,9 +27,16 @@ const generateAuth = (token: string, withBearer: boolean=true) => {
     }
 }
 
+interface RequestParams {
+    method: string
+    headers?: object
+    body?: string
+}
+
 export {
     generateURL,
     HTTPMETHOD,
     CONTENT_TYPE_JSON,
-    generateAuth
+    generateAuth,
+    RequestParams
 }

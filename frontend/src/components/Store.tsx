@@ -1,4 +1,5 @@
 import React, {useState} from "react"
+import { useApiRequest } from "../apis/reducer"
 import * as storeAPIs from "../apis/StoreAPIs"
 
 const Store = () => {
@@ -18,22 +19,32 @@ const Store = () => {
   const getCookie = () => {
     console.log(document.cookie)
   }
+  
+  const [openStoreAction, makeOpenStoreRequest] = useApiRequest(...storeAPIs.openStore("jeerywa@gmail.com", "YXRlbjEyMzQ=", "name", "Asia/Taipei", ["queue_a", "queue_b"]))
+  const [signInStoreAction, makeSignInStoreRequest] = useApiRequest(...storeAPIs.signInStore("jeerywa@gmail.com", "YXRlbjEyMzQ="))
+  const [refreshTokenAction, makeRefreshTokenRequest] = useApiRequest(...storeAPIs.refreshToken())
+  const [closeStoreAction, makeCloseStoreRequest] = useApiRequest(...storeAPIs.closeStore(storeId, normalToken))
 
   return (
     <>
-      <button onClick={() => storeAPIs.openStore("jeerywa@gmail.com", "YXRlbjEyMzQ=", "name", "Asia/Taipei", ["queue_a", "queue_b"])}>
+      <button onClick={makeOpenStoreRequest}>
         openStore
       </button>
+      <>{console.log(openStoreAction)}</>
+      
       <br />
-      <button onClick={() => storeAPIs.signInStore("jeerywa@gmail.com", "YXRlbjEyMzQ=")}>
+      <button onClick={makeSignInStoreRequest}>
         signInStore
       </button>
+      <>{console.log(signInStoreAction)}</>
+      
       <br />
-      <button onClick={() => storeAPIs.refreshToken()}>
+      <button onClick={makeRefreshTokenRequest}>
         refreshToken
       </button>
+      <>{console.log(refreshTokenAction)}</>
+      
       <br />
-
       <input
           type="text"
           onChange={handleInputStoreId}
@@ -44,9 +55,12 @@ const Store = () => {
           onChange={handleInputNormalToken}
           placeholder="normalToken"
         />
-      <button onClick={() => storeAPIs.closeStore(storeId, normalToken)}>
+      <button onClick={makeCloseStoreRequest}>
         closeStore
       </button>
+      <>{console.log(closeStoreAction)}</>
+      
+      <hr />
 
       <br />
       <button onClick={getCookie}>

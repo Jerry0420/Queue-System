@@ -6,30 +6,21 @@ interface Customer {
     queue_id: number
   }
 
-const createCustomers = (sessionId: string, storeId: number, customers: Customer[]): Promise<any> => {
+  const createCustomers = (sessionId: string, storeId: number, customers: Customer[]): [string, httpTools.RequestParams] => {
     const jsonBody: string = JSON.stringify({
         "store_id": storeId,
         "customers": customers
     })
-    return fetch(
+    return [
         httpTools.generateURL("/customers"), { 
             method: httpTools.HTTPMETHOD.POST,
             headers: {...httpTools.CONTENT_TYPE_JSON, ...httpTools.generateAuth(sessionId, false)},
             body: jsonBody
         }
-    )
-      .then(response => response.json())
-      .then(jsonResponse => {
-          console.log(jsonResponse)
-          return jsonResponse
-      })
-      .catch(error => {
-          console.error(error)
-          throw new Error("createCustomers error")  
-      })
+    ]
 }
 
-const updateCustomer = (customerId: number, normalToken: string, storeId: number, queueId: number, oldCustomerStatus: string, newCustomerStatus: string): Promise<any> => {
+const updateCustomer = (customerId: number, normalToken: string, storeId: number, queueId: number, oldCustomerStatus: string, newCustomerStatus: string): [string, httpTools.RequestParams] => {
     const route = "/customers/".concat(customerId.toString())
     const jsonBody: string = JSON.stringify({
         "store_id": storeId,
@@ -37,22 +28,13 @@ const updateCustomer = (customerId: number, normalToken: string, storeId: number
         "old_customer_status": oldCustomerStatus,
         "new_customer_status": newCustomerStatus,
     })
-    return fetch(
+    return [
         httpTools.generateURL(route), { 
             method: httpTools.HTTPMETHOD.PUT,
             headers: {...httpTools.CONTENT_TYPE_JSON, ...httpTools.generateAuth(normalToken)},
             body: jsonBody
         }
-    )
-      .then(response => response.json())
-      .then(jsonResponse => {
-          console.log(jsonResponse)
-          return jsonResponse
-      })
-      .catch(error => {
-          console.error(error)
-          throw new Error("updateCustomer error")  
-      })
+    ]
 }
 
 export {

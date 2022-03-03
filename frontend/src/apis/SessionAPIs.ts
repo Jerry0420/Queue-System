@@ -10,27 +10,19 @@ const createSessionWithSSE = (sessionToken: string): EventSource => {
     return sse
 }
 
-const scanSession = (sessionId: string, storeId: number): Promise<any> => {
+const scanSession = (sessionId: string, storeId: number): [string, httpTools.RequestParams] => {
     const route = "/sessions/".concat(sessionId)
     const jsonBody: string = JSON.stringify({
         "store_id": storeId,
     })
-    return fetch(
-        httpTools.generateURL(route), { 
+    return [
+        httpTools.generateURL(route), 
+        { 
             method: httpTools.HTTPMETHOD.PUT,
             headers: {...httpTools.CONTENT_TYPE_JSON, ...httpTools.generateAuth(sessionId, false)},
             body: jsonBody
         }
-    )
-      .then(response => response.json())
-      .then(jsonResponse => {
-          console.log(jsonResponse)
-          return jsonResponse
-      })
-      .catch(error => {
-          console.error(error)
-          throw new Error("scannSession error")  
-      })
+    ]
 }
 
 export {
