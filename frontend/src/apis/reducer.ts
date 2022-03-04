@@ -1,5 +1,4 @@
 import { useReducer, useCallback } from "react"
-import {RequestParams} from './base'
 
 const ACTION_TYPES = {
     RUNNING: 'running',
