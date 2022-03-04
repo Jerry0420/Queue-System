@@ -6,21 +6,25 @@ const ACTION_TYPES = {
     ERROR: 'error',
 }
 
-const doRunning = (): object => ({ actionType: ACTION_TYPES.RUNNING })
-const doSuccess = (response: object): object => ({ actionType: ACTION_TYPES.SUCCESS, response })
-const doError = (exception: object): object => ({ actionType: ACTION_TYPES.ERROR, exception })
-
-const initialState = {
-    actionType: null,
-    response: null,
-    exception: null
+interface JSONResponse {
+  [propName: string]: any
 }
 
 interface Action {
-    actionType: string
-    response?: object
-    exception?: Error
+  actionType: string | null
+  response?: JSONResponse | null
+  exception?: Error | null
 }
+
+const initialState: Action = {
+  actionType: null,
+  response: null,
+  exception: null
+}
+
+const doRunning = (): Action => ({ actionType: ACTION_TYPES.RUNNING })
+const doSuccess = (response: JSONResponse): Action => ({ actionType: ACTION_TYPES.SUCCESS, response })
+const doError = (exception: Error): Action => ({ actionType: ACTION_TYPES.ERROR, exception, response: null })
   
 const reducer = (state = initialState, { actionType, response, exception }: Action) => {
     switch (actionType) {
@@ -43,15 +47,16 @@ const useApiRequest = (url: string, requestParams: RequestInit): [Action, () => 
       try {
         const response = await fetch(url, requestParams)
           .then(response => response.json())
-          .then(jsonResponse => {
+          .then((jsonResponse: JSONResponse) => {
               return jsonResponse
           })
-          .catch(error => {
+          .catch((error: Error) => {
               console.error(error)
               throw error  
           })
         dispatch(doSuccess(response))
-      } catch (error) {
+      } catch (e) {
+        const error = (e as Error)
         dispatch(doError(error));
       }
     }, [url, requestParams]);

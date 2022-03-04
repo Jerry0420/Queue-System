@@ -4,9 +4,9 @@ interface Customer {
     name: string
     phone: string
     queue_id: number
-  }
+}
 
-  const createCustomers = (sessionId: string, storeId: number, customers: Customer[]): [url: string, requestParams: RequestInit] => {
+const createCustomers = (sessionId: string, storeId: number, customers: Customer[]): [url: string, requestParams: RequestInit] => {
     const jsonBody: string = JSON.stringify({
         "store_id": storeId,
         "customers": customers
