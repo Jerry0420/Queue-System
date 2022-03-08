@@ -60,7 +60,8 @@ func (had *HttpAPIDelivery) SigninStore(w http.ResponseWriter, r *http.Request) 
 	if had.config.IsProdEnv == true {
 		cookieSecure = true
 	}
-
+	cookieMaxAge := int(refreshTokenExpiresAt.Sub(time.Now()).Seconds())
+	
 	cookie := http.Cookie{
 		Name:     domain.SignKeyTypes.REFRESH,
 		Value:    token,
@@ -68,9 +69,21 @@ func (had *HttpAPIDelivery) SigninStore(w http.ResponseWriter, r *http.Request) 
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		Path:     V_1("/stores/token"),
-		MaxAge:   int(refreshTokenExpiresAt.Sub(time.Now())),
+		MaxAge:   cookieMaxAge,
 	}
 	http.SetCookie(w, &cookie)
+
+	// use cookie: refreshable to check if refresh token exist in the browser. 
+	cookie = http.Cookie{
+		Name:     domain.SignKeyTypes.REFRESH + "able",
+		Value:    "true",
+		Secure:   cookieSecure,
+		SameSite: http.SameSiteLaxMode,
+		Path:     "/",
+		MaxAge:   cookieMaxAge,
+	}
+	http.SetCookie(w, &cookie)
+
 	presenter.JsonResponseOK(w, presenter.StoreForResponse(store))
 }
 
