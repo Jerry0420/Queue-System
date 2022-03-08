@@ -28,7 +28,6 @@ jobs:
     
     - name: Install dependencies
       run: |
-        apk add make
         ./scripts/migration_tools/install-migrate.sh
     - name: Test
       env:
@@ -36,4 +35,4 @@ jobs:
         ENV_PATH: /__w/queue-system/queue-system/envs/env_test
       run: |
         cd backend/
-        make test_only path=./
+        go test -v -count=1 -cover -vet=off ./...

@@ -41,9 +41,17 @@ func TestGetStoreByEmail(t *testing.T) {
 	query := `SELECT id,email,password,name,description,created_at,timezone FROM stores WHERE email=$1`
 	mock.ExpectQuery(query).WithArgs("email1").WillReturnRows(rows)
 
-	store, err := pgDBStoreRepository.GetStoreByEmail(context.TODO(), "email1")
-	assert.NoError(t, err)
-	assert.Equal(t, mockStore, store)
+	t.Run("right email", func(t *testing.T) {
+		store, err := pgDBStoreRepository.GetStoreByEmail(context.TODO(), "email1")
+		assert.NoError(t, err)
+		assert.Equal(t, mockStore, store)
+	})
+
+	t.Run("wrong email", func(t *testing.T) {
+		store, err := pgDBStoreRepository.GetStoreByEmail(context.TODO(), "email2")
+		assert.NotNil(t, err)
+		assert.Equal(t, domain.Store{}, store)
+	})
 }
 
 func TestCreateStore(t *testing.T) {
