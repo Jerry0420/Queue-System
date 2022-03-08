@@ -7,7 +7,7 @@ const ACTION_TYPES = {
 }
 
 interface JSONResponse {
-  [propName: string]: any
+  [propName: string]: object
 }
 
 interface Action {
@@ -39,7 +39,7 @@ const reducer = (state = initialState, { actionType, response, exception }: Acti
     }
 }
 
-const useApiRequest = (url: string, requestParams: RequestInit): [Action, () => Promise<any>] => {
+const useApiRequest = (url: string, requestParams: RequestInit): [Action, () => Promise<void>] => {
     const [action, dispatch] = useReducer(reducer, initialState)
   
     const makeRequest = useCallback(async () => {
