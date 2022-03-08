@@ -1,22 +1,33 @@
 import React, {useContext, useEffect} from "react"
 import { RefreshTokenContext } from "./contexts"
-import { JSONResponse } from "../apis/reducer"
+import { ACTION_TYPES } from "../apis/reducer"
+import { useNavigate } from "react-router-dom"
+import { validateResponseSuccess } from "../apis/helper"
 
 const SignUp = () => {
   const {refreshTokenAction, makeRefreshTokenRequest} = useContext(RefreshTokenContext)
+  let navigate = useNavigate()
+
   useEffect(() => {
-    makeRefreshTokenRequest().then(jsonRespons => {
-      console.log(refreshTokenAction)
-    })
-  }, [refreshTokenAction])
+    if (refreshTokenAction.response == null) {
+      makeRefreshTokenRequest()
+    }
+  }, [])
 
   return (
     <div>
-      {/* <>{console.log(refreshTokenAction)}</>  */}
-      <button onClick={makeRefreshTokenRequest}>
-        refreshToken
-      </button>
-      {/* <>{console.log(refreshTokenAction)}</>  */}
+      {
+        (refreshTokenAction.actionType === ACTION_TYPES.SUCCESS) && 
+        (validateResponseSuccess(refreshTokenAction.response) === true) &&
+        (navigate("/temp"))
+      }
+      {
+        (refreshTokenAction.actionType === ACTION_TYPES.SUCCESS) && 
+        (validateResponseSuccess(refreshTokenAction.response) === false) &&
+        (
+          <div>sign up</div>
+        )
+      }
     </div>
   )
 }

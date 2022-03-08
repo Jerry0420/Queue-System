@@ -3,10 +3,10 @@ import { initialState, Action } from '../apis/reducer'
 
 const initialRefreshTokenContext: {
     refreshTokenAction: Action, 
-    makeRefreshTokenRequest: (() => Promise<void>) | undefined
+    makeRefreshTokenRequest: (() => Promise<void>)
 } = {
     refreshTokenAction: initialState,
-    makeRefreshTokenRequest: undefined
+    makeRefreshTokenRequest: (() => {return new Promise((resolve, reject) => {})})
 }
 
 const RefreshTokenContext = createContext(initialRefreshTokenContext)
