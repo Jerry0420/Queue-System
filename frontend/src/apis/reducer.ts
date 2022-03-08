@@ -66,6 +66,8 @@ const useApiRequest = (url: string, requestParams: RequestInit): [Action, () => 
 
 export {
     ACTION_TYPES,
+    Action,
+    JSONResponse,
     doRunning,
     doSuccess,
     doError,

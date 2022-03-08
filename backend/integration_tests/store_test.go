@@ -49,7 +49,7 @@ func (suite *BackendTestSuite) Test_GetStoreInfoWithSSE() {
 	decodedResponse = map[string]interface{}{}
 	json.NewDecoder(response.Body).Decode(&decodedResponse)
 	suite.Equal(1, int(decodedResponse["id"].(float64)))
-	suite.Equal(2, len(response.Cookies()))
+	suite.Equal(2, len(response.Cookies())) // refresh, refreshable, two cookies
 
 	refreshCookie := response.Cookies()[0]
 
