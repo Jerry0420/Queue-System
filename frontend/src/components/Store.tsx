@@ -3,7 +3,6 @@ import { useParams, Link } from "react-router-dom"
 import { RefreshTokenContext } from "./contexts"
 import { createSessionWithSSE } from "../apis/SessionAPIs"
 import { checkAuthFlow } from "../apis/helper"
-import { JSONResponse } from "../apis/reducer"
 
 const Store = () => {
   let { storeId } = useParams()
@@ -12,10 +11,8 @@ const Store = () => {
   useEffect(() => {
     checkAuthFlow(refreshTokenAction.response, makeRefreshTokenRequest, 
       // nextStuff
-      () => {
-        console.log("in newstuff", refreshTokenAction)
-
-        const sessionToken: string = ((refreshTokenAction.response as JSONResponse)["session_token"] as string)
+      (jsonResponse) => {
+        const sessionToken: string = (jsonResponse["session_token"] as string)
         const createSessionSSE = createSessionWithSSE(sessionToken)
         
         createSessionSSE.onmessage = (event) => {

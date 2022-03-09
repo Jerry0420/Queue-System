@@ -37,7 +37,7 @@ const checkUpdatableOfNormalToken = (jsonResponse: JSONResponse): boolean => {
 const checkAuthFlow = ( 
     jsonResponse: JSONResponse | null | undefined,
     makeRefreshTokenRequest: (() => Promise<JSONResponse | null | undefined>),
-    nextStuff: (() => void),
+    nextStuff: ((jsonResponse: JSONResponse) => void),
     redirectToMainPage: (() => void)
     ) => {
     
@@ -47,7 +47,7 @@ const checkAuthFlow = (
         .then(response => {
             if (validateResponseSuccess(response) === true) {
                 console.log("1=========")
-                nextStuff()   
+                nextStuff((response as JSONResponse))   
             } else {
                 console.log("2=========")
                 redirectToMainPage()
@@ -76,7 +76,7 @@ const checkAuthFlow = (
                 // refresh cookie, refreshTokenAction.response exist
                 // normal token no need to be updated
                 console.log("6=========")
-                nextStuff()
+                nextStuff((jsonResponse as JSONResponse))
             }
         }
     } else {
