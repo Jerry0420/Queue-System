@@ -10,10 +10,10 @@ const Store = () => {
   const {refreshTokenAction, makeRefreshTokenRequest} = useContext(RefreshTokenContext)
 
   useEffect(() => {
-    checkAuthFlow(refreshTokenAction, makeRefreshTokenRequest, 
+    checkAuthFlow(refreshTokenAction.response, makeRefreshTokenRequest, 
       // nextStuff
       () => {
-        console.log("in newstuff")
+        console.log("in newstuff", refreshTokenAction)
 
         const sessionToken: string = ((refreshTokenAction.response as JSONResponse)["session_token"] as string)
         const createSessionSSE = createSessionWithSSE(sessionToken)
@@ -32,10 +32,10 @@ const Store = () => {
       }, 
       // redirectToMainPage
       () => {
-        console.log("in redirectToMainPage")
+        console.log("in redirectToMainPage", refreshTokenAction)
       }
     )
-  }, [])
+  }, [createSessionWithSSE])
 
   return (
     <div>

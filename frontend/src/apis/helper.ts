@@ -35,8 +35,8 @@ const checkUpdatableOfNormalToken = (jsonResponse: JSONResponse): boolean => {
 }
 
 const checkAuthFlow = ( 
-    refreshTokenAction: Action,
-    makeRefreshTokenRequest: (() => Promise<boolean>),
+    jsonResponse: JSONResponse | null | undefined,
+    makeRefreshTokenRequest: (() => Promise<JSONResponse | null | undefined>),
     nextStuff: (() => void),
     redirectToMainPage: (() => void)
     ) => {
@@ -44,32 +44,30 @@ const checkAuthFlow = (
     // refresh cookie, refreshTokenAction.response exist
     const doMakeRefreshTokenRequest = () => {
         makeRefreshTokenRequest()
-        .then(done => {
-            if (refreshTokenAction.actionType === ACTION_TYPES.SUCCESS) {
-                if (validateResponseSuccess(refreshTokenAction.response) === true) {
-                    console.log("1=========")
-                    nextStuff()   
-                } else {
-                    console.log("2=========")
-                    redirectToMainPage()
-                }
-            }
-            if (refreshTokenAction.actionType === ACTION_TYPES.ERROR) {
-                console.log("3=========")
+        .then(response => {
+            if (validateResponseSuccess(response) === true) {
+                console.log("1=========")
+                nextStuff()   
+            } else {
+                console.log("2=========")
                 redirectToMainPage()
             }
+        })
+        .catch((error: Error) => {
+            console.log("3=========")
+            redirectToMainPage()
         })
     }
     
     if (checkExistenceOfRefreshableCookie() === true) {
-        if (validateResponseSuccess(refreshTokenAction.response) === false) {
+        if (validateResponseSuccess(jsonResponse) === false) {
             // refresh cookie exist
             // refreshTokenAction.response not exist.
             console.log("4=========")
             doMakeRefreshTokenRequest()
         } else {
-            const jsonResponse = (refreshTokenAction.response as JSONResponse) // jsonResponse would never be null or undefined here
-            if (checkUpdatableOfNormalToken(jsonResponse) === true) {
+            const _jsonResponse = (jsonResponse as JSONResponse) // jsonResponse would never be null or undefined here
+            if (checkUpdatableOfNormalToken(_jsonResponse) === true) {
                 // refresh cookie, refreshTokenAction.response exist
                 // normal token already need to be updated
                 console.log("5=========")
