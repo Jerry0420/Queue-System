@@ -9,6 +9,7 @@ import { useApiRequest } from "./apis/reducer"
 import { refreshToken } from './apis/StoreAPIs'
 import './tailwind.scss'
 import { RefreshTokenContext } from './components/contexts'
+import { Store } from './components/Store'
 
 function App() {
   
@@ -20,7 +21,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Header />}>
             <Route path="" element={<SignUp />} />
-            <Route path="stores/:storeId" element={(<></>)} />
+            <Route path="stores/:storeId" element={(<Store />)} />
             <Route path="stores/:storeId/queues/:queueId" element={(<></>)} />
             <Route path="signin" element={(<></>)} />
 

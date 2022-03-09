@@ -11,8 +11,8 @@ const SignUp = () => {
     if (checkExistenceOfRefreshableCookie() === true) {
       const storeId = localStorage.getItem("storeId")
       if (storeId != null) {
-        navigate("/temp")
-        // navigate(`/stores/${storeId}`)
+        // navigate("/temp")
+        navigate(`/stores/${storeId}`)
       } else {
         document.cookie = "refreshable=true ; expires = Thu, 01 Jan 1970 00:00:00 GMT"
       }

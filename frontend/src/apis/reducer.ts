@@ -39,7 +39,7 @@ const reducer = (state = initialState, { actionType, response, exception }: Acti
     }
 }
 
-const useApiRequest = (url: string, requestParams: RequestInit): [Action, () => Promise<JSONResponse | undefined>] => {
+const useApiRequest = (url: string, requestParams: RequestInit): [Action, () => Promise<boolean>] => {
     const [action, dispatch] = useReducer(reducer, initialState)
   
     const makeRequest = useCallback(async () => {
@@ -55,11 +55,12 @@ const useApiRequest = (url: string, requestParams: RequestInit): [Action, () => 
               throw error  
           })
         dispatch(doSuccess(response))
-        return response
       } catch (e) {
         const error = (e as Error)
         dispatch(doError(error))
-        throw error
+      } finally {
+        // to indicate this http request was done.
+        return true
       }
     }, [url, requestParams]);
   

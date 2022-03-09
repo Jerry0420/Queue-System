@@ -4,7 +4,7 @@ import { JSONResponse } from '../apis/reducer'
 
 const initialRefreshTokenContext: {
     refreshTokenAction: Action, 
-    makeRefreshTokenRequest: (() => Promise<JSONResponse | undefined>)
+    makeRefreshTokenRequest: (() => Promise<boolean>)
 } = {
     refreshTokenAction: initialState,
     makeRefreshTokenRequest: (() => {return new Promise((resolve, reject) => {})})
