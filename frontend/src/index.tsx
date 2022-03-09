@@ -4,7 +4,7 @@ import { HashRouter, Route, Routes } from 'react-router-dom'
 import { NoMatch } from './components/Default'
 import { Header } from './components/Header'
 import { SignUp } from './components/Signup'
-import Store from './components/Store'
+import Temp from './components/Temp'
 import { useApiRequest } from "./apis/reducer"
 import { refreshToken } from './apis/StoreAPIs'
 import './tailwind.scss'
@@ -28,7 +28,7 @@ function App() {
             <Route path="password/forget" element={(<></>)} />
             <Route path="stores/:sessionId/password/update" element={(<></>)} />
 
-            <Route path="temp" element={<Store />} />
+            <Route path="temp" element={<Temp />} />
 
             <Route path="*" element={<NoMatch />} />
           </Route>
