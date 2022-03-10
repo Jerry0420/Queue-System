@@ -23,7 +23,7 @@ const checkExistenceOfRefreshableCookie = (): boolean => {
 
 const checkUpdatableOfNormalToken = (jsonResponse: JSONResponse): boolean => {
     const tokenExpiresAt = (jsonResponse["token_expires_at"] as number)
-    const now = Date.now()
+    const now = Date.now() / 1000 // ms to s
     if (
         (tokenExpiresAt < now) || 
         (tokenExpiresAt >= now) && 

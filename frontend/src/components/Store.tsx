@@ -1,4 +1,4 @@
-import React, {useEffect, useContext} from "react"
+import React, {useEffect, useContext, useCallback} from "react"
 import { useParams, Link } from "react-router-dom"
 import { RefreshTokenContext } from "./contexts"
 import { createSessionWithSSE } from "../apis/SessionAPIs"
@@ -12,11 +12,12 @@ const Store = () => {
     checkAuthFlow(refreshTokenAction.response, makeRefreshTokenRequest, 
       // nextStuff
       (jsonResponse) => {
+        console.log("in nextStuff", refreshTokenAction)
         const sessionToken: string = (jsonResponse["session_token"] as string)
         const createSessionSSE = createSessionWithSSE(sessionToken)
-        
+
         createSessionSSE.onmessage = (event) => {
-          console.log(JSON.stringify(JSON.parse(event.data)))
+          console.log(JSON.parse(event.data))
         }
         
         createSessionSSE.onopen = (event) => {
@@ -36,7 +37,8 @@ const Store = () => {
 
   return (
     <div>
-        <Link to="/temp">Dashboard</Link>
+        <Link to="/temp">to temp</Link>
+        {/* {console.log(refreshTokenAction)} */}
     </div>
   )
 }
