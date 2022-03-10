@@ -2,7 +2,7 @@ import React, {useEffect, useContext, useState} from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
 import { RefreshTokenContext } from "./contexts"
 import { createSessionWithSSE } from "../apis/SessionAPIs"
-import { validateResponseSuccess } from "../apis/helper"
+import { validateResponseSuccess, getNormalTokenFromRefreshTokenAction } from "../apis/helper"
 import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
 import { toDataURL } from "qrcode"
 import { updateStoreDescription } from "../apis/StoreAPIs"
@@ -13,12 +13,15 @@ const Store = () => {
   const [sessionScannedURL, setSessionScannedURL] = useState("")
   const [qrcodeImageURL, setQrcodeImageURL] = useState("")
   const [storeDescription, setStoreDescription] = useState("")
-  const [normalToken, setNormalToken] = useState("")
 
   const {refreshTokenAction, makeRefreshTokenRequest, wrapCheckAuthFlow} = useContext(RefreshTokenContext)
   const [updateStoreDescriptionAction, makeUpdateStoreDescriptionRequest] = useApiRequest(
-    ...updateStoreDescription(parseInt(storeId), normalToken, storeDescription)
-    )
+    ...updateStoreDescription(
+      parseInt(storeId), 
+      getNormalTokenFromRefreshTokenAction(refreshTokenAction.response), 
+      storeDescription
+      )
+  )
 
   const handleInputStoreDescription = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value: value }: { value: string } = e.target
@@ -73,20 +76,13 @@ const Store = () => {
   }, [sessionScannedURL])
 
   useEffect(() => {
-    if (validateResponseSuccess(refreshTokenAction.response) === true) {
-      const response: JSONResponse = refreshTokenAction.response as JSONResponse // refreshTokenAction.response must be JSONResponse here.
-      setNormalToken(response["token"] as string)
-    }
-  }, [refreshTokenAction.response])
-
-  useEffect(() => {
     // handle running, success, error states here.
   }, [updateStoreDescriptionAction])
 
   return (
     <div>
         <Link to="/temp">to temp</Link>
-        {/* <img src={qrcodeImageURL} alt="qrcode image"></img> */}
+        <img src={qrcodeImageURL} alt="qrcode image"></img>
 
         <br />
         <input
