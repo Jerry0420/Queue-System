@@ -10,13 +10,29 @@ import { refreshToken } from './apis/StoreAPIs'
 import './tailwind.scss'
 import { RefreshTokenContext } from './components/contexts'
 import { Store } from './components/Store'
+import { checkAuthFlow, validateResponseSuccess } from './apis/helper'
 
 function App() {
   
   const [refreshTokenAction, makeRefreshTokenRequest] = useApiRequest(...refreshToken())
+
+  const wrapCheckAuthFlow = (nextStuff: () => void, redirectToMainPage: () => void) => {
+    checkAuthFlow(refreshTokenAction.response, makeRefreshTokenRequest, 
+      // nextStuff
+      () => {
+        if (validateResponseSuccess(refreshTokenAction.response) === true) {
+          nextStuff()
+        }
+      }, 
+      // redirectToMainPage
+      () => {
+        redirectToMainPage()
+      }
+    )
+  }
   
   return (
-    <RefreshTokenContext.Provider value={{refreshTokenAction, makeRefreshTokenRequest}}>
+    <RefreshTokenContext.Provider value={{refreshTokenAction, makeRefreshTokenRequest, wrapCheckAuthFlow}}>
       <HashRouter>
         <Routes>
           <Route path="/" element={<Header />}>
