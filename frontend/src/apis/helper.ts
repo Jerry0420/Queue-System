@@ -1,6 +1,4 @@
-import { JSONResponse, ACTION_TYPES, Action } from "./reducer"
-import { useContext } from "react"
-import { RefreshTokenContext } from "../components/contexts"
+import { JSONResponse } from "./reducer"
 
 const validateResponseSuccess = (jsonResponse: JSONResponse | null | undefined): boolean => {
     if (
@@ -37,24 +35,20 @@ const checkUpdatableOfNormalToken = (jsonResponse: JSONResponse): boolean => {
 const checkAuthFlow = ( 
     jsonResponse: JSONResponse | null | undefined,
     makeRefreshTokenRequest: (() => Promise<JSONResponse | null | undefined>),
-    nextStuff: ((jsonResponse: JSONResponse) => void),
+    nextStuff: (() => void),
     redirectToMainPage: (() => void)
     ) => {
-    
     // refresh cookie, refreshTokenAction.response exist
     const doMakeRefreshTokenRequest = () => {
         makeRefreshTokenRequest()
         .then(response => {
             if (validateResponseSuccess(response) === true) {
-                console.log("1=========")
-                nextStuff((response as JSONResponse))   
+                nextStuff()   
             } else {
-                console.log("2=========")
                 redirectToMainPage()
             }
         })
         .catch((error: Error) => {
-            console.log("3=========")
             redirectToMainPage()
         })
     }
@@ -63,25 +57,21 @@ const checkAuthFlow = (
         if (validateResponseSuccess(jsonResponse) === false) {
             // refresh cookie exist
             // refreshTokenAction.response not exist.
-            console.log("4=========")
             doMakeRefreshTokenRequest()
         } else {
             const _jsonResponse = (jsonResponse as JSONResponse) // jsonResponse would never be null or undefined here
             if (checkUpdatableOfNormalToken(_jsonResponse) === true) {
                 // refresh cookie, refreshTokenAction.response exist
                 // normal token already need to be updated
-                console.log("5=========")
                 doMakeRefreshTokenRequest()
             } else {
                 // refresh cookie, refreshTokenAction.response exist
                 // normal token no need to be updated
-                console.log("6=========")
-                nextStuff((jsonResponse as JSONResponse))
+                nextStuff()
             }
         }
     } else {
         // refreshable cookie not exist
-        console.log("7=========")
         redirectToMainPage()
     }
 }
