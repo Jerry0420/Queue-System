@@ -2,10 +2,11 @@ import React, {useEffect, useContext, useState} from "react"
 import { useParams, Link, useNavigate } from "react-router-dom"
 import { RefreshTokenContext } from "./contexts"
 import { createSessionWithSSE } from "../apis/SessionAPIs"
-import { validateResponseSuccess, getNormalTokenFromRefreshTokenAction } from "../apis/helper"
+import { validateResponseSuccess } from "../apis/helper"
 import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
 import { toDataURL } from "qrcode"
 import { updateStoreDescription } from "../apis/StoreAPIs"
+import { getNormalTokenFromRefreshTokenAction, getSessionTokenFromRefreshTokenAction } from "../apis/validator"
 
 const Store = () => {
   let { storeId: storeId }: {storeId: string} = useParams()
@@ -32,7 +33,7 @@ const Store = () => {
     let createSessionSSE: EventSource
     wrapCheckAuthFlow(
       () => {
-        const sessionToken: string = ((refreshTokenAction.response as JSONResponse)["session_token"] as string)
+        const sessionToken: string = getSessionTokenFromRefreshTokenAction(refreshTokenAction.response)
         createSessionSSE = createSessionWithSSE(sessionToken)
 
         createSessionSSE.onmessage = (event) => {

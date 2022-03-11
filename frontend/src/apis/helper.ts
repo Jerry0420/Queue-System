@@ -76,18 +76,9 @@ const checkAuthFlow = (
     }
 }
 
-const getNormalTokenFromRefreshTokenAction = (refreshTokenActionResponse: JSONResponse | undefined | null): string => {
-    if (validateResponseSuccess(refreshTokenActionResponse) === true) {
-        const response: JSONResponse = refreshTokenActionResponse as JSONResponse // refreshTokenActionResponse must be JSONResponse here.
-        return response["token"] as string
-    }
-    return ""
-}
-
 export {
     validateResponseSuccess,
     checkExistenceOfRefreshableCookie,
     checkUpdatableOfNormalToken,
     checkAuthFlow,
-    getNormalTokenFromRefreshTokenAction
 }
