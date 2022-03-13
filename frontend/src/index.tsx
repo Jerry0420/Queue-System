@@ -11,6 +11,7 @@ import './tailwind.scss'
 import { RefreshTokenContext } from './components/contexts'
 import { Store } from './components/Store'
 import { checkAuthFlow, validateResponseSuccess } from './apis/helper'
+import { SignIn } from './components/Signin'
 
 function App() {
   
@@ -39,7 +40,7 @@ function App() {
             <Route path="" element={<SignUp />} />
             <Route path="stores/:storeId" element={(<Store />)} />
             <Route path="stores/:storeId/queues/:queueId" element={(<></>)} />
-            <Route path="signin" element={(<></>)} />
+            <Route path="signin" element={(<SignIn />)} />
 
             <Route path="stores/:storeId/sessions/:sessionId" element={(<></>)} />
             <Route path="password/forget" element={(<></>)} />

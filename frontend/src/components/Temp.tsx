@@ -4,18 +4,36 @@ import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
 import * as storeAPIs from "../apis/StoreAPIs"
 import { RefreshTokenContext } from "./contexts"
 
+// import PropTypes from 'prop-types'
+
+// const Queue = ({name}: {name: string}) => {
+//   return (
+//     <div>
+//       {name}
+//     </div>
+//   )
+// }
+
+// Queue.propTypes = {
+//   name: PropTypes.string,
+// }
+
+// Queue.defaultProps = {
+//   name: '',
+// }
+
 const Temp = () => {
   const [normalToken, setNormalToken] = useState("")
   const [storeId, setStoreId] = useState(0)
 
-  const handleInputNormalToken = (e: React.ChangeEvent<HTMLElement>) => {
+  const handleInputNormalToken = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value }: { value: string } = e.target
     setNormalToken(value)
   }
 
-  const handleInputStoreId = (e: React.ChangeEvent<HTMLElement>) => {
-    const { value }: { value: number } = e.target
-    setStoreId(value)
+  const handleInputStoreId = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value }: { value: string } = e.target
+    setStoreId(parseInt(value))
   }
 
   const getCookie = () => {
