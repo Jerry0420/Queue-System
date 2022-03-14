@@ -99,11 +99,6 @@ const Store = () => {
     // TODO: handle running, success, error states here.
   }, [updateStoreDescriptionAction.actionType])
 
-  const scannedQrcode = () => {
-    const url = new URL(sessionScannedURL)
-    navigate(sessionScannedURL.replace(url.origin + "/#", ""))
-  }
-
   return (
     <div>
         <Link to="/temp">to temp</Link>
@@ -120,9 +115,7 @@ const Store = () => {
         </button>
 
         <br />
-        <button onClick={() => {scannedQrcode()}}>
-          scanned qrcode
-        </button>
+        <a href={sessionScannedURL} target="_blank">{sessionScannedURL}</a>
     </div>
   )
 }

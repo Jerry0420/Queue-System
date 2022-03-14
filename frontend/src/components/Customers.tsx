@@ -17,7 +17,9 @@ const CreateCustomers = () => {
     if (scanSessionAction.actionType === ACTION_TYPES.ERROR) {
         // TODO: disable create customers button
     }
-    if ((scanSessionAction.response != null) && (scanSessionAction.response["error_code"])) {
+
+    // 40007: store_session exist but is already scanned.
+    if ((scanSessionAction.response != null) && (scanSessionAction.response["error_code"]) && (scanSessionAction.response["error_code"] !== 40007)) {
         // TODO: disable create customers button
     }
   }, [scanSessionAction.actionType])
