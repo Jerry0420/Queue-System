@@ -7,7 +7,7 @@ const ACTION_TYPES = {
 }
 
 interface JSONResponse {
-  [propName: string]: object
+  [propName: string]: object | number | string | null | undefined
 }
 
 interface Action {
@@ -39,7 +39,7 @@ const reducer = (state = initialState, { actionType, response, exception }: Acti
     }
 }
 
-const useApiRequest = (url: string, requestParams: RequestInit): [Action, () => Promise<void>] => {
+const useApiRequest = (url: string, requestParams: RequestInit): [Action, () => Promise<JSONResponse | null | undefined>] => {
     const [action, dispatch] = useReducer(reducer, initialState)
   
     const makeRequest = useCallback(async () => {
@@ -55,9 +55,11 @@ const useApiRequest = (url: string, requestParams: RequestInit): [Action, () => 
               throw error  
           })
         dispatch(doSuccess(response))
+        return response
       } catch (e) {
         const error = (e as Error)
-        dispatch(doError(error));
+        dispatch(doError(error))
+        throw error
       }
     }, [url, requestParams]);
   
@@ -66,6 +68,8 @@ const useApiRequest = (url: string, requestParams: RequestInit): [Action, () => 
 
 export {
     ACTION_TYPES,
+    Action,
+    JSONResponse,
     doRunning,
     doSuccess,
     doError,

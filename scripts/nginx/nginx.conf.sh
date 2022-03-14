@@ -27,10 +27,10 @@ http {
 
         location /api {
                 proxy_pass http://upstream_backend;
-                add_header Access-Control-Allow-Origin '*';
-                add_header Access-Control-Allow-Methods 'GET, POST, OPTIONS, PUT, DELETE, PATCH';
-                add_header Access-Control-Allow-Headers 'DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Connection,Authorization';
-                add_header Access-Control-Allow-Credentials 'true';
+
+                proxy_set_header Connection '';
+                proxy_http_version 1.1;
+                chunked_transfer_encoding off;
         }
 
         location / {

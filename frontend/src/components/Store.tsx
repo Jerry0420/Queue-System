@@ -1,73 +1,103 @@
-import React, {useState} from "react"
-import { useApiRequest } from "../apis/reducer"
-import * as storeAPIs from "../apis/StoreAPIs"
+import React, {useEffect, useContext, useState} from "react"
+import { useParams, Link, useNavigate } from "react-router-dom"
+import { RefreshTokenContext } from "./contexts"
+import { createSessionWithSSE } from "../apis/SessionAPIs"
+import { validateResponseSuccess } from "../apis/helper"
+import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
+import { toDataURL } from "qrcode"
+import { updateStoreDescription } from "../apis/StoreAPIs"
+import { getNormalTokenFromRefreshTokenAction, getSessionTokenFromRefreshTokenAction } from "../apis/validator"
 
 const Store = () => {
-  const [normalToken, setNormalToken] = useState("")
-  const [storeId, setStoreId] = useState(0)
+  let { storeId: storeId }: {storeId: string} = useParams()
+  let navigate = useNavigate()
+  const [sessionScannedURL, setSessionScannedURL] = useState("")
+  const [qrcodeImageURL, setQrcodeImageURL] = useState("")
+  const [storeDescription, setStoreDescription] = useState("")
 
-  const handleInputNormalToken = (e: React.ChangeEvent<HTMLElement>) => {
-    const { value }: { value: string } = e.target
-    setNormalToken(value)
+  const {refreshTokenAction, makeRefreshTokenRequest, wrapCheckAuthFlow} = useContext(RefreshTokenContext)
+  const [updateStoreDescriptionAction, makeUpdateStoreDescriptionRequest] = useApiRequest(
+    ...updateStoreDescription(
+      parseInt(storeId), 
+      getNormalTokenFromRefreshTokenAction(refreshTokenAction.response), 
+      storeDescription
+      )
+  )
+
+  const handleInputStoreDescription = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value: value }: { value: string } = e.target
+    setStoreDescription(value)
   }
 
-  const handleInputStoreId = (e: React.ChangeEvent<HTMLElement>) => {
-    const { value }: { value: number } = e.target
-    setStoreId(value)
+  useEffect(() => {
+    let createSessionSSE: EventSource
+    wrapCheckAuthFlow(
+      () => {
+        const sessionToken: string = getSessionTokenFromRefreshTokenAction(refreshTokenAction.response)
+        createSessionSSE = createSessionWithSSE(sessionToken)
+
+        createSessionSSE.onmessage = (event) => {
+          setSessionScannedURL(JSON.parse(event.data)["scanned_url"])
+        }
+        
+        createSessionSSE.onerror = (event) => {
+          createSessionSSE.close()
+        }
+      },
+      () => {
+         // TODO: show error message
+         navigate("/")
+      }
+    )
+    return () => {
+      if (createSessionSSE != null) {
+        createSessionSSE.close()
+      }
+    }
+  }, [createSessionWithSSE, refreshTokenAction.response, refreshTokenAction.exception])
+
+  const doMakeUpdateStoreDescriptionRequest = () => {
+    wrapCheckAuthFlow(
+      () => {
+        makeUpdateStoreDescriptionRequest()
+      },
+      () => {
+         // TODO: show error message
+         navigate("/")
+      }
+    )
   }
 
-  const getCookie = () => {
-    console.log(document.cookie)
-  }
-  
-  const [openStoreAction, makeOpenStoreRequest] = useApiRequest(...storeAPIs.openStore("jeerywa@gmail.com", "YXRlbjEyMzQ=", "name", "Asia/Taipei", ["queue_a", "queue_b"]))
-  const [signInStoreAction, makeSignInStoreRequest] = useApiRequest(...storeAPIs.signInStore("jeerywa@gmail.com", "YXRlbjEyMzQ="))
-  const [refreshTokenAction, makeRefreshTokenRequest] = useApiRequest(...storeAPIs.refreshToken())
-  const [closeStoreAction, makeCloseStoreRequest] = useApiRequest(...storeAPIs.closeStore(storeId, normalToken))
+  useEffect(() => {
+    toDataURL(sessionScannedURL, (error, url) => {
+      if (url != null) {
+        setQrcodeImageURL(url)
+      }
+    })
+  }, [sessionScannedURL])
+
+  useEffect(() => {
+    // TODO: handle running, success, error states here.
+  }, [updateStoreDescriptionAction.actionType])
 
   return (
-    <>
-      <button onClick={makeOpenStoreRequest}>
-        openStore
-      </button>
-      <>{console.log(openStoreAction)}</>
-      
-      <br />
-      <button onClick={makeSignInStoreRequest}>
-        signInStore
-      </button>
-      <>{console.log(signInStoreAction)}</>
-      
-      <br />
-      <button onClick={makeRefreshTokenRequest}>
-        refreshToken
-      </button>
-      <>{console.log(refreshTokenAction)}</>
-      
-      <br />
-      <input
-          type="text"
-          onChange={handleInputStoreId}
-          placeholder="storeId"
-        />
-      <input
-          type="text"
-          onChange={handleInputNormalToken}
-          placeholder="normalToken"
-        />
-      <button onClick={makeCloseStoreRequest}>
-        closeStore
-      </button>
-      <>{console.log(closeStoreAction)}</>
-      
-      <hr />
+    <div>
+        <Link to="/temp">to temp</Link>
+        <img src={qrcodeImageURL} alt="qrcode image"></img>
 
-      <br />
-      <button onClick={getCookie}>
-        get refresh token (cookie)
-      </button>
-    </>
+        <br />
+        <input
+          type="text"
+          onChange={handleInputStoreDescription}
+          placeholder="input store description"
+        />
+        <button onClick={doMakeUpdateStoreDescriptionRequest}>
+          update store description
+        </button>
+    </div>
   )
 }
 
-export default Store
+export {
+  Store
+}
