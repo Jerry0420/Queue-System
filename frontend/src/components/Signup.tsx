@@ -101,6 +101,7 @@ const SignUp = () => {
   }, [email, password, name, timezone, queueNames])
 
   useEffect(() => {
+    // TODO: handle running, success, error states here.
     if (openStoreAction.actionType === ACTION_TYPES.SUCCESS) {
       // TODO: show alert to signin page
       navigate("/signin")

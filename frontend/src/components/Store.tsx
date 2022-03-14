@@ -77,8 +77,8 @@ const Store = () => {
   }, [sessionScannedURL])
 
   useEffect(() => {
-    // handle running, success, error states here.
-  }, [updateStoreDescriptionAction])
+    // TODO: handle running, success, error states here.
+  }, [updateStoreDescriptionAction.actionType])
 
   return (
     <div>
