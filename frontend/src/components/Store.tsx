@@ -5,11 +5,11 @@ import { createSessionWithSSE } from "../apis/SessionAPIs"
 import { validateResponseSuccess } from "../apis/helper"
 import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
 import { toDataURL } from "qrcode"
-import { updateStoreDescription } from "../apis/StoreAPIs"
+import { getStoreInfoWithSSE, updateStoreDescription } from "../apis/StoreAPIs"
 import { getNormalTokenFromRefreshTokenAction, getSessionTokenFromRefreshTokenAction } from "../apis/validator"
 
 const Store = () => {
-  let { storeId: storeId }: {storeId: string} = useParams()
+  let { storeId }: {storeId: string} = useParams()
   let navigate = useNavigate()
   const [sessionScannedURL, setSessionScannedURL] = useState("")
   const [qrcodeImageURL, setQrcodeImageURL] = useState("")
@@ -28,6 +28,25 @@ const Store = () => {
     const { value: value }: { value: string } = e.target
     setStoreDescription(value)
   }
+
+  useEffect(() => {
+    let getStoreInfoSSE: EventSource
+    getStoreInfoSSE = getStoreInfoWithSSE(parseInt(storeId))
+
+    getStoreInfoSSE.onmessage = (event) => {
+      // TODO: render to ui
+      console.log(JSON.parse(event.data))
+    }
+    
+    getStoreInfoSSE.onerror = (event) => {
+      getStoreInfoSSE.close()
+    }
+    return () => {
+      if (getStoreInfoSSE != null) {
+        getStoreInfoSSE.close()
+      }
+    }
+  }, [getStoreInfoWithSSE])
 
   useEffect(() => {
     let createSessionSSE: EventSource
@@ -80,10 +99,15 @@ const Store = () => {
     // TODO: handle running, success, error states here.
   }, [updateStoreDescriptionAction.actionType])
 
+  const scannedQrcode = () => {
+    const url = new URL(sessionScannedURL)
+    navigate(sessionScannedURL.replace(url.origin + "/#", ""))
+  }
+
   return (
     <div>
         <Link to="/temp">to temp</Link>
-        <img src={qrcodeImageURL} alt="qrcode image"></img>
+        {/* <img src={qrcodeImageURL} alt="qrcode image"></img> */}
 
         <br />
         <input
@@ -93,6 +117,11 @@ const Store = () => {
         />
         <button onClick={doMakeUpdateStoreDescriptionRequest}>
           update store description
+        </button>
+
+        <br />
+        <button onClick={() => {scannedQrcode()}}>
+          scanned qrcode
         </button>
     </div>
   )

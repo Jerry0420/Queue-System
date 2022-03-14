@@ -39,27 +39,57 @@ func (psr *pgDBSessionRepository) CreateSession(ctx context.Context, store domai
 func (psr *pgDBSessionRepository) UpdateSessionStatus(ctx context.Context, tx PgDBInterface, session *domain.StoreSession, oldStatus string, newStatus string) error {
 	ctx, cancel := context.WithTimeout(ctx, psr.contextTimeOut)
 	defer cancel()
-	query := `UPDATE store_sessions SET status=$1 WHERE id=$2 and status=$3`
-	var result sql.Result
+
+	sessionStatusInDb := ""
 	var err error
+	var row *sql.Row
+
+	query := `SELECT status FROM store_sessions WHERE id=$1`
 	if tx == nil {
-		result, err = psr.db.ExecContext(ctx, query, newStatus, session.ID, oldStatus)
+		row = psr.db.QueryRowContext(ctx, query, session.ID)
 	} else {
-		result, err = tx.ExecContext(ctx, query, newStatus, session.ID, oldStatus)
+		row = tx.QueryRowContext(ctx, query, session.ID)
+	}
+	err = row.Scan(&sessionStatusInDb)
+	switch {
+	case errors.Is(err, sql.ErrNoRows):
+		psr.logger.ERRORf("error %v", err)
+		return domain.ServerError40404
+	case err != nil:
+		psr.logger.ERRORf("error %v", err)
+		return domain.ServerError50002
 	}
 
-	if err != nil {
-		psr.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
+	if sessionStatusInDb == oldStatus {
+		query = `UPDATE store_sessions SET status=$1 WHERE id=$2 and status=$3`
+		var result sql.Result
+		if tx == nil {
+			result, err = psr.db.ExecContext(ctx, query, newStatus, session.ID, oldStatus)
+		} else {
+			result, err = tx.ExecContext(ctx, query, newStatus, session.ID, oldStatus)
+		}
+		if err != nil {
+			psr.logger.ERRORf("error %v", err)
+			return domain.ServerError50002
+		}
+		num, err := result.RowsAffected()
+		if err != nil {
+			psr.logger.ERRORf("error %v", err)
+			return domain.ServerError50002
+		}
+		if num == 0 {
+			return domain.ServerError40404
+		}
+		return nil
+	} else {
+		switch sessionStatusInDb {
+			case domain.StoreSessionStatus.SCANNED: 
+				return domain.ServerError40007
+			case domain.StoreSessionStatus.USED: 
+				return domain.ServerError40008
+		}
 	}
-	num, err := result.RowsAffected()
-	if err != nil {
-		psr.logger.ERRORf("error %v", err)
-		return domain.ServerError50002
-	}
-	if num == 0 {
-		return domain.ServerError40404
-	}
+
 	return nil
 }
 

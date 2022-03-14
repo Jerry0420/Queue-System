@@ -27,6 +27,10 @@ var (
 	ServerError40005 = &ServerError{Code: 40005, Description: "the count of customers is more than 5"}
 	// timezone not exist
 	ServerError40006 = &ServerError{Code: 40006, Description: "timezone not exist"}
+	// store_session exist but is already scanned
+	ServerError40007 = &ServerError{Code: 40007, Description: "store_session exist but is already scanned."}
+	// store_session exist but is already used
+	ServerError40008 = &ServerError{Code: 40008, Description: "store_session exist but is already used."}
 
 	// ============================================================
 
