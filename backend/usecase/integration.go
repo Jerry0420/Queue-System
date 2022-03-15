@@ -385,13 +385,7 @@ func (iu *integrationUsecase) GetStoreWithQueuesAndCustomersById(ctx context.Con
 		return store, err
 	}
 	if store.Queues == nil {
-		store, err = iu.pgDBStoreRepository.GetStoreWithQueuesById(ctx, storeId)
-		if err != nil {
-			return store, err
-		}
-		if store.Queues == nil {
-			return store, domain.ServerError40402
-		}
+		return store, domain.ServerError40402
 	}
 	return store, err
 }

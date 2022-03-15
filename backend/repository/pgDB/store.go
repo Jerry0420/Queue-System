@@ -47,17 +47,51 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesAndCustomersById(ctx context.C
 	defer cancel()
 
 	var storeWithQueues domain.StoreWithQueues
+	// query := `SELECT 
+	// 				stores.email, stores.name, stores.description, stores.created_at, 
+	// 				queues.id AS queue_id, queues.name AS queue_name, 
+	// 				customers.id AS customer_id, customers.name AS customer_name, customers.phone AS customer_phone, 
+	// 				customers.status AS customer_status,
+	// 				customers.created_at AS customer_created_at
+	// 		FROM stores
+	// 		INNER JOIN queues ON stores.id = queues.store_id
+	// 		INNER JOIN customers ON queues.id = customers.queue_id
+	// 		WHERE stores.id=$1 and customers.status='normal' OR customers.status='processing'
+	// 		ORDER BY customers.id ASC`
+
 	query := `SELECT 
-					stores.email, stores.name, stores.description, stores.created_at, 
-					queues.id AS queue_id, queues.name AS queue_name, 
-					customers.id AS customer_id, customers.name AS customer_name, customers.phone AS customer_phone, 
+					stores.email, 
+					stores.name, 
+					stores.description, 
+					stores.created_at, 
+					queues.id AS queue_id, 
+					queues.name AS queue_name, 
+					customers.id AS customer_id, 
+					customers.name AS customer_name, 
+					customers.phone AS customer_phone, 
 					customers.status AS customer_status,
 					customers.created_at AS customer_created_at
-			FROM stores
-			INNER JOIN queues ON stores.id = queues.store_id
-			INNER JOIN customers ON queues.id = customers.queue_id
-			WHERE stores.id=$1 and customers.status='normal' OR customers.status='processing'
-			ORDER BY customers.id ASC`
+				FROM stores
+				INNER JOIN queues ON stores.id = queues.store_id
+				INNER JOIN customers ON queues.id = customers.queue_id
+				WHERE stores.id=$1 and customers.status='normal' OR customers.status='processing'
+				UNION
+				SELECT 
+					stores.email, 
+					stores.name, 
+					stores.description, 
+					stores.created_at, 
+					queues.id AS queue_id, 
+					queues.name AS queue_name,
+					-1 AS customer_id, 
+					'' AS customer_name, 
+					'' AS customer_phone, 
+					'normal' AS customer_status,
+					'1970-01-1 00:00:00.00000' AS customer_created_at
+				FROM stores
+				INNER JOIN queues ON stores.id = queues.store_id
+				WHERE stores.id=$1
+				ORDER BY customer_id ASC, queue_id ASC`
 
 	rows, err := psr.db.QueryContext(ctx, query, storeId)
 	if err != nil {
@@ -83,6 +117,9 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesAndCustomersById(ctx context.C
 			return storeWithQueues, domain.ServerError50002
 		}
 		queues[queue.ID] = queue
+		if customer.ID == -1 {
+			continue
+		}
 		customer.QueueID = queue.ID
 		customers[queue.ID] = append(customers[queue.ID], &customer)
 	}
@@ -90,58 +127,14 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesAndCustomersById(ctx context.C
 
 	storeWithQueues = domain.StoreWithQueues{ID: storeId, Email: store.Email, Name: store.Name, Description: store.Description, CreatedAt: store.CreatedAt}
 	for _, queue := range queues {
-		storeWithQueues.Queues = append(storeWithQueues.Queues, &domain.QueueWithCustomers{
-			ID:        queue.ID,
-			Name:      queue.Name,
-			Customers: customers[queue.ID],
-		})
-	}
-	return storeWithQueues, nil
-}
-
-func (psr *pgDBStoreRepository) GetStoreWithQueuesById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
-	ctx, cancel := context.WithTimeout(ctx, psr.contextTimeOut)
-	defer cancel()
-
-	var storeWithQueues domain.StoreWithQueues
-	var store domain.Store
-	queues := make(map[int]domain.Queue)
-
-	query := `SELECT 
-				stores.email, 
-				stores.name, 
-				stores.description, 
-				stores.created_at, 
-				queues.id AS queue_id, 
-				queues.name AS queue_name
-			FROM stores
-			INNER JOIN queues ON stores.id = queues.store_id
-			WHERE stores.id=$1`
-	rows, err := psr.db.QueryContext(ctx, query, storeId)
-	if err != nil {
-		psr.logger.ERRORf("error %v", err)
-		return storeWithQueues, domain.ServerError50002
-	}
-	for rows.Next() {
-		var queue domain.Queue
-		err := rows.Scan(
-			&store.Email, &store.Name, &store.Description, &store.CreatedAt,
-			&queue.ID, &queue.Name,
-		)
-		if err != nil {
-			psr.logger.ERRORf("error %v", err)
-			return storeWithQueues, domain.ServerError50002
+		customersOfQueue := customers[queue.ID]
+		if customersOfQueue == nil {
+			customersOfQueue = []*domain.Customer{}
 		}
-		queues[queue.ID] = queue
-	}
-	defer rows.Close()
-
-	storeWithQueues = domain.StoreWithQueues{ID: storeId, Email: store.Email, Name: store.Name, Description: store.Description, CreatedAt: store.CreatedAt}
-	for _, queue := range queues {
 		storeWithQueues.Queues = append(storeWithQueues.Queues, &domain.QueueWithCustomers{
 			ID:        queue.ID,
 			Name:      queue.Name,
-			Customers: []*domain.Customer{},
+			Customers: customersOfQueue,
 		})
 	}
 	return storeWithQueues, nil
