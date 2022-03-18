@@ -47,18 +47,6 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesAndCustomersById(ctx context.C
 	defer cancel()
 
 	var storeWithQueues domain.StoreWithQueues
-	// query := `SELECT 
-	// 				stores.email, stores.name, stores.description, stores.created_at, 
-	// 				queues.id AS queue_id, queues.name AS queue_name, 
-	// 				customers.id AS customer_id, customers.name AS customer_name, customers.phone AS customer_phone, 
-	// 				customers.status AS customer_status,
-	// 				customers.created_at AS customer_created_at
-	// 		FROM stores
-	// 		INNER JOIN queues ON stores.id = queues.store_id
-	// 		INNER JOIN customers ON queues.id = customers.queue_id
-	// 		WHERE stores.id=$1 and customers.status='normal' OR customers.status='processing'
-	// 		ORDER BY customers.id ASC`
-
 	query := `SELECT 
 					stores.email, 
 					stores.name, 
@@ -117,7 +105,7 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesAndCustomersById(ctx context.C
 			return storeWithQueues, domain.ServerError50002
 		}
 		queues[queue.ID] = queue
-		if customer.ID == -1 {
+		if customer.ID == -1 { // non-exist customer id
 			continue
 		}
 		customer.QueueID = queue.ID
@@ -193,7 +181,7 @@ func (psr *pgDBStoreRepository) RemoveStoreByIDs(ctx context.Context, tx PgDBInt
 	ctx, cancel := context.WithTimeout(ctx, psr.contextTimeOut)
 	defer cancel()
 
-	// it's for internal usage, and storeIds slice is from other function...no need to worry the sql ingection!
+	// it's for internal usage, and storeIds slice is from other function...no need to worry the sql injection!
 	param := "(" + strings.Join(storeIds, ",") + ")"
 
 	query := fmt.Sprintf(`DELETE FROM stores WHERE id IN %s`, param)
