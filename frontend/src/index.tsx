@@ -12,6 +12,7 @@ import { RefreshTokenContext } from './components/contexts'
 import { Store } from './components/Store'
 import { checkAuthFlow, validateResponseSuccess } from './apis/helper'
 import { SignIn } from './components/Signin'
+import { CreateCustomers } from './components/Customers'
 
 function App() {
   
@@ -38,14 +39,14 @@ function App() {
         <Routes>
           <Route path="/" element={<Header />}>
             <Route path="" element={<SignUp />} />
-            <Route path="stores/:storeId" element={(<Store />)} />
             <Route path="stores/:storeId/queues/:queueId" element={(<></>)} />
-            <Route path="signin" element={(<SignIn />)} />
-
-            <Route path="stores/:storeId/sessions/:sessionId" element={(<></>)} />
-            <Route path="password/forget" element={(<></>)} />
+            <Route path="stores/:storeId/sessions/:sessionId" element={(<CreateCustomers />)} />
             <Route path="stores/:sessionId/password/update" element={(<></>)} />
+            <Route path="stores/:storeId" element={(<Store />)} />
 
+            <Route path="password/forget" element={(<></>)} />
+            <Route path="signin" element={(<SignIn />)} />
+            
             <Route path="temp" element={<Temp />} />
 
             <Route path="*" element={<NoMatch />} />

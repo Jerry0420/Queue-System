@@ -40,6 +40,7 @@ const updateCustomer = (customerId: number, normalToken: string, storeId: number
 }
 
 export {
+    Customer,
     createCustomers,
     updateCustomer
 }

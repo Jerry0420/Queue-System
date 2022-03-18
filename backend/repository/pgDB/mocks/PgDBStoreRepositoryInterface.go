@@ -120,27 +120,6 @@ func (_m *PgDBStoreRepositoryInterface) GetStoreWithQueuesAndCustomersById(ctx c
 	return r0, r1
 }
 
-// GetStoreWithQueuesById provides a mock function with given fields: ctx, storeId
-func (_m *PgDBStoreRepositoryInterface) GetStoreWithQueuesById(ctx context.Context, storeId int) (domain.StoreWithQueues, error) {
-	ret := _m.Called(ctx, storeId)
-
-	var r0 domain.StoreWithQueues
-	if rf, ok := ret.Get(0).(func(context.Context, int) domain.StoreWithQueues); ok {
-		r0 = rf(ctx, storeId)
-	} else {
-		r0 = ret.Get(0).(domain.StoreWithQueues)
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, int) error); ok {
-		r1 = rf(ctx, storeId)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // RemoveStoreByID provides a mock function with given fields: ctx, tx, id
 func (_m *PgDBStoreRepositoryInterface) RemoveStoreByID(ctx context.Context, tx pgDB.PgDBInterface, id int) error {
 	ret := _m.Called(ctx, tx, id)
