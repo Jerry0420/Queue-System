@@ -47,7 +47,7 @@ function App() {
               <Route path="" element={<SignUp />} />
               <Route path="stores/:storeId/queues/:queueId" element={(<></>)} />
               <Route path="stores/:storeId/sessions/:sessionId" element={(<CreateCustomers />)} />
-              <Route path="stores/:sessionId/password/update" element={(<></>)} />
+              <Route path="stores/:storeId/password/update" element={(<></>)} />
               <Route path="stores/:storeId" element={(<Store />)} />
 
               <Route path="password/forget" element={(<></>)} />
