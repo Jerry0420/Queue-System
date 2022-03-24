@@ -2,7 +2,7 @@ import React, {useEffect, useState} from "react"
 import {
   Link as RouterLink,
   useNavigate,
-} from 'react-router-dom';
+} from 'react-router-dom'
 import { checkExistenceOfRefreshableCookie } from "../apis/helper"
 import { ACTION_TYPES, useApiRequest } from "../apis/reducer"
 import { openStore } from "../apis/StoreAPIs"
@@ -139,7 +139,7 @@ const SignUp = () => {
           sm={false}
           md={7}
           sx={{
-            backgroundImage: 'url(https://source.unsplash.com/random)',
+            backgroundImage: 'url(https://images.unsplash.com/photo-1519248200454-8f2590ed22b7?ixlib=rb-1.2.1&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=2256&q=80)',
             backgroundRepeat: 'no-repeat',
             backgroundColor: (t) =>
               t.palette.mode === 'light' ? t.palette.grey[50] : t.palette.grey[900],
@@ -248,11 +248,6 @@ const SignUp = () => {
                 Sign In
               </Button>
               <Grid container>
-                <Grid item xs>
-                  <Link component={RouterLink} variant="body2" to="/password/forget">
-                    Forgot password?
-                  </Link>
-                </Grid>
                 <Grid item>
                   <Link component={RouterLink} variant="body2" to="/signin">
                     {"Already have an account? Sign In"}
@@ -265,54 +260,6 @@ const SignUp = () => {
         </Grid>
       </Grid>
     </Box>
-    // <div>
-    //   <div>sign up</div>
-
-    //   <input
-    //     type="text"
-    //     placeholder="email"
-    //     className={classNames({'alertInputField': emailAlertFlag})}
-    //     onBlur={handleInputEmail}
-    //   />
-    //   <input
-    //     type="text"
-    //     onBlur={handleInputPassword}
-    //     className={classNames({'alertInputField': passwordAlertFlag})}
-    //     placeholder="password"
-    //   />
-    //   <input
-    //     type="text"
-    //     onBlur={handleInputName}
-    //     className={classNames({'alertInputField': nameAlertFlag})}
-    //     placeholder="name"
-    //   />
-
-    //   <input
-    //     type="text"
-    //     onBlur={handleInputQueueName}
-    //     className={classNames({'alertInputField': queueNameAlertFlag})}
-    //     placeholder="queue name"
-    //   />
-    //   <button onClick={clearQueueNames}>
-    //     clear queue names
-    //   </button>
-
-      // {queueNames.map((queueName: string) => (
-      //   <div id={queueName} key={queueName}>{queueName}</div>
-      // ))}
-
-    //   <br />
-    //   <button 
-    //     onClick={makeOpenStoreRequest}
-    //     disabled={openStoreFlag}
-    //   >
-    //     open store
-    //   </button>
-
-    //   <br />
-      
-    //   <Link to="/signin">signin</Link>
-    // </div>
   )
 }
 
