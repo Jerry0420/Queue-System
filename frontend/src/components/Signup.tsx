@@ -6,9 +6,8 @@ import {
 import { checkExistenceOfRefreshableCookie } from "../apis/helper"
 import { ACTION_TYPES, useApiRequest } from "../apis/reducer"
 import { openStore } from "../apis/StoreAPIs"
-import { IconButton, Chip, Button, Box, Grid, Paper, Avatar, Typography, TextField, Link } from "@mui/material"
+import { Chip, Button, Box, Grid, Paper, Avatar, Typography, TextField, Link } from "@mui/material"
 import AddBoxIcon from '@mui/icons-material/AddBox';
-import RestartAltIcon from '@mui/icons-material/RestartAlt'
 
 const SignUp = () => {
   let navigate = useNavigate()
@@ -66,8 +65,11 @@ const SignUp = () => {
     setQueueName("")
   }
 
-  const clearQueueNames = () => {
-    setQueueNames([])
+  const handleDeleteQueueName = (deletedQueueName: string) => {
+      var _queueNames = queueNames.filter((value, index, error): boolean => {
+        return value != deletedQueueName
+      })
+      setQueueNames(_queueNames)
   }
 
   useEffect(() => {
@@ -114,6 +116,10 @@ const SignUp = () => {
     } else {
       setQueueNameAlertFlag(true)
     }
+
+    if (email && password && name && timezone && queueNames.length > 0) {
+      makeOpenStoreRequest()
+    }
   }
 
   useEffect(() => {
@@ -130,7 +136,7 @@ const SignUp = () => {
         <Grid
           item
           xs={false}
-          sm={4}
+          sm={false}
           md={7}
           sx={{
             backgroundImage: 'url(https://source.unsplash.com/random)',
@@ -141,7 +147,7 @@ const SignUp = () => {
             backgroundPosition: 'center',
           }}
         />
-        <Grid item xs={12} sm={8} md={5} component={Paper} elevation={6} square>
+        <Grid item xs={12} sm={12} md={5} component={Paper} elevation={6} square>
           <Box
             sx={{
               my: 8,
@@ -198,7 +204,7 @@ const SignUp = () => {
                 alignItems="center"
                 justifyContent="flex-start"
               >
-                <Grid item xs={8}>
+                <Grid item xs={8} sm={8}>
                   <TextField
                     fullWidth
                     required
@@ -212,7 +218,7 @@ const SignUp = () => {
                     error={queueNameAlertFlag}
                   />
                 </Grid>
-                <Grid item xs={2}>
+                <Grid item xs={4} sm={4}>
                   <Button 
                     variant="contained" 
                     startIcon={<AddBoxIcon />}
@@ -222,16 +228,6 @@ const SignUp = () => {
                     Add
                   </Button>
                 </Grid>
-                <Grid item xs={2} alignSelf="center">
-                  <IconButton 
-                    color="secondary" 
-                    aria-label="clear all queues" 
-                    component="span"
-                    onClick={clearQueueNames}
-                  >
-                    <RestartAltIcon />
-                  </IconButton>
-                </Grid>
               </Grid>              
 
               {queueNames.map((queueName: string) => (
@@ -239,6 +235,7 @@ const SignUp = () => {
                     sx={{ mb: 1, ml: 1, mr: 1 }}
                     label={queueName}
                     key={queueName} 
+                    onDelete={() => {handleDeleteQueueName(queueName)}}
                   />
                 ))}
 
