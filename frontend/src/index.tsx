@@ -2,7 +2,6 @@ import React, {useState} from 'react'
 import ReactDom from 'react-dom'
 import { HashRouter, Route, Routes } from 'react-router-dom'
 import { NoMatch } from './components/Default'
-import { Header } from './components/Header'
 import { SignUp } from './components/Signup'
 import Temp from './components/Temp'
 import { useApiRequest } from "./apis/reducer"
@@ -43,20 +42,18 @@ function App() {
         <CssBaseline />
         <HashRouter>
           <Routes>
-            <Route path="/" element={<Header />}>
-              <Route path="" element={<SignUp />} />
-              <Route path="stores/:storeId/queues/:queueId" element={(<></>)} />
-              <Route path="stores/:storeId/sessions/:sessionId" element={(<CreateCustomers />)} />
-              <Route path="stores/:storeId/password/update" element={(<></>)} />
-              <Route path="stores/:storeId" element={(<Store />)} />
+            <Route path="/" element={<SignUp />} />
+            <Route path="/stores/:storeId/queues/:queueId" element={(<></>)} />
+            <Route path="/stores/:storeId/sessions/:sessionId" element={(<CreateCustomers />)} />
+            <Route path="/stores/:storeId/password/update" element={(<></>)} />
+            <Route path="/stores/:storeId" element={(<Store />)} />
 
-              <Route path="password/forget" element={(<></>)} />
-              <Route path="signin" element={(<SignIn />)} />
-              
-              <Route path="temp" element={<Temp />} />
+            <Route path="/password/forget" element={(<></>)} />
+            <Route path="/signin" element={(<SignIn />)} />
+            
+            <Route path="/temp" element={<Temp />} />
 
-              <Route path="*" element={<NoMatch />} />
-            </Route>
+            <Route path="*" element={<NoMatch />} />
           </Routes>
         </HashRouter>
       </RefreshTokenContext.Provider>
