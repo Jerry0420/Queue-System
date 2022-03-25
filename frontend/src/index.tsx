@@ -7,7 +7,7 @@ import Temp from './components/Temp'
 import { useApiRequest } from "./apis/reducer"
 import { refreshToken } from './apis/StoreAPIs'
 import { RefreshTokenContext } from './components/contexts'
-import { Store } from './components/Store'
+import { StoreInfo } from './components/Store'
 import { checkAuthFlow, validateResponseSuccess } from './apis/helper'
 import { SignIn } from './components/Signin'
 import { CreateCustomers } from './components/Customers'
@@ -46,7 +46,7 @@ function App() {
             <Route path="/stores/:storeId/queues/:queueId" element={(<></>)} />
             <Route path="/stores/:storeId/sessions/:sessionId" element={(<CreateCustomers />)} />
             <Route path="/stores/:storeId/password/update" element={(<></>)} />
-            <Route path="/stores/:storeId" element={(<Store />)} />
+            <Route path="/stores/:storeId" element={(<StoreInfo />)} />
 
             <Route path="/password/forget" element={(<></>)} />
             <Route path="/signin" element={(<SignIn />)} />

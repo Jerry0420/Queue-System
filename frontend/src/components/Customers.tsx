@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react"
 import { useParams } from "react-router-dom"
-import { createCustomers, Customer } from "../apis/CustomerAPIs"
+import { createCustomers } from "../apis/CustomerAPIs"
+import { CustomerForm } from "../apis/models"
 import { ACTION_TYPES, useApiRequest } from "../apis/reducer"
 import { scanSession } from "../apis/SessionAPIs"
 import { getStoreInfoWithSSE } from "../apis/StoreAPIs"
@@ -97,16 +98,16 @@ const CreateCustomers = () => {
     }
   }, [customerName, queueId])
 
-  const [customers, setCustomers] = useState<Customer[]>([])
+  const [customersForm, setCustomersForm] = useState<CustomerForm[]>([])
 
   const addCustomer = () => {
-    const _customers = [...customers]
-    _customers.push({
+    const _customersForm = [...customersForm]
+    _customersForm.push({
         name: customerName,
         phone: customerPhone,
         queue_id: queueId
     })
-    setCustomers(_customers)
+    setCustomersForm(_customersForm)
 
     setCustomerName("")
     setCustomerPhone("")
@@ -114,21 +115,21 @@ const CreateCustomers = () => {
   }
 
   const [createCustomersAction, makeCreateCustomersRequest] = useApiRequest(
-    ...createCustomers(sessionId, parseInt(storeId), customers)
+    ...createCustomers(sessionId, parseInt(storeId), customersForm)
     )
 
   const [createCustomersFlag, setCreateCustomersFlag] = useState(false)
 
   useEffect(() => {
-    if (customers.length > 0) {
+    if (customersForm.length > 0) {
         setCreateCustomersFlag(false)
     } else {
         setCreateCustomersFlag(true)
     }
-  }, [customers])
+  }, [customersForm])
 
-  const clearCustomers = () => {
-    setCustomers([])
+  const clearCustomersForm = () => {
+    setCustomersForm([])
   }
   
   return (
@@ -162,13 +163,13 @@ const CreateCustomers = () => {
             add customer
         </button>
 
-        {customers.map((customer: Customer) => (
+        {customersForm.map((customerForm: CustomerForm) => (
           // <div id={customer.name} key={customer.name}>{customer.name}</div>
-          <div id={customer.name} key={customer.queue_id}>{customer.name}</div>
+          <div id={customerForm.name} key={customerForm.queue_id}>{customerForm.name}</div>
         ))}
 
         <br />
-        <button onClick={clearCustomers}>
+        <button onClick={clearCustomersForm}>
             clear customers
         </button>
 
