@@ -7,9 +7,15 @@ import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
 import { toDataURL } from "qrcode"
 import { getStoreInfoWithSSE, updateStoreDescription } from "../apis/StoreAPIs"
 import { getNormalTokenFromRefreshTokenAction, getSessionTokenFromRefreshTokenAction } from "../apis/validator"
-import { List, ListItem, ListItemText, Divider, AppBar, Box, Grid, Paper, Avatar, Typography, Drawer, Toolbar, IconButton } from "@mui/material"
+import { List, ListItem, ListItemText, ListItemIcon, Divider, AppBar, Box, Grid, Paper, Avatar, Typography, Drawer, Toolbar, IconButton } from "@mui/material"
 import MenuIcon from '@mui/icons-material/Menu'
 import { Customer, Queue, Store } from "../apis/models"
+import CloseIcon from '@mui/icons-material/Close'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import HomeIcon from '@mui/icons-material/Home'
+import HailIcon from '@mui/icons-material/Hail'
+import EscalatorWarningIcon from '@mui/icons-material/EscalatorWarning'
+import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 
 const StoreInfo = () => {
   let { storeId }: {storeId: string} = useParams()
@@ -42,7 +48,6 @@ const StoreInfo = () => {
 
   const [storeInfo, setStoreInfo] = useState<Store>({})
   const [queuesInfo, setQueuesInfo] = useState<Queue[]>([])
-  const [selectQueueId, setSelectQueueId] = useState<number | null>(null) 
   useEffect(() => {
     let getStoreInfoSSE: EventSource
     getStoreInfoSSE = getStoreInfoWithSSE(parseInt(storeId))
@@ -114,24 +119,47 @@ const StoreInfo = () => {
   useEffect(() => {
     // TODO: handle running, success, error states here.
   }, [updateStoreDescriptionAction.actionType])
+  
+  const [selectQueueId, setSelectQueueId] = useState<number | null>(null) 
+  const [mainContent, setMainContent] = useState<JSX.Element>((<></>)) 
+  useEffect(() => {
+    if (selectQueueId === null) {
+      setMainContent((
+        <>
+          <div>
+            hello world
+          </div>
+        </>
+      ))
+    } else {
+      setMainContent((
+        <>
+          <Typography paragraph>
+            Lorem ipsum ac.
+          </Typography>
+          <a href={sessionScannedURL} target="_blank">{sessionScannedURL}</a>
+        </>
+      ))
+    }
+  }, [selectQueueId, setMainContent, storeInfo, queuesInfo])
 
   const drawer = (
     <div>
       <Toolbar />
       <Divider />
-          <ListItem button key={"All"}>
-            {/* <ListItemIcon>
-              {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-            </ListItemIcon> */}
+          <ListItem button key={"All"} onClick={() => {setSelectQueueId(null)}}>
+            <ListItemIcon>
+              <HomeIcon />
+            </ListItemIcon>
             <ListItemText primary={"All"} />
           </ListItem>
       <Divider />
       <List>
-        {queuesInfo.map((queue, index) => (
-          <ListItem button key={queue.name}>
-            {/* <ListItemIcon>
-              {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-            </ListItemIcon> */}
+        {queuesInfo.map((queue: Queue, index) => (
+          <ListItem button key={queue.name} onClick={() => {setSelectQueueId(queue.id)}}>
+            <ListItemIcon>
+              {index % 2 === 0 ? <HailIcon /> : <EscalatorWarningIcon />}
+            </ListItemIcon>
             <ListItemText primary={queue.name} />
           </ListItem>
         ))}
@@ -139,17 +167,26 @@ const StoreInfo = () => {
       <Divider />
       <List>
         <ListItem button key={"Update Description"}>
-          {/* <ListItemIcon>
-            {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-            </ListItemIcon> */}
+          <ListItemIcon>
+            <RefreshIcon />
+          </ListItemIcon>
           <ListItemText primary={"Update Description"} />
         </ListItem>
+        
         <ListItem button key={"Close Store"}>
-          {/* <ListItemIcon>
-            {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-            </ListItemIcon> */}
+          <ListItemIcon>
+            <CloseIcon />
+          </ListItemIcon>
           <ListItemText primary={"Close Store"} />
         </ListItem>
+
+        <ListItem button key={"Sign Out"}>
+          <ListItemIcon>
+            <ExitToAppIcon />
+          </ListItemIcon>
+          <ListItemText primary={"Sign Out"} />
+        </ListItem>
+
       </List>
     </div>
   )
@@ -213,10 +250,7 @@ const StoreInfo = () => {
         sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
       >
         <Toolbar />
-        <Typography paragraph>
-          Lorem ipsum ac.
-        </Typography>
-        <a href={sessionScannedURL} target="_blank">{sessionScannedURL}</a>
+        {mainContent}
       </Box>
     </Box>
     // <div>
