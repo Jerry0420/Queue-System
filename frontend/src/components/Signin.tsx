@@ -24,7 +24,7 @@ const SignIn = () => {
   const [passwordAlertFlag, setPasswordAlertFlag] = useState(false)
   const handleInputPassword = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value }: { value: string } = e.target
-    setPassword(value)
+    setPassword(window.btoa(value))
   }
 
   const [signInStoreAction, makeSignInStoreRequest] = useApiRequest(...signInStore(email, password))
@@ -39,14 +39,15 @@ const SignIn = () => {
       setEmailAlertFlag(true)
     }
 
-    if ((8 <= password.length) && (password.length <= 15)) {
+    const rawPassword = window.atob(password)
+    if ((8 <= rawPassword.length) && (rawPassword.length <= 15)) {
       setPasswordAlertFlag(false)
       setPassword(window.btoa(password)) // base64 password value
     } else {
       setPasswordAlertFlag(true)
     }
 
-    if (email && password) {
+    if (email && rawPassword) {
       makeSignInStoreRequest()
     }
   }

@@ -25,7 +25,7 @@ const SignUp = () => {
   const [passwordAlertFlag, setPasswordAlertFlag] = useState(false)
   const handleInputPassword = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value }: { value: string } = e.target
-    setPassword(value)
+    setPassword(window.btoa(value))
   }
 
   const [name, setName] = useState("")
@@ -39,12 +39,7 @@ const SignUp = () => {
   const [queueNameAlertFlag, setQueueNameAlertFlag] = useState(false)
   const handleInputQueueName = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { value }: { value: string } = e.target
-    if (value) {
-      setQueueNameAlertFlag(false)
-      setQueueName(value)
-    } else {
-      setQueueNameAlertFlag(true)
-    }
+    setQueueName(value)
   }
 
   const [addQueueNameAlertFlag, setAddQueueNameAlertFlag] = useState(false)
@@ -98,9 +93,9 @@ const SignUp = () => {
       setEmailAlertFlag(true)
     }
 
-    if ((8 <= password.length) && (password.length <= 15)) {
+    const rawPassword = window.atob(password)
+    if ((8 <= rawPassword.length) && (rawPassword.length <= 15)) {
       setPasswordAlertFlag(false)
-      setPassword(window.btoa(password)) // base64 password value
     } else {
       setPasswordAlertFlag(true)
     }
@@ -117,7 +112,7 @@ const SignUp = () => {
       setQueueNameAlertFlag(true)
     }
 
-    if (email && password && name && timezone && queueNames.length > 0) {
+    if (email && rawPassword && name && timezone && queueNames.length > 0) {
       makeOpenStoreRequest()
     }
   }
@@ -245,7 +240,7 @@ const SignUp = () => {
                 sx={{ mt: 3, mb: 2 }}
                 onClick={doMakeOpenStoreRequest}
               >
-                Sign In
+                Open
               </Button>
               <Grid container>
                 <Grid item>
