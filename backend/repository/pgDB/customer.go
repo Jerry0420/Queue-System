@@ -60,7 +60,7 @@ func (pcr *pgDBCustomerRepository) CreateCustomers(ctx context.Context, tx PgDBI
 			pcr.logger.ERRORf("error %v", err)
 			return domain.ServerError50002
 		}
-		customer.Status = domain.CustomerStatus.NORMAL
+		customer.Status = domain.CustomerStatus.WAITING
 		customers = append(customers, customer)
 
 	}

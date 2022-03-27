@@ -2,9 +2,9 @@ package domain
 
 import "time"
 
-type customerStatus struct{ NORMAL, PROCESSING, DONE, DELETE string }
+type customerStatus struct{ WAITING, PROCESSING, DONE, DELETE string }
 
-var CustomerStatus customerStatus = customerStatus{NORMAL: "normal", PROCESSING: "processing", DONE: "done", DELETE: "delete"}
+var CustomerStatus customerStatus = customerStatus{WAITING: "waiting", PROCESSING: "processing", DONE: "done", DELETE: "delete"}
 
 type Customer struct {
 	ID        int       `json:"id"`
