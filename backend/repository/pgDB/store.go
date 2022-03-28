@@ -62,7 +62,7 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesAndCustomersById(ctx context.C
 				FROM stores
 				INNER JOIN queues ON stores.id = queues.store_id
 				INNER JOIN customers ON queues.id = customers.queue_id
-				WHERE stores.id=$1 and customers.status='normal' OR customers.status='processing'
+				WHERE stores.id=$1 and customers.status='waiting' OR customers.status='processing'
 				UNION
 				SELECT 
 					stores.email, 
@@ -74,7 +74,7 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesAndCustomersById(ctx context.C
 					-1 AS customer_id, 
 					'' AS customer_name, 
 					'' AS customer_phone, 
-					'normal' AS customer_status,
+					'waiting' AS customer_status,
 					'1970-01-1 00:00:00.00000' AS customer_created_at
 				FROM stores
 				INNER JOIN queues ON stores.id = queues.store_id

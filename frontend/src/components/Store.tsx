@@ -5,48 +5,30 @@ import { createSessionWithSSE } from "../apis/SessionAPIs"
 import { validateResponseSuccess } from "../apis/helper"
 import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
 import { toDataURL } from "qrcode"
-import { getStoreInfoWithSSE, updateStoreDescription } from "../apis/StoreAPIs"
+import { closeStore, getStoreInfoWithSSE, updateStoreDescription } from "../apis/StoreAPIs"
 import { getNormalTokenFromRefreshTokenAction, getSessionTokenFromRefreshTokenAction } from "../apis/validator"
+import { TextareaAutosize, OutlinedInput, FormControl, InputLabel, SelectChangeEvent, Select, MenuItem, DialogActions, Button, Dialog, DialogTitle, DialogContent, Stack, CardContent, CardMedia, Container, Card, List, ListItem, ListItemText, ListItemIcon, Divider, AppBar, Box, Grid, Paper, Avatar, Typography, Drawer, Toolbar, IconButton } from "@mui/material"
+import Table from '@mui/material/Table'
+import TableBody from '@mui/material/TableBody'
+import TableCell from '@mui/material/TableCell'
+import TableContainer from '@mui/material/TableContainer'
+import TableHead from '@mui/material/TableHead'
+import TableRow from '@mui/material/TableRow'
+import { Customer, Queue, Store } from "../apis/models"
+import CloseIcon from '@mui/icons-material/Close'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import ExitToAppIcon from '@mui/icons-material/ExitToApp'
+import { updateCustomer } from "../apis/CustomerAPIs"
+import { AppBarWDrawer } from "./AppBarWDrawer"
+import AlarmIcon from '@mui/icons-material/Alarm'
 
-const Store = () => {
-  let { storeId }: {storeId: string} = useParams()
+const StoreInfo = () => {
   let navigate = useNavigate()
+  let { storeId }: {storeId: string} = useParams()
+
+  // ====================== session sse ======================
   const [sessionScannedURL, setSessionScannedURL] = useState("")
-  const [qrcodeImageURL, setQrcodeImageURL] = useState("")
-  const [storeDescription, setStoreDescription] = useState("")
-
   const {refreshTokenAction, makeRefreshTokenRequest, wrapCheckAuthFlow} = useContext(RefreshTokenContext)
-  const [updateStoreDescriptionAction, makeUpdateStoreDescriptionRequest] = useApiRequest(
-    ...updateStoreDescription(
-      parseInt(storeId), 
-      getNormalTokenFromRefreshTokenAction(refreshTokenAction.response), 
-      storeDescription
-      )
-  )
-
-  const handleInputStoreDescription = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { value: value }: { value: string } = e.target
-    setStoreDescription(value)
-  }
-
-  useEffect(() => {
-    let getStoreInfoSSE: EventSource
-    getStoreInfoSSE = getStoreInfoWithSSE(parseInt(storeId))
-
-    getStoreInfoSSE.onmessage = (event) => {
-      // TODO: render to ui
-      console.log(JSON.parse(event.data))
-    }
-    
-    getStoreInfoSSE.onerror = (event) => {
-      getStoreInfoSSE.close()
-    }
-    return () => {
-      if (getStoreInfoSSE != null) {
-        getStoreInfoSSE.close()
-      }
-    }
-  }, [getStoreInfoWithSSE])
 
   useEffect(() => {
     let createSessionSSE: EventSource
@@ -75,18 +57,8 @@ const Store = () => {
     }
   }, [createSessionWithSSE, refreshTokenAction.response, refreshTokenAction.exception])
 
-  const doMakeUpdateStoreDescriptionRequest = () => {
-    wrapCheckAuthFlow(
-      () => {
-        makeUpdateStoreDescriptionRequest()
-      },
-      () => {
-         // TODO: show error message
-         navigate("/")
-      }
-    )
-  }
-
+  // qrcode image url
+  const [qrcodeImageURL, setQrcodeImageURL] = useState("")
   useEffect(() => {
     toDataURL(sessionScannedURL, (error, url) => {
       if (url != null) {
@@ -95,31 +67,495 @@ const Store = () => {
     })
   }, [sessionScannedURL])
 
+  // ====================== storeinfo sse ======================
+  const [storeInfo, setStoreInfo] = useState<Store>({})
+  const [queuesInfo, setQueuesInfo] = useState<Queue[]>([])
+  useEffect(() => {
+    let getStoreInfoSSE: EventSource
+    getStoreInfoSSE = getStoreInfoWithSSE(parseInt(storeId))
+
+    getStoreInfoSSE.onmessage = (event) => {
+      // TODO: render to ui
+      setStoreInfo(JSON.parse(event.data))
+      setQueuesInfo(JSON.parse(event.data)['queues'])
+      console.log(JSON.parse(event.data))
+    }
+    
+    getStoreInfoSSE.onerror = (event) => {
+      getStoreInfoSSE.close()
+    }
+    return () => {
+      if (getStoreInfoSSE != null) {
+        getStoreInfoSSE.close()
+      }
+    }
+  }, [getStoreInfoWithSSE, setStoreInfo])
+
+  // ====================== main content ======================
+  const [mainContent, setMainContent] = useState<JSX.Element>((<></>)) 
+  // helper function
+  const countWaitingOrProcessingCustomers = (customers: Customer[]): Customer[] => {
+    return customers.filter((customer: Customer) => customer.status == 'waiting' || customer.status == 'processing')
+  }
+
+  // update customer status
+  const [selectedQueueId, setSelectedQueueId] = useState<number | null>(null)
+  const [openUpdateCustomerStatusDialog, setOpenUpdateCustomerStatusDialog] = React.useState(false)
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null) 
+  const [customerNewStatus, setCustomerNewStatus] = React.useState('')
+  const handleChangeCustomerNewStatus = (event: SelectChangeEvent<typeof customerNewStatus>) => {
+    setCustomerNewStatus(event.target.value)
+  }
+
+  const handleClickCustomerStatus = (customer: Customer) => {
+    setOpenUpdateCustomerStatusDialog(true)
+    setSelectedCustomer(customer)
+    setCustomerNewStatus(customer.status) //default status
+  }
+
+  const handleCloseCustomerStatusDialog = (event: React.SyntheticEvent<unknown>, reason?: string) => {
+    setOpenUpdateCustomerStatusDialog(false)
+    setCustomerNewStatus('')
+    setSelectedCustomer(null)
+  }
+
+  const [updateCustomerAction, makeUpdateCustomerRequest] = useApiRequest(
+    ...updateCustomer(
+        selectedCustomer === null ? -1 : selectedCustomer.id,
+        getNormalTokenFromRefreshTokenAction(refreshTokenAction.response), 
+        parseInt(storeId),
+        selectedQueueId === null ? -1 : selectedQueueId,
+        selectedCustomer === null ? '' : selectedCustomer.status,
+        customerNewStatus
+      )
+  )
+  const doMakeUpdateCustomerRequest = () => {
+    wrapCheckAuthFlow(
+      () => {
+        makeUpdateCustomerRequest()
+          .then((response) => {
+            setOpenUpdateCustomerStatusDialog(false)
+            setCustomerNewStatus('')
+          })
+      },
+      () => {
+         // TODO: show error message
+         navigate("/")
+      }
+    )
+  }
+
+  const handleUpdateCustomerNewStatus = () => {
+    if (!customerNewStatus) {
+      return
+    }
+    if ((selectedCustomer as Customer).status === customerNewStatus) {
+      return
+    }
+    doMakeUpdateCustomerRequest()
+  }
+
+  // update customer status dialog
+  const UpdateCustomerStatusDialog = (
+    openUpdateCustomerStatusDialog: boolean,
+    customerNewStatus: string,
+    ): JSX.Element => {
+    return (
+      <Dialog disableEscapeKeyDown open={openUpdateCustomerStatusDialog} onClose={handleCloseCustomerStatusDialog}>
+        <DialogTitle>Update Customer Status</DialogTitle>
+        <DialogContent>
+          <Box component="form" sx={{ display: 'flex', flexWrap: 'wrap' }}>
+            <FormControl sx={{ m: 1, minWidth: 120 }}>
+              <InputLabel id="dialog-select-label">Status</InputLabel>
+              <Select
+                labelId="dialog-select-label"
+                id="dialog-select"
+                value={customerNewStatus}
+                onChange={handleChangeCustomerNewStatus}
+                input={<OutlinedInput label="Status" />}
+              >
+                <MenuItem value="">------</MenuItem>
+                <MenuItem value={'waiting'}>Waiting</MenuItem>
+                <MenuItem value={'processing'}>Processing</MenuItem>
+                <MenuItem value={'done'}>Done</MenuItem>
+                <MenuItem value={'delete'}>Delete</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseCustomerStatusDialog}>Cancel</Button>
+          <Button onClick={handleUpdateCustomerNewStatus}>Ok</Button>
+        </DialogActions>
+      </Dialog>
+    )
+  }
+  useEffect(() => {
+    if (selectedQueueId === null) {
+      setMainContent((
+        <>
+          <Container maxWidth="md">
+            <Container fixed>
+              <Typography gutterBottom variant="h5" component="h2" align="center">
+                Please scan the QRCode to join the queue.
+              </Typography>
+            </Container>
+            <Grid container rowSpacing={2} justifyContent="center" alignItems="center">
+              <Grid item key={"all"} xs={10} sm={10} md={6}>
+                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                  <CardMedia
+                    component="img"
+                    sx={{
+                      display: 'block',
+                      marginLeft: 'auto',
+                      marginRight: 'auto',
+                      width: '80%'
+                    }}
+                    src={qrcodeImageURL}
+                    alt="qrcode image"
+                  />
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography 
+                      gutterBottom 
+                      variant="h5" 
+                      component="h2"
+                      style={{whiteSpace: 'pre-line'}}
+                    >
+                      {storeInfo.description}
+                    </Typography>
+                    <a href={sessionScannedURL} target="_blank">{sessionScannedURL}</a>
+                  </CardContent>
+                </Card>
+              </Grid>
+              <Grid item key={"queues"} xs={12} sm={12} md={12}>
+                <TableContainer component={Paper}>
+                  <Table sx={{ minWidth: '50vw' }} aria-label="simple table">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Queue Name</TableCell>
+                        <TableCell align="right">Await</TableCell>
+                        <TableCell align="right">Next</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {queuesInfo.map((queue: Queue) => (
+                        <TableRow
+                          key={queue.id}
+                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                        >
+                          <TableCell component="th" scope="row">
+                            {queue.name}
+                          </TableCell>
+                          <TableCell align="right">{countWaitingOrProcessingCustomers(queue.customers).length}</TableCell>
+                          {countWaitingOrProcessingCustomers(queue.customers).length === 0 && (
+                            <TableCell align="right"> - </TableCell>  
+                          )}
+                          {countWaitingOrProcessingCustomers(queue.customers).length !== 0 && (
+                            <TableCell align="right">{countWaitingOrProcessingCustomers(queue.customers)[0].name}</TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Grid>
+            </Grid>
+          </Container>
+        </>
+      ))
+    } else {
+      let processedCustomers: Customer[]
+      const _selectedQueue = queuesInfo.filter((queue: Queue) => queue.id === selectedQueueId)
+      const selectedQueue = _selectedQueue[0]
+      if (selectedQueue.customers) {
+        processedCustomers = countWaitingOrProcessingCustomers(selectedQueue.customers)
+      } else {
+        processedCustomers = []
+      }
+      setMainContent((
+        <>
+          <Box sx={{ width: '100%' }}>
+            <Stack 
+              spacing={2}
+              justifyContent="center"
+              alignItems="center"
+            >
+              <Typography variant="h2" component="h2">{selectedQueue.name}</Typography>
+              <TableContainer component={Paper}>
+                <Table sx={{ minWidth: '40vw' }} aria-label="simple table">
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Name</TableCell>
+                      <TableCell align="right">Phone</TableCell>
+                      <TableCell align="right">Status</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {processedCustomers.map((customer: Customer, index) => (
+                      <TableRow
+                        key={customer.id}
+                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                      >
+                        <TableCell component="th" scope="row">
+                          [{index}] {customer.name}
+                        </TableCell>
+
+                        <TableCell align="right">
+                          {customer.phone}
+                        </TableCell>
+
+                        {customer.status === 'waiting' && (
+                          <TableCell align="right">
+                            <Button onClick={() => handleClickCustomerStatus(customer)}>waiting</Button>
+                          </TableCell>
+                        )}
+                        {customer.status === 'processing' && (
+                          <TableCell align="right">
+                            <Button sx={{color: 'red'}} onClick={() => handleClickCustomerStatus(customer)}>{customer.status}</Button>
+                          </TableCell>
+                        )}
+
+                        {UpdateCustomerStatusDialog(openUpdateCustomerStatusDialog, customerNewStatus)}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Stack>
+          </Box>
+        </>
+      ))
+    }
+  }, [
+    selectedQueueId, 
+    setMainContent, 
+    storeInfo, 
+    queuesInfo, 
+    qrcodeImageURL, 
+    openUpdateCustomerStatusDialog, 
+    customerNewStatus, 
+    setOpenUpdateCustomerStatusDialog, 
+    setCustomerNewStatus,
+  ])
+
+  // ====================== store drawer ====================== 
+  // update store description
+  const [openUpdateStoreDescriptionDialog, setOpenUpdateStoreDescriptionDialog] = React.useState(false)
+  const [storeNewDescription, setStoreNewDescription] = React.useState('')
+  const handleClickUpdateStoreDescription = () => {
+    setOpenUpdateStoreDescriptionDialog(true)
+    setStoreNewDescription(storeInfo.description) // default description
+  }
+
+  const handleChangeStoreNewDescription = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value }: { value: string } = event.target
+    setStoreNewDescription(value)
+  }
+
+  const handleCloseUpdateDescriptionDialog = () => {
+    setOpenUpdateStoreDescriptionDialog(false)
+    setStoreNewDescription('')
+  }
+
+  const [updateStoreDescriptionAction, makeUpdateStoreDescriptionRequest] = useApiRequest(
+    ...updateStoreDescription(
+      parseInt(storeId), 
+      getNormalTokenFromRefreshTokenAction(refreshTokenAction.response), 
+      storeNewDescription
+      )
+  )
+
+  const doMakeUpdateStoreDescriptionRequest = () => {
+    wrapCheckAuthFlow(
+      () => {
+        makeUpdateStoreDescriptionRequest()
+          .then((response) => {
+            handleCloseUpdateDescriptionDialog()
+          })
+      },
+      () => {
+         // TODO: show error message
+         navigate("/")
+      }
+    )
+  }
+
+  const handleUpdateStoreNewDescription = () => {
+    doMakeUpdateStoreDescriptionRequest()
+  }
+
   useEffect(() => {
     // TODO: handle running, success, error states here.
   }, [updateStoreDescriptionAction.actionType])
 
-  return (
+  // store drawer (update store description) 
+  const UpdateStoreDescriptionDialog = (): JSX.Element => {
+    return (
+      <Dialog disableEscapeKeyDown open={openUpdateStoreDescriptionDialog} onClose={handleCloseUpdateDescriptionDialog}>
+          <DialogTitle>Update Store</DialogTitle>
+          <DialogContent>
+            <Box component="form" sx={{ display: 'flex', flexWrap: 'wrap' }}>
+              <FormControl sx={{ m: 1, minWidth: 120 }}>
+                <TextareaAutosize
+                  aria-label="empty textarea"
+                  placeholder="Store Description"
+                  value={storeNewDescription}
+                  style={{ width: 200 }}
+                  onChange={handleChangeStoreNewDescription}
+                />
+              </FormControl>
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseUpdateDescriptionDialog}>Cancel</Button>
+            <Button onClick={handleUpdateStoreNewDescription}>Ok</Button>
+          </DialogActions>
+        </Dialog>
+    )
+  }
+
+  // Close Store
+  const [openCloseStoreDialog, setOpenCloseStoreDialog] = React.useState(false)
+  const handleClickCloseStore = () => {
+    setOpenCloseStoreDialog(true)
+  }
+  const handleCloseCloseStoreDialog = () => {
+    setOpenCloseStoreDialog(false)
+  }
+  const [closeStoreAction, makeCloseSotreRequest] = useApiRequest(
+    ...closeStore(
+      parseInt(storeId),
+      getNormalTokenFromRefreshTokenAction(refreshTokenAction.response) 
+      )
+  )
+  const clearCookieAndLocalstorage = () => {
+    localStorage.removeItem("storeId")
+    document.cookie = "refreshable=true ; expires = Thu, 01 Jan 1970 00:00:00 GMT"
+  }
+
+  const doMakeCloseStoreRequest = () => {
+    wrapCheckAuthFlow(
+      () => {
+        makeCloseSotreRequest()
+          .then((response) => {
+            handleCloseCloseStoreDialog()
+            clearCookieAndLocalstorage()
+            navigate("/")
+          })
+      },
+      () => {
+         // TODO: show error message
+         navigate("/")
+      }
+    )
+  }
+  const handleCloseStore = () => {
+    doMakeCloseStoreRequest() 
+  }
+  const CloseStoreDialog = (): JSX.Element => {
+    return (
+      <Dialog disableEscapeKeyDown open={openCloseStoreDialog} onClose={handleCloseCloseStoreDialog}>
+          <DialogTitle>Close Store</DialogTitle>
+          <DialogContent>
+            <Typography gutterBottom align="center">
+              This store will be closed and all customers' data will be sent by email.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseCloseStoreDialog}>Cancel</Button>
+            <Button onClick={handleCloseStore}>Ok</Button>
+          </DialogActions>
+        </Dialog>
+    )
+  }
+
+  // signout 
+  const [openSignOutDialog, setOpenSignOutDialog] = React.useState(false)
+  const handleClickSignOut = () => {
+    setOpenSignOutDialog(true)
+  }
+  const handleCloseSignOutDialog = () => {
+    setOpenSignOutDialog(false)
+  }
+  const handleSignOut = () => {
+    handleCloseSignOutDialog()
+    clearCookieAndLocalstorage()
+    navigate("/") 
+  }
+  const SignOutDialog = (): JSX.Element => {
+    return (
+      <Dialog disableEscapeKeyDown open={openSignOutDialog} onClose={handleCloseSignOutDialog}>
+          <DialogTitle>Sign Out?</DialogTitle>
+          <DialogActions>
+            <Button onClick={handleCloseSignOutDialog}>Cancel</Button>
+            <Button onClick={handleSignOut}>Ok</Button>
+          </DialogActions>
+        </Dialog>
+    )
+  }
+
+  // countdown
+  const countdownTime = (): string => {
+    const storeCreatedAt = new Date(storeInfo.created_at)
+    const storeCloseTimeNumber = storeCreatedAt.setHours(storeCreatedAt.getHours() + 24)
+    const storeCloseTime = new Date(storeCloseTimeNumber).toLocaleString()
+    return storeCloseTime
+  }
+
+  const StoreDrawer = (
     <div>
-        <Link to="/temp">to temp</Link>
-        {/* <img src={qrcodeImageURL} alt="qrcode image"></img> */}
+      <Divider />
+      <List>
+        <ListItem button key={"Update Store"} onClick={handleClickUpdateStoreDescription}>
+          <ListItemIcon>
+            <RefreshIcon />
+          </ListItemIcon>
+          <ListItemText primary={"Update Store"} />
+        </ListItem>
+        {UpdateStoreDescriptionDialog()}
 
-        <br />
-        <input
-          type="text"
-          onChange={handleInputStoreDescription}
-          placeholder="input store description"
-        />
-        <button onClick={doMakeUpdateStoreDescriptionRequest}>
-          update store description
-        </button>
+        <ListItem button key={"Close Store"} onClick={handleClickCloseStore}>
+          <ListItemIcon>
+            <CloseIcon />
+          </ListItemIcon>
+          <ListItemText primary={"Close Store"} />
+        </ListItem>
+        {CloseStoreDialog()}
 
-        <br />
-        <a href={sessionScannedURL} target="_blank">{sessionScannedURL}</a>
+        <ListItem button key={"Sign Out"} onClick={handleClickSignOut}>
+          <ListItemIcon>
+            <ExitToAppIcon />
+          </ListItemIcon>
+          <ListItemText primary={"Sign Out"} />
+        </ListItem>
+        {SignOutDialog()}
+
+      </List>
+
+      <Divider />
+      <List>
+        <ListItem key={"countdown"}>
+          <ListItemIcon>
+            <AlarmIcon />
+          </ListItemIcon>
+          <ListItemText primary={`Open till ${countdownTime()}`} />
+        </ListItem>
+      </List>
+
     </div>
+  )
+
+  return (
+    <AppBarWDrawer
+      storeInfo={storeInfo}
+      mainContent={mainContent}
+      setSelectedQueueId={setSelectedQueueId}
+      queuesInfo={queuesInfo}
+      StoreDrawer={StoreDrawer}
+    />
   )
 }
 
 export {
-  Store
+  StoreInfo
 }

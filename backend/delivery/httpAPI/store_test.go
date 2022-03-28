@@ -97,7 +97,7 @@ func TestGetStoreInfoWithSSE(t *testing.T) {
 						Name:      "name1",
 						Phone:     "phone1",
 						QueueID:   1,
-						Status:    domain.CustomerStatus.NORMAL,
+						Status:    domain.CustomerStatus.WAITING,
 						CreatedAt: time.Now(),
 					},
 					&domain.Customer{
@@ -105,7 +105,7 @@ func TestGetStoreInfoWithSSE(t *testing.T) {
 						Name:      "name2",
 						Phone:     "phone2",
 						QueueID:   1,
-						Status:    domain.CustomerStatus.NORMAL,
+						Status:    domain.CustomerStatus.WAITING,
 						CreatedAt: time.Now(),
 					},
 				},

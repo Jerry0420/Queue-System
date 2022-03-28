@@ -19,7 +19,7 @@ func TestCustomerUpdate(t *testing.T) {
 	customerUseCase, _, storeUseCase, _, httpAPIDelivery, router, broker := setUpHttpAPITest()
 	defer broker.CloseAll()
 
-	originalCustomerStatus := domain.CustomerStatus.NORMAL
+	originalCustomerStatus := domain.CustomerStatus.WAITING
 	expectedCustomerStatus := domain.CustomerStatus.PROCESSING
 
 	mockCustomer := domain.Customer{

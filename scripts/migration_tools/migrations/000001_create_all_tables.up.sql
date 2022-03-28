@@ -43,14 +43,14 @@ CREATE TABLE IF NOT EXISTS queues(
 
 -- ----------------------------
 
-CREATE TYPE customer_status AS ENUM ('normal', 'processing', 'done', 'delete');
+CREATE TYPE customer_status AS ENUM ('waiting', 'processing', 'done', 'delete');
 
 CREATE TABLE IF NOT EXISTS customers(
    id serial PRIMARY KEY,
    name varchar(64) NOT NULL,
    phone varchar(30) NOT NULL,
    queue_id integer REFERENCES queues ON DELETE CASCADE,
-   status customer_status DEFAULT 'normal',
+   status customer_status DEFAULT 'waiting',
    created_at timestamp NOT NULL DEFAULT clock_timestamp()
 );
 

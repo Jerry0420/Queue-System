@@ -51,7 +51,7 @@ func CustomerCreate(r *http.Request) (session domain.StoreSession, customers []d
 		}
 		customers = append(
 			customers, 
-			domain.Customer{Name: name, Phone: phone, QueueID: int(queueId), Status: domain.CustomerStatus.NORMAL},
+			domain.Customer{Name: name, Phone: phone, QueueID: int(queueId), Status: domain.CustomerStatus.WAITING},
 		)
 	}
 
