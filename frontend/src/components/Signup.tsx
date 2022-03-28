@@ -7,7 +7,7 @@ import { checkExistenceOfRefreshableCookie } from "../apis/helper"
 import { ACTION_TYPES, useApiRequest } from "../apis/reducer"
 import { openStore } from "../apis/StoreAPIs"
 import { Chip, Button, Box, Grid, Paper, Avatar, Typography, TextField, Link } from "@mui/material"
-import AddBoxIcon from '@mui/icons-material/AddBox';
+import AddBoxIcon from '@mui/icons-material/AddBox'
 
 const SignUp = () => {
   let navigate = useNavigate()

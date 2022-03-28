@@ -217,8 +217,6 @@ const StoreInfo = () => {
                   <CardContent sx={{ flexGrow: 1 }}>
                     <Typography 
                       gutterBottom 
-                      variant="h5" 
-                      component="h2"
                       style={{whiteSpace: 'pre-line'}}
                     >
                       {storeInfo.description}
