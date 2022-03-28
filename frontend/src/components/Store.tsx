@@ -14,54 +14,20 @@ import TableCell from '@mui/material/TableCell'
 import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
-import MenuIcon from '@mui/icons-material/Menu'
 import { Customer, Queue, Store } from "../apis/models"
 import CloseIcon from '@mui/icons-material/Close'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import HomeIcon from '@mui/icons-material/Home'
-import HailIcon from '@mui/icons-material/Hail'
-import EscalatorWarningIcon from '@mui/icons-material/EscalatorWarning'
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import { updateCustomer } from "../apis/CustomerAPIs"
+import { AppBarWDrawer } from "./AppBarWDrawer"
 
 const StoreInfo = () => {
-  let { storeId }: {storeId: string} = useParams()
-  
-  const drawerWidth = 240
-  
-  const [mobileOpen, setMobileOpen] = useState(false)
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen)
-  }
-
   let navigate = useNavigate()
+  let { storeId }: {storeId: string} = useParams()
+
+  // ====================== session sse ======================
   const [sessionScannedURL, setSessionScannedURL] = useState("")
-  const [qrcodeImageURL, setQrcodeImageURL] = useState("")
-
   const {refreshTokenAction, makeRefreshTokenRequest, wrapCheckAuthFlow} = useContext(RefreshTokenContext)
-
-  const [storeInfo, setStoreInfo] = useState<Store>({})
-  const [queuesInfo, setQueuesInfo] = useState<Queue[]>([])
-  useEffect(() => {
-    let getStoreInfoSSE: EventSource
-    getStoreInfoSSE = getStoreInfoWithSSE(parseInt(storeId))
-
-    getStoreInfoSSE.onmessage = (event) => {
-      // TODO: render to ui
-      setStoreInfo(JSON.parse(event.data))
-      setQueuesInfo(JSON.parse(event.data)['queues'])
-      console.log(JSON.parse(event.data))
-    }
-    
-    getStoreInfoSSE.onerror = (event) => {
-      getStoreInfoSSE.close()
-    }
-    return () => {
-      if (getStoreInfoSSE != null) {
-        getStoreInfoSSE.close()
-      }
-    }
-  }, [getStoreInfoWithSSE, setStoreInfo])
 
   useEffect(() => {
     let createSessionSSE: EventSource
@@ -90,50 +56,8 @@ const StoreInfo = () => {
     }
   }, [createSessionWithSSE, refreshTokenAction.response, refreshTokenAction.exception])
 
-  const [openUpdateStoreDescriptionDialog, setOpenUpdateStoreDescriptionDialog] = React.useState(false)
-  const [storeNewDescription, setStoreNewDescription] = React.useState('')
-  const handleClickUpdateStoreDescription = () => {
-    setOpenUpdateStoreDescriptionDialog(true)
-    setStoreNewDescription(storeInfo.description) // default description
-  }
-
-  const handleChangeStoreNewDescription = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const { value }: { value: string } = event.target
-    setStoreNewDescription(value)
-  }
-
-  const handleCloseUpdateDescriptionDialog = () => {
-    setOpenUpdateStoreDescriptionDialog(false)
-    setStoreNewDescription('')
-  }
-
-  const [updateStoreDescriptionAction, makeUpdateStoreDescriptionRequest] = useApiRequest(
-    ...updateStoreDescription(
-      parseInt(storeId), 
-      getNormalTokenFromRefreshTokenAction(refreshTokenAction.response), 
-      storeNewDescription
-      )
-  )
-
-  const doMakeUpdateStoreDescriptionRequest = () => {
-    wrapCheckAuthFlow(
-      () => {
-        makeUpdateStoreDescriptionRequest()
-          .then((response) => {
-            handleCloseUpdateDescriptionDialog()
-          })
-      },
-      () => {
-         // TODO: show error message
-         navigate("/")
-      }
-    )
-  }
-
-  const handleUpdateStoreNewDescription = () => {
-    doMakeUpdateStoreDescriptionRequest()
-  }
-
+  // qrcode image url
+  const [qrcodeImageURL, setQrcodeImageURL] = useState("")
   useEffect(() => {
     toDataURL(sessionScannedURL, (error, url) => {
       if (url != null) {
@@ -142,16 +66,39 @@ const StoreInfo = () => {
     })
   }, [sessionScannedURL])
 
+  // ====================== storeinfo sse ======================
+  const [storeInfo, setStoreInfo] = useState<Store>({})
+  const [queuesInfo, setQueuesInfo] = useState<Queue[]>([])
   useEffect(() => {
-    // TODO: handle running, success, error states here.
-  }, [updateStoreDescriptionAction.actionType])
-  
-  const [selectedQueueId, setSelectedQueueId] = useState<number | null>(null) 
+    let getStoreInfoSSE: EventSource
+    getStoreInfoSSE = getStoreInfoWithSSE(parseInt(storeId))
+
+    getStoreInfoSSE.onmessage = (event) => {
+      // TODO: render to ui
+      setStoreInfo(JSON.parse(event.data))
+      setQueuesInfo(JSON.parse(event.data)['queues'])
+      console.log(JSON.parse(event.data))
+    }
+    
+    getStoreInfoSSE.onerror = (event) => {
+      getStoreInfoSSE.close()
+    }
+    return () => {
+      if (getStoreInfoSSE != null) {
+        getStoreInfoSSE.close()
+      }
+    }
+  }, [getStoreInfoWithSSE, setStoreInfo])
+
+  // ====================== main content ======================
   const [mainContent, setMainContent] = useState<JSX.Element>((<></>)) 
+  // helper function
   const countWaitingOrProcessingCustomers = (customers: Customer[]): Customer[] => {
     return customers.filter((customer: Customer) => customer.status == 'waiting' || customer.status == 'processing')
   }
 
+  // update customer status
+  const [selectedQueueId, setSelectedQueueId] = useState<number | null>(null)
   const [openUpdateCustomerStatusDialog, setOpenUpdateCustomerStatusDialog] = React.useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null) 
   const [customerNewStatus, setCustomerNewStatus] = React.useState('')
@@ -207,6 +154,41 @@ const StoreInfo = () => {
     doMakeUpdateCustomerRequest()
   }
 
+  // update customer status dialog
+  const UpdateCustomerStatusDialog = (
+    openUpdateCustomerStatusDialog: boolean,
+    customerNewStatus: string,
+    ): JSX.Element => {
+    return (
+      <Dialog disableEscapeKeyDown open={openUpdateCustomerStatusDialog} onClose={handleCloseCustomerStatusDialog}>
+        <DialogTitle>Update Customer Status</DialogTitle>
+        <DialogContent>
+          <Box component="form" sx={{ display: 'flex', flexWrap: 'wrap' }}>
+            <FormControl sx={{ m: 1, minWidth: 120 }}>
+              <InputLabel id="dialog-select-label">Status</InputLabel>
+              <Select
+                labelId="dialog-select-label"
+                id="dialog-select"
+                value={customerNewStatus}
+                onChange={handleChangeCustomerNewStatus}
+                input={<OutlinedInput label="Status" />}
+              >
+                <MenuItem value="">------</MenuItem>
+                <MenuItem value={'waiting'}>Waiting</MenuItem>
+                <MenuItem value={'processing'}>Processing</MenuItem>
+                <MenuItem value={'done'}>Done</MenuItem>
+                <MenuItem value={'delete'}>Delete</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseCustomerStatusDialog}>Cancel</Button>
+          <Button onClick={handleUpdateCustomerNewStatus}>Ok</Button>
+        </DialogActions>
+      </Dialog>
+    )
+  }
   useEffect(() => {
     if (selectedQueueId === null) {
       setMainContent((
@@ -332,33 +314,7 @@ const StoreInfo = () => {
                           </TableCell>
                         )}
 
-                        <Dialog disableEscapeKeyDown open={openUpdateCustomerStatusDialog} onClose={handleCloseCustomerStatusDialog}>
-                          <DialogTitle>Update Customer Status</DialogTitle>
-                          <DialogContent>
-                            <Box component="form" sx={{ display: 'flex', flexWrap: 'wrap' }}>
-                              <FormControl sx={{ m: 1, minWidth: 120 }}>
-                                <InputLabel id="dialog-select-label">Status</InputLabel>
-                                <Select
-                                  labelId="dialog-select-label"
-                                  id="dialog-select"
-                                  value={customerNewStatus}
-                                  onChange={handleChangeCustomerNewStatus}
-                                  input={<OutlinedInput label="Status" />}
-                                >
-                                  <MenuItem value="">------</MenuItem>
-                                  <MenuItem value={'waiting'}>Waiting</MenuItem>
-                                  <MenuItem value={'processing'}>Processing</MenuItem>
-                                  <MenuItem value={'done'}>Done</MenuItem>
-                                  <MenuItem value={'delete'}>Delete</MenuItem>
-                                </Select>
-                              </FormControl>
-                            </Box>
-                          </DialogContent>
-                          <DialogActions>
-                            <Button onClick={handleCloseCustomerStatusDialog}>Cancel</Button>
-                            <Button onClick={handleUpdateCustomerNewStatus}>Ok</Button>
-                          </DialogActions>
-                        </Dialog>
+                        {UpdateCustomerStatusDialog(openUpdateCustomerStatusDialog, customerNewStatus)}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -369,38 +325,71 @@ const StoreInfo = () => {
         </>
       ))
     }
-  }, [selectedQueueId, setMainContent, storeInfo, queuesInfo, qrcodeImageURL, openUpdateCustomerStatusDialog, customerNewStatus, setOpenUpdateCustomerStatusDialog, setCustomerNewStatus])
+  }, [
+    selectedQueueId, 
+    setMainContent, 
+    storeInfo, 
+    queuesInfo, 
+    qrcodeImageURL, 
+    openUpdateCustomerStatusDialog, 
+    customerNewStatus, 
+    setOpenUpdateCustomerStatusDialog, 
+    setCustomerNewStatus,
+  ])
 
-  const drawer = (
-    <div>
-      <Toolbar />
-      <Divider />
-          <ListItem button key={"All"} onClick={() => {setSelectedQueueId(null)}}>
-            <ListItemIcon>
-              <HomeIcon />
-            </ListItemIcon>
-            <ListItemText primary={"All"} />
-          </ListItem>
-      <Divider />
-      <List>
-        {queuesInfo.map((queue: Queue, index) => (
-          <ListItem button key={queue.id} onClick={() => {setSelectedQueueId(queue.id)}}>
-            <ListItemIcon>
-              {index % 2 === 0 ? <HailIcon /> : <EscalatorWarningIcon />}
-            </ListItemIcon>
-            <ListItemText primary={queue.name} />
-          </ListItem>
-        ))}
-      </List>
-      <Divider />
-      <List>
-        <ListItem button key={"Update Description"} onClick={handleClickUpdateStoreDescription}>
-          <ListItemIcon>
-            <RefreshIcon />
-          </ListItemIcon>
-          <ListItemText primary={"Update Description"} />
-        </ListItem>
-        <Dialog disableEscapeKeyDown open={openUpdateStoreDescriptionDialog} onClose={handleCloseUpdateDescriptionDialog}>
+  // ====================== store drawer (update store description) ====================== 
+  const [openUpdateStoreDescriptionDialog, setOpenUpdateStoreDescriptionDialog] = React.useState(false)
+  const [storeNewDescription, setStoreNewDescription] = React.useState('')
+  const handleClickUpdateStoreDescription = () => {
+    setOpenUpdateStoreDescriptionDialog(true)
+    setStoreNewDescription(storeInfo.description) // default description
+  }
+
+  const handleChangeStoreNewDescription = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { value }: { value: string } = event.target
+    setStoreNewDescription(value)
+  }
+
+  const handleCloseUpdateDescriptionDialog = () => {
+    setOpenUpdateStoreDescriptionDialog(false)
+    setStoreNewDescription('')
+  }
+
+  const [updateStoreDescriptionAction, makeUpdateStoreDescriptionRequest] = useApiRequest(
+    ...updateStoreDescription(
+      parseInt(storeId), 
+      getNormalTokenFromRefreshTokenAction(refreshTokenAction.response), 
+      storeNewDescription
+      )
+  )
+
+  const doMakeUpdateStoreDescriptionRequest = () => {
+    wrapCheckAuthFlow(
+      () => {
+        makeUpdateStoreDescriptionRequest()
+          .then((response) => {
+            handleCloseUpdateDescriptionDialog()
+          })
+      },
+      () => {
+         // TODO: show error message
+         navigate("/")
+      }
+    )
+  }
+
+  const handleUpdateStoreNewDescription = () => {
+    doMakeUpdateStoreDescriptionRequest()
+  }
+
+  useEffect(() => {
+    // TODO: handle running, success, error states here.
+  }, [updateStoreDescriptionAction.actionType])
+
+  // store drawer
+  const UpdateStoreDescriptionDialog = (): JSX.Element => {
+    return (
+      <Dialog disableEscapeKeyDown open={openUpdateStoreDescriptionDialog} onClose={handleCloseUpdateDescriptionDialog}>
           <DialogTitle>Update Description</DialogTitle>
           <DialogContent>
             <Box component="form" sx={{ display: 'flex', flexWrap: 'wrap' }}>
@@ -420,7 +409,20 @@ const StoreInfo = () => {
             <Button onClick={handleUpdateStoreNewDescription}>Ok</Button>
           </DialogActions>
         </Dialog>
-        
+    )
+  }
+
+  const StoreDrawer = (
+    <div>
+      <Divider />
+      <List>
+        <ListItem button key={"Update Description"} onClick={handleClickUpdateStoreDescription}>
+          <ListItemIcon>
+            <RefreshIcon />
+          </ListItemIcon>
+          <ListItemText primary={"Update Store"} />
+        </ListItem>
+        {UpdateStoreDescriptionDialog()}
         <ListItem button key={"Close Store"}>
           <ListItemIcon>
             <CloseIcon />
@@ -440,70 +442,15 @@ const StoreInfo = () => {
   )
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
-        }}
-      >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            {storeInfo.name}
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        // aria-label="mailbox folders"
-      >
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true,
-          }}
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-        >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
-      </Box>
-      <Box
-        component="main"
-        sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
-      >
-        <Toolbar />
-        {mainContent}
-      </Box>
-    </Box>
+    <AppBarWDrawer
+      storeInfo={storeInfo}
+      mainContent={mainContent}
+      setSelectedQueueId={setSelectedQueueId}
+      queuesInfo={queuesInfo}
+      StoreDrawer={StoreDrawer}
+    />
   )
 }
-
 
 export {
   StoreInfo
