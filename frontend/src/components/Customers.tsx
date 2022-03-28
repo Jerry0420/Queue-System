@@ -69,30 +69,32 @@ const CreateCustomers = () => {
   }
 
   // =================
-  // const [queueId, setQueueId] = useState("")
-  // const [queueIdAlertFlag, setQueueNameAlertFlag] = useState(false)
-  // const handleInputQueueName = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const { value }: { value: string } = e.target
-  //   setQueueName(value)
-  // }
+  const [customerQueueId, setCustomerQueueId] = useState(0)
+  const [customerQueueIdAlertFlag, setCustomerQueueNameAlertFlag] = useState(false)
+  const handleInputCustomerQueueId = (e: SelectChangeEvent<typeof customerQueueId>) => {
+    setCustomerQueueId(e.target.value)
+  }
 
-  // const [addQueueNameAlertFlag, setAddQueueNameAlertFlag] = useState(false)
-  // useEffect(() => {
-  //   if (queueName) {
-  //     setAddQueueNameAlertFlag(false)
-  //   } else {
-  //     setAddQueueNameAlertFlag(true)
-  //   }
-  // }, [queueName])
+  const [addCustomerAlertFlag, setAddCustomerAlertFlag] = useState(false)
+  const [customersForm, setCustomersForm] = useState<CustomerForm[]>([])
+  const addCustomerToCustomersForm = () => {
+    const _customersForm = [...customersForm]
+    _customersForm.push({
+      name: customerName,
+      phone: customerPhone,
+      queue_id: customerQueueId
+    })
+    setCustomersForm(_customersForm)
+    setCustomerName("")
+    setCustomerPhone("")
+    setCustomerQueueId(0)
+  }
 
-  // const [queueNames, setQueueNames] = useState<string[]>([])
-  
-  // const addQueueNameToQueueNames = () => {
-  //   const _queueNames = [...queueNames]
-  //   _queueNames.push(queueName)
-  //   setQueueNames(_queueNames)
-  //   setQueueName("")
-  // }
+  useEffect(() => {
+    // TODO: validate!!!
+  }, [customerName, customerPhone, customerQueueId])
+
+  const [addCustomersAlertFlag, setAddCustomersAlertFlag] = useState(false)
 
   // const handleDeleteQueueName = (deletedQueueName: string) => {
   //     var _queueNames = queueNames.filter((value, index, error): boolean => {
@@ -100,6 +102,10 @@ const CreateCustomers = () => {
   //     })
   //     setQueueNames(_queueNames)
   // }
+
+  const [addCustomersAction, makeAddCustomersRequest] = useApiRequest(
+    ...createCustomers(sessionId, parseInt(storeId), customersForm)
+    )
 
   // =================
 
@@ -155,17 +161,17 @@ const CreateCustomers = () => {
                       <Box component="form" sx={{ display: 'flex', flexWrap: 'wrap' }}>
                         <FormControl 
                           sx={{ mt: 3, minWidth: 160 }} 
-                          // error={queueNameAlertFlag}
+                          error={customerQueueIdAlertFlag}
                         >
                           <InputLabel id="queue-select-label">Queue</InputLabel>
                           <Select
                             labelId="queue-select-label"
                             id="queue-select"
-                            // value={customerNewStatus}
-                            // onChange={handleChangeCustomerNewStatus}
+                            value={customerQueueId}
+                            onChange={handleInputCustomerQueueId}
                             input={<OutlinedInput label="Queue" />}
                           >
-                            <MenuItem value="">------</MenuItem>
+                            <MenuItem value={0}>------</MenuItem>
                             {queuesInfo.map((queue: Queue) => (
                               <MenuItem value={queue.id}>{queue.name}</MenuItem>
                             ))}
@@ -177,28 +183,29 @@ const CreateCustomers = () => {
                       <Button 
                         variant="contained" 
                         startIcon={<AddBoxIcon />}
-                        // onClick={addQueueNameToQueueNames}
-                        // disabled={addQueueNameAlertFlag}
+                        onClick={addCustomerToCustomersForm}
+                        disabled={addCustomerAlertFlag}
                       >
                         Add
                       </Button>
                     </Grid>
                   </Grid>              
 
-                  {/* {queueNames.map((queueName: string) => (
+                  {customersForm.map((customer: CustomerForm) => (
                       <Chip 
                         sx={{ mb: 1, ml: 1, mr: 1 }}
-                        label={queueName}
-                        key={queueName} 
-                        onDelete={() => {handleDeleteQueueName(queueName)}}
+                        label={customer.name}
+                        key={customer.name} 
+                        // onDelete={() => {handleDeleteQueueName(queueName)}}
                       />
-                    ))} */}
+                    ))}
 
                   <Button
                     fullWidth
                     variant="contained"
                     sx={{ mt: 3, mb: 2 }}
-                    // onClick={doMakeOpenStoreRequest}
+                    onClick={makeAddCustomersRequest}
+                    disabled={addCustomersAlertFlag}
                   >
                     Add Customers
                   </Button>
@@ -306,6 +313,7 @@ const CreateCustomers = () => {
     setMainContent, 
     storeInfo, 
     queuesInfo,
+    customerQueueId
   ])
 
   // ================= scan session =================  
