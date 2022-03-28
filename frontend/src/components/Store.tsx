@@ -5,10 +5,10 @@ import { createSessionWithSSE } from "../apis/SessionAPIs"
 import { validateResponseSuccess } from "../apis/helper"
 import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
 import { toDataURL } from "qrcode"
-import { getStoreInfoWithSSE, updateStoreDescription } from "../apis/StoreAPIs"
+import { closeStore, getStoreInfoWithSSE, updateStoreDescription } from "../apis/StoreAPIs"
 import { getNormalTokenFromRefreshTokenAction, getSessionTokenFromRefreshTokenAction } from "../apis/validator"
 import { TextareaAutosize, OutlinedInput, FormControl, InputLabel, SelectChangeEvent, Select, MenuItem, DialogActions, Button, Dialog, DialogTitle, DialogContent, Stack, CardContent, CardMedia, Container, Card, List, ListItem, ListItemText, ListItemIcon, Divider, AppBar, Box, Grid, Paper, Avatar, Typography, Drawer, Toolbar, IconButton } from "@mui/material"
-import Table from '@mui/material/Table';
+import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
 import TableContainer from '@mui/material/TableContainer'
@@ -17,9 +17,10 @@ import TableRow from '@mui/material/TableRow'
 import { Customer, Queue, Store } from "../apis/models"
 import CloseIcon from '@mui/icons-material/Close'
 import RefreshIcon from '@mui/icons-material/Refresh'
-import ExitToAppIcon from '@mui/icons-material/ExitToApp';
+import ExitToAppIcon from '@mui/icons-material/ExitToApp'
 import { updateCustomer } from "../apis/CustomerAPIs"
 import { AppBarWDrawer } from "./AppBarWDrawer"
+import AlarmIcon from '@mui/icons-material/Alarm'
 
 const StoreInfo = () => {
   let navigate = useNavigate()
@@ -337,7 +338,8 @@ const StoreInfo = () => {
     setCustomerNewStatus,
   ])
 
-  // ====================== store drawer (update store description) ====================== 
+  // ====================== store drawer ====================== 
+  // update store description
   const [openUpdateStoreDescriptionDialog, setOpenUpdateStoreDescriptionDialog] = React.useState(false)
   const [storeNewDescription, setStoreNewDescription] = React.useState('')
   const handleClickUpdateStoreDescription = () => {
@@ -386,11 +388,11 @@ const StoreInfo = () => {
     // TODO: handle running, success, error states here.
   }, [updateStoreDescriptionAction.actionType])
 
-  // store drawer
+  // store drawer (update store description) 
   const UpdateStoreDescriptionDialog = (): JSX.Element => {
     return (
       <Dialog disableEscapeKeyDown open={openUpdateStoreDescriptionDialog} onClose={handleCloseUpdateDescriptionDialog}>
-          <DialogTitle>Update Description</DialogTitle>
+          <DialogTitle>Update Store</DialogTitle>
           <DialogContent>
             <Box component="form" sx={{ display: 'flex', flexWrap: 'wrap' }}>
               <FormControl sx={{ m: 1, minWidth: 120 }}>
@@ -412,32 +414,134 @@ const StoreInfo = () => {
     )
   }
 
+  // Close Store
+  const [openCloseStoreDialog, setOpenCloseStoreDialog] = React.useState(false)
+  const handleClickCloseStore = () => {
+    setOpenCloseStoreDialog(true)
+  }
+  const handleCloseCloseStoreDialog = () => {
+    setOpenCloseStoreDialog(false)
+  }
+  const [closeStoreAction, makeCloseSotreRequest] = useApiRequest(
+    ...closeStore(
+      parseInt(storeId),
+      getNormalTokenFromRefreshTokenAction(refreshTokenAction.response) 
+      )
+  )
+  const clearCookieAndLocalstorage = () => {
+    localStorage.removeItem("storeId")
+    document.cookie = "refreshable=true ; expires = Thu, 01 Jan 1970 00:00:00 GMT"
+  }
+
+  const doMakeCloseStoreRequest = () => {
+    wrapCheckAuthFlow(
+      () => {
+        makeCloseSotreRequest()
+          .then((response) => {
+            handleCloseCloseStoreDialog()
+            clearCookieAndLocalstorage()
+            navigate("/")
+          })
+      },
+      () => {
+         // TODO: show error message
+         navigate("/")
+      }
+    )
+  }
+  const handleCloseStore = () => {
+    doMakeCloseStoreRequest() 
+  }
+  const CloseStoreDialog = (): JSX.Element => {
+    return (
+      <Dialog disableEscapeKeyDown open={openCloseStoreDialog} onClose={handleCloseCloseStoreDialog}>
+          <DialogTitle>Close Store</DialogTitle>
+          <DialogContent>
+            <Typography gutterBottom align="center">
+              This store will be closed and all customers' data will be sent by email.
+            </Typography>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleCloseCloseStoreDialog}>Cancel</Button>
+            <Button onClick={handleCloseStore}>Ok</Button>
+          </DialogActions>
+        </Dialog>
+    )
+  }
+
+  // signout 
+  const [openSignOutDialog, setOpenSignOutDialog] = React.useState(false)
+  const handleClickSignOut = () => {
+    setOpenSignOutDialog(true)
+  }
+  const handleCloseSignOutDialog = () => {
+    setOpenSignOutDialog(false)
+  }
+  const handleSignOut = () => {
+    handleCloseSignOutDialog()
+    clearCookieAndLocalstorage()
+    navigate("/") 
+  }
+  const SignOutDialog = (): JSX.Element => {
+    return (
+      <Dialog disableEscapeKeyDown open={openSignOutDialog} onClose={handleCloseSignOutDialog}>
+          <DialogTitle>Sign Out?</DialogTitle>
+          <DialogActions>
+            <Button onClick={handleCloseSignOutDialog}>Cancel</Button>
+            <Button onClick={handleSignOut}>Ok</Button>
+          </DialogActions>
+        </Dialog>
+    )
+  }
+
+  // countdown
+  const countdownTime = (): string => {
+    const storeCreatedAt = new Date(storeInfo.created_at)
+    const storeCloseTimeNumber = storeCreatedAt.setHours(storeCreatedAt.getHours() + 24)
+    const storeCloseTime = new Date(storeCloseTimeNumber).toLocaleString()
+    return storeCloseTime
+  }
+
   const StoreDrawer = (
     <div>
       <Divider />
       <List>
-        <ListItem button key={"Update Description"} onClick={handleClickUpdateStoreDescription}>
+        <ListItem button key={"Update Store"} onClick={handleClickUpdateStoreDescription}>
           <ListItemIcon>
             <RefreshIcon />
           </ListItemIcon>
           <ListItemText primary={"Update Store"} />
         </ListItem>
         {UpdateStoreDescriptionDialog()}
-        <ListItem button key={"Close Store"}>
+
+        <ListItem button key={"Close Store"} onClick={handleClickCloseStore}>
           <ListItemIcon>
             <CloseIcon />
           </ListItemIcon>
           <ListItemText primary={"Close Store"} />
         </ListItem>
+        {CloseStoreDialog()}
 
-        <ListItem button key={"Sign Out"}>
+        <ListItem button key={"Sign Out"} onClick={handleClickSignOut}>
           <ListItemIcon>
             <ExitToAppIcon />
           </ListItemIcon>
           <ListItemText primary={"Sign Out"} />
         </ListItem>
+        {SignOutDialog()}
 
       </List>
+
+      <Divider />
+      <List>
+        <ListItem key={"countdown"}>
+          <ListItemIcon>
+            <AlarmIcon />
+          </ListItemIcon>
+          <ListItemText primary={`Open till ${countdownTime()}`} />
+        </ListItem>
+      </List>
+
     </div>
   )
 
