@@ -78,7 +78,7 @@ const StoreInfo = () => {
       // TODO: render to ui
       setStoreInfo(JSON.parse(event.data))
       setQueuesInfo(JSON.parse(event.data)['queues'])
-      console.log(JSON.parse(event.data))
+      // console.log(JSON.parse(event.data))
     }
     
     getStoreInfoSSE.onerror = (event) => {
@@ -217,8 +217,6 @@ const StoreInfo = () => {
                   <CardContent sx={{ flexGrow: 1 }}>
                     <Typography 
                       gutterBottom 
-                      variant="h5" 
-                      component="h2"
                       style={{whiteSpace: 'pre-line'}}
                     >
                       {storeInfo.description}
