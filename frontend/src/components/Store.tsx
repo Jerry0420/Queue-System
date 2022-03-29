@@ -21,10 +21,15 @@ import ExitToAppIcon from '@mui/icons-material/ExitToApp'
 import { updateCustomer } from "../apis/CustomerAPIs"
 import { AppBarWDrawer } from "./AppBarWDrawer"
 import AlarmIcon from '@mui/icons-material/Alarm'
+import { StatusBar, STATUS_TYPES } from "./StatusBar"
 
 const StoreInfo = () => {
   let navigate = useNavigate()
   let { storeId }: {storeId: string} = useParams()
+
+  // ==================== handle all status ====================
+  const [statusBarSeverity, setStatusBarSeverity] = React.useState('')
+  const [statusBarMessage, setStatusBarMessage] = React.useState('')
 
   // ====================== session sse ======================
   const [sessionScannedURL, setSessionScannedURL] = useState("")
@@ -154,6 +159,10 @@ const StoreInfo = () => {
     }
     doMakeUpdateCustomerRequest()
   }
+
+  useEffect(() => {
+    // TODO: handle running, success, error states here.
+  }, [updateCustomerAction.actionType])
 
   // update customer status dialog
   const UpdateCustomerStatusDialog = (
@@ -383,7 +392,14 @@ const StoreInfo = () => {
   }
 
   useEffect(() => {
-    // TODO: handle running, success, error states here.
+    if (updateStoreDescriptionAction.actionType === ACTION_TYPES.SUCCESS) {
+      setStatusBarSeverity(STATUS_TYPES.SUCCESS)
+      setStatusBarMessage("Success to update store description.")
+    }
+    if (updateStoreDescriptionAction.actionType === ACTION_TYPES.ERROR) {
+      setStatusBarSeverity(STATUS_TYPES.ERROR)
+      setStatusBarMessage("Fail to update store description.")
+    }
   }, [updateStoreDescriptionAction.actionType])
 
   // store drawer (update store description) 
@@ -544,13 +560,20 @@ const StoreInfo = () => {
   )
 
   return (
-    <AppBarWDrawer
-      storeInfo={storeInfo}
-      mainContent={mainContent}
-      setSelectedQueueId={setSelectedQueueId}
-      queuesInfo={queuesInfo}
-      StoreDrawer={StoreDrawer}
-    />
+    <>
+      <AppBarWDrawer
+        storeInfo={storeInfo}
+        mainContent={mainContent}
+        setSelectedQueueId={setSelectedQueueId}
+        queuesInfo={queuesInfo}
+        StoreDrawer={StoreDrawer}
+      />
+      <StatusBar
+        severity={statusBarSeverity}
+        message={statusBarMessage}
+        setMessage={setStatusBarMessage}
+      />
+    </>
   )
 }
 
