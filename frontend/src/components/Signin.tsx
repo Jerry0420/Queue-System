@@ -7,8 +7,8 @@ import classNames from 'classnames'
 import '../styles/style.scss'
 import { checkExistenceOfRefreshableCookie } from "../apis/helper"
 import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
-import { signInStore } from "../apis/StoreAPIs"
-import { Chip, Button, Box, Grid, Paper, Avatar, Typography, TextField, Link } from "@mui/material"
+import { signInStore, forgetPassword } from "../apis/StoreAPIs"
+import { Button, Box, Grid, Paper, Avatar, Typography, TextField, Link, DialogActions, Dialog, DialogTitle, DialogContent } from "@mui/material"
 
 const SignIn = () => {
   let navigate = useNavigate()
@@ -37,6 +37,7 @@ const SignIn = () => {
       setEmailAlertFlag(false)
     } else {
       setEmailAlertFlag(true)
+      return
     }
 
     const rawPassword = window.atob(password)
@@ -45,6 +46,7 @@ const SignIn = () => {
       setPassword(window.btoa(password)) // base64 password value
     } else {
       setPasswordAlertFlag(true)
+      return
     }
 
     if (email && rawPassword) {
@@ -73,6 +75,29 @@ const SignIn = () => {
       }
     }
   }, [])
+
+  const [openForgetPasswordDialog, setOpenForgetPasswordDialog] = React.useState(false)
+  const [forgetPasswordEmail, setForgetPasswordEmail] = useState("")
+  const [forgetPasswordEmailAlertFlag, setForgetPasswordEmailAlertFlag] = useState(false)
+  const handleInputForgetPasswordEmail = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { value }: { value: string } = e.target
+    setForgetPasswordEmail(value)
+  }
+  const [forgetPasswordAction, makeForgetPasswordRequest] = useApiRequest(...forgetPassword(forgetPasswordEmail))
+  const handleForgetPassword = () => {
+    const validateEmail = (inputEmail: string) => {
+      return inputEmail.match(/^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/)
+    }
+    if (validateEmail(forgetPasswordEmail)) {
+      setForgetPasswordEmailAlertFlag(false)
+    } else {
+      setForgetPasswordEmailAlertFlag(true)
+      return
+    }
+    makeForgetPasswordRequest().then((response) => {
+      setOpenForgetPasswordDialog(false)
+    })
+  }
 
   return (
     <Box sx={{flexGrow: 1}}>
@@ -139,9 +164,31 @@ const SignIn = () => {
               </Button>
               <Grid container>
                 <Grid item xs>
-                  <Link component={RouterLink} variant="body2" to="/password/forget">
+                  <Link variant="body2" sx={{"&:hover": {cursor: "pointer"}}} onClick={() => {setOpenForgetPasswordDialog(true)}}>
                     Forgot password?
                   </Link>
+                  <Dialog disableEscapeKeyDown open={openForgetPasswordDialog} onClose={() => {setOpenForgetPasswordDialog(false)}}>
+                    <DialogTitle>Forget Password</DialogTitle>
+                    <DialogContent>
+                      <TextField
+                        autoFocus
+                        margin="dense"
+                        id="email"
+                        label="Email Address"
+                        type="email"
+                        fullWidth
+                        variant="standard"
+                        autoComplete="email"
+                        onChange={handleInputForgetPasswordEmail}
+                        error={forgetPasswordEmailAlertFlag}
+                      />
+                      We'll send a link to the email for resetting password.
+                    </DialogContent>
+                    <DialogActions>
+                      <Button onClick={() => {setOpenForgetPasswordDialog(false)}}>Cancel</Button>
+                      <Button onClick={handleForgetPassword}>Ok</Button>
+                    </DialogActions>
+                  </Dialog>
                 </Grid>
                 <Grid item>
                   <Link component={RouterLink} variant="body2" to="/">
