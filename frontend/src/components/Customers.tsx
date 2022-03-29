@@ -32,7 +32,7 @@ const CreateCustomers = () => {
         // TODO: render customers ui
         setStoreInfo(JSON.parse(event.data))
         setQueuesInfo(JSON.parse(event.data)['queues'])
-        console.log(JSON.parse(event.data))
+        // console.log(JSON.parse(event.data))
     }
     
     getStoreInfoSSE.onerror = (event) => {
@@ -68,14 +68,21 @@ const CreateCustomers = () => {
     setCustomerPhone(value)
   }
 
-  // =================
   const [customerQueueId, setCustomerQueueId] = useState(0)
-  const [customerQueueIdAlertFlag, setCustomerQueueNameAlertFlag] = useState(false)
+  const [customerQueueIdAlertFlag, setCustomerQueueIdAlertFlag] = useState(false)
   const handleInputCustomerQueueId = (e: SelectChangeEvent<typeof customerQueueId>) => {
-    setCustomerQueueId(e.target.value)
+    setCustomerQueueId(e.target.value as number)
   }
 
   const [addCustomerAlertFlag, setAddCustomerAlertFlag] = useState(false)
+  useEffect(() => {
+    if (customerName && customerQueueId) {
+      setAddCustomerAlertFlag(false)
+    } else {
+      setAddCustomerAlertFlag(true)
+    }
+  }, [customerName, customerQueueId])
+
   const [customersForm, setCustomersForm] = useState<CustomerForm[]>([])
   const addCustomerToCustomersForm = () => {
     const _customersForm = [...customersForm]
@@ -88,26 +95,62 @@ const CreateCustomers = () => {
     setCustomerName("")
     setCustomerPhone("")
     setCustomerQueueId(0)
+    setCustomerNameAlertFlag(false)
+    setCustomerPhoneAlertFlag(false)
+    setCustomerQueueIdAlertFlag(false)
   }
 
-  useEffect(() => {
-    // TODO: validate!!!
-  }, [customerName, customerPhone, customerQueueId])
+  const showCustomerNamePhoneQueueName = (customerForm: CustomerForm): string => {
+    const _selectedQueue = queuesInfo.filter((queue: Queue) => queue.id === customerForm.queue_id)
+    let customerPhone = ''
+    if (customerForm.phone) {
+      customerPhone = customerForm.phone
+    } else {
+      customerPhone = '-'
+    }
+    return `${customerForm.name} / ${customerPhone} / ${_selectedQueue[0].name}`
+  }
 
   const [addCustomersAlertFlag, setAddCustomersAlertFlag] = useState(false)
+  const [customersFormAlertFlag, setCustomersFormAlertFlag] = useState('black')
 
-  // const handleDeleteQueueName = (deletedQueueName: string) => {
-  //     var _queueNames = queueNames.filter((value, index, error): boolean => {
-  //       return value != deletedQueueName
-  //     })
-  //     setQueueNames(_queueNames)
-  // }
+  const handleDeleteCustomer = (deletedCustomerForm: CustomerForm) => {
+    var _customerForms = customersForm.filter((customerForm, index, error): boolean => {
+      return customerForm.name != deletedCustomerForm.name
+    })
+    setCustomersForm(_customerForms)
+  }
 
   const [addCustomersAction, makeAddCustomersRequest] = useApiRequest(
     ...createCustomers(sessionId, parseInt(storeId), customersForm)
-    )
+  )
 
-  // =================
+  const doMakeAddCustomersRequest = () => {
+    if (customersForm.length > 5) {
+      setCustomersFormAlertFlag('red')
+    } else if (1 <= customersForm.length && customersForm.length <= 5) {
+      makeAddCustomersRequest()
+        .then((response) => {
+          setAddCustomersAlertFlag(true)
+      })
+    } else {
+      setCustomerNameAlertFlag(true)
+      setCustomerPhoneAlertFlag(true)
+      setCustomerQueueIdAlertFlag(true)
+    }
+  }
+
+  useEffect(() => {
+    if (customersForm.length <= 5) {
+      setCustomersFormAlertFlag('black')
+    } else {
+      setCustomersFormAlertFlag('red')
+    }
+  }, [customersForm])
+
+  useEffect(() => {
+    // TODO: handle running, success, error states here.
+  }, [addCustomersAction.actionType])
 
   useEffect(() => {
     if (selectedQueueId === null) {
@@ -136,9 +179,9 @@ const CreateCustomers = () => {
                     label="Name"
                     name="name"
                     autoComplete="name"
+                    value={customerName}
                     onChange={handleInputCustomerName}
                     error={customerNameAlertFlag}
-                    helperText="Can not add more than 5 customers at a time."
                   />
                   <TextField
                     margin="normal"
@@ -147,6 +190,7 @@ const CreateCustomers = () => {
                     label="Phone"
                     type="phone"
                     id="phone"
+                    value={customerPhone}
                     autoComplete="tel"
                     onChange={handleInputCustomerPhone}
                     error={customerPhoneAlertFlag}
@@ -173,7 +217,7 @@ const CreateCustomers = () => {
                           >
                             <MenuItem value={0}>------</MenuItem>
                             {queuesInfo.map((queue: Queue) => (
-                              <MenuItem value={queue.id}>{queue.name}</MenuItem>
+                              <MenuItem key={queue.id} value={queue.id}>{queue.name}</MenuItem>
                             ))}
                           </Select>
                         </FormControl>
@@ -191,20 +235,27 @@ const CreateCustomers = () => {
                     </Grid>
                   </Grid>              
 
-                  {customersForm.map((customer: CustomerForm) => (
+                  {customersForm.map((customerForm: CustomerForm) => (
                       <Chip 
                         sx={{ mb: 1, ml: 1, mr: 1 }}
-                        label={customer.name}
-                        key={customer.name} 
-                        // onDelete={() => {handleDeleteQueueName(queueName)}}
+                        label={showCustomerNamePhoneQueueName(customerForm)}
+                        key={customerForm.name} 
+                        onDelete={() => {handleDeleteCustomer(customerForm)}}
                       />
                     ))}
 
+                  <Typography 
+                    align="center"
+                    variant='subtitle2'
+                    color={customersFormAlertFlag}
+                  >
+                    <em>* Can not add more than 5 customers at a time.</em>
+                  </Typography>
                   <Button
                     fullWidth
                     variant="contained"
                     sx={{ mt: 3, mb: 2 }}
-                    onClick={makeAddCustomersRequest}
+                    onClick={doMakeAddCustomersRequest}
                     disabled={addCustomersAlertFlag}
                   >
                     Add Customers
@@ -313,7 +364,16 @@ const CreateCustomers = () => {
     setMainContent, 
     storeInfo, 
     queuesInfo,
-    customerQueueId
+    customerName,
+    customerNameAlertFlag,
+    customerPhone,
+    customerPhoneAlertFlag,
+    customerQueueId,
+    customerQueueIdAlertFlag,
+    customersForm,
+    addCustomerAlertFlag,
+    addCustomersAlertFlag,
+    customersFormAlertFlag
   ])
 
   // ================= scan session =================  
@@ -323,77 +383,14 @@ const CreateCustomers = () => {
   }, [])
   useEffect(() => {
     if (scanSessionAction.actionType === ACTION_TYPES.ERROR) {
-        // TODO: disable create customers block
+        setAddCustomersAlertFlag(true)
     }
 
     // 40007: store_session exist but is already scanned.
     if ((scanSessionAction.response != null) && (scanSessionAction.response["error_code"]) && (scanSessionAction.response["error_code"] !== 40007)) {
-        // TODO: disable create customers block
+        setAddCustomersAlertFlag(true)
     }
   }, [scanSessionAction.actionType])
-
-  // const [customerName, setCustomerName] = useState("")
-  // const [customerNameAlertFlag, setCustomerNameAlertFlag] = useState(false)
-  // const handleInputCustomerName = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const { value }: { value: string } = e.target
-  //   if (value) {
-  //     setCustomerNameAlertFlag(false)
-  //     setCustomerName(value)
-  //   } else {
-  //     setCustomerNameAlertFlag(true)
-  //   }
-  // }
-
-  // const [customerPhone, setCustomerPhone] = useState("")
-  // const [customerPhoneAlertFlag, setCustomerPhoneAlertFlag] = useState(false)
-  // const handleInputCustomerPhone = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const { value }: { value: string } = e.target
-  //   if (value) {
-  //     setCustomerPhoneAlertFlag(false)
-  //     setCustomerPhone(value)
-  //   } else {
-  //     setCustomerPhoneAlertFlag(true)
-  //   }
-  // }
-
-  // const [queueId, setQueueId] = useState<number>(0)
-  // const handleInputQueueId = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const { value }: { value: string } = e.target
-  //   if (value) {
-  //     setQueueId(parseInt(value))
-  //   }
-  // }
-
-  // const [addCustomerFlag, setAddCustomerFlag] = useState(false)
-  // useEffect(() => {
-  //   if (customerName && queueId) {
-  //     setAddCustomerFlag(false)
-  //   } else {
-  //     setAddCustomerFlag(true)
-  //   }
-  // }, [customerName, queueId])
-
-  // const [customersForm, setCustomersForm] = useState<CustomerForm[]>([])
-
-  // const addCustomer = () => {
-  //   const _customersForm = [...customersForm]
-  //   _customersForm.push({
-  //       name: customerName,
-  //       phone: customerPhone,
-  //       queue_id: queueId
-  //   })
-  //   setCustomersForm(_customersForm)
-
-  //   setCustomerName("")
-  //   setCustomerPhone("")
-  //   setQueueId(0)
-  // }
-
-  // const [createCustomersAction, makeCreateCustomersRequest] = useApiRequest(
-  //   ...createCustomers(sessionId, parseInt(storeId), customersForm)
-  //   )
-
-  // const [createCustomersFlag, setCreateCustomersFlag] = useState(false)
   
   return (
     <AppBarWDrawer
@@ -403,55 +400,6 @@ const CreateCustomers = () => {
       queuesInfo={queuesInfo}
       StoreDrawer={(<></>)}
     />
-    // <div>
-    //     <div>
-    //         scanned qrcode and create customers
-    //     </div>
-
-    //     <input
-    //         type="text"
-    //         placeholder="customer name"
-    //         className={classNames({'alertInputField': customerNameAlertFlag})}
-    //         onBlur={handleInputCustomerName}
-    //     />
-    //     <input
-    //         type="text"
-    //         onBlur={handleInputCustomerPhone}
-    //         className={classNames({'alertInputField': customerPhoneAlertFlag})}
-    //         placeholder="customer phone"
-    //     />
-    //     <input
-    //         type="number"
-    //         onBlur={handleInputQueueId}
-    //         placeholder="queue id"
-    //     />
-
-    //     <button 
-    //         onClick={addCustomer}
-    //         disabled={addCustomerFlag}
-    //     >
-    //         add customer
-    //     </button>
-
-    //     {customersForm.map((customerForm: CustomerForm) => (
-    //       // <div id={customer.name} key={customer.name}>{customer.name}</div>
-    //       <div id={customerForm.name} key={customerForm.queue_id}>{customerForm.name}</div>
-    //     ))}
-
-    //     <br />
-    //     <button onClick={clearCustomersForm}>
-    //         clear customers
-    //     </button>
-
-    //     &nbsp;&nbsp;&nbsp;
-
-    //     <button 
-    //         onClick={makeCreateCustomersRequest}
-    //         disabled={createCustomersFlag}
-    //     >
-    //         create customers
-    //     </button>
-    // </div>
   )
 }
 

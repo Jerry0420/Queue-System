@@ -78,7 +78,7 @@ const StoreInfo = () => {
       // TODO: render to ui
       setStoreInfo(JSON.parse(event.data))
       setQueuesInfo(JSON.parse(event.data)['queues'])
-      console.log(JSON.parse(event.data))
+      // console.log(JSON.parse(event.data))
     }
     
     getStoreInfoSSE.onerror = (event) => {

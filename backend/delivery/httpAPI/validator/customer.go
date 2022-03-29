@@ -42,9 +42,7 @@ func CustomerCreate(r *http.Request) (session domain.StoreSession, customers []d
 			return session, customers, domain.ServerError40001
 		}
 		phone, ok := customerInfo["phone"].(string)
-		if !ok || phone == "" {
-			return session, customers, domain.ServerError40001
-		}
+		
 		queueId, ok := customerInfo["queue_id"].(float64)
 		if !ok {
 			return session, customers, domain.ServerError40001
