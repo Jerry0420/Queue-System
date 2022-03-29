@@ -91,6 +91,7 @@ const SignUp = () => {
       setEmailAlertFlag(false)
     } else {
       setEmailAlertFlag(true)
+      return
     }
 
     const rawPassword = window.atob(password)
@@ -98,18 +99,21 @@ const SignUp = () => {
       setPasswordAlertFlag(false)
     } else {
       setPasswordAlertFlag(true)
+      return
     }
 
     if (name) {
       setNameAlertFlag(false)
     } else {
       setNameAlertFlag(true)
+      return
     }
 
     if (queueNames.length > 0) {
       setQueueNameAlertFlag(false)
     } else {
       setQueueNameAlertFlag(true)
+      return
     }
 
     if (email && rawPassword && name && timezone && queueNames.length > 0) {
@@ -234,6 +238,13 @@ const SignUp = () => {
                   />
                 ))}
 
+              <Typography 
+                // align="center"
+                variant='subtitle2'
+                sx={{mb: '-20px', mt: '20px'}}
+              >
+                <em>* The newly open store will be automatically closed after 24 hrs. Every Store owner can reopen their store after closing.</em>
+              </Typography>
               <Button
                 fullWidth
                 variant="contained"

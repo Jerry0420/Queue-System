@@ -16,6 +16,7 @@ import './tailwind.scss'
 import CssBaseline from '@mui/material/CssBaseline'
 import { ThemeProvider } from '@emotion/react'
 import { theme } from './styles/theme'
+import { UpdatePasswordComponent } from './components/UpdatePassword'
 
 function App() {
   
@@ -43,12 +44,10 @@ function App() {
         <HashRouter>
           <Routes>
             <Route path="/" element={<SignUp />} />
-            <Route path="/stores/:storeId/queues/:queueId" element={(<></>)} />
             <Route path="/stores/:storeId/sessions/:sessionId" element={(<CreateCustomers />)} />
-            <Route path="/stores/:storeId/password/update" element={(<></>)} />
+            <Route path="/stores/:storeId/password/update" element={(<UpdatePasswordComponent />)} />
             <Route path="/stores/:storeId" element={(<StoreInfo />)} />
 
-            <Route path="/password/forget" element={(<></>)} />
             <Route path="/signin" element={(<SignIn />)} />
             
             <Route path="/temp" element={<Temp />} />
