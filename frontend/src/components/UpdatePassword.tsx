@@ -1,6 +1,5 @@
 import React, {useEffect, useState} from "react"
 import { useParams, useLocation } from "react-router-dom"
-import '../styles/style.scss'
 import { ACTION_TYPES, useApiRequest } from "../apis/reducer"
 import { updatePassword } from "../apis/StoreAPIs"
 import { StatusBar, STATUS_TYPES } from "./StatusBar"

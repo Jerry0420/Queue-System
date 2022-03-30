@@ -3,7 +3,6 @@ import {
   Link as RouterLink,
   useNavigate 
 } from "react-router-dom"
-import '../styles/style.scss'
 import { checkExistenceOfRefreshableCookie } from "../apis/helper"
 import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
 import { signInStore, forgetPassword } from "../apis/StoreAPIs"
