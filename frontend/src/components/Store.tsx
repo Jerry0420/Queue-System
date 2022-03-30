@@ -80,7 +80,6 @@ const StoreInfo = () => {
     getStoreInfoSSE = getStoreInfoWithSSE(parseInt(storeId))
 
     getStoreInfoSSE.onmessage = (event) => {
-      // TODO: render to ui
       setStoreInfo(JSON.parse(event.data))
       setQueuesInfo(JSON.parse(event.data)['queues'])
       // console.log(JSON.parse(event.data))
@@ -138,10 +137,6 @@ const StoreInfo = () => {
     wrapCheckAuthFlow(
       () => {
         makeUpdateCustomerRequest()
-          .then((response) => {
-            setOpenUpdateCustomerStatusDialog(false)
-            setCustomerNewStatus('')
-          })
       },
       () => {
          // TODO: show error message
@@ -161,7 +156,18 @@ const StoreInfo = () => {
   }
 
   useEffect(() => {
-    // TODO: handle running, success, error states here.
+    if (updateCustomerAction.actionType === ACTION_TYPES.SUCCESS) {
+      setOpenUpdateCustomerStatusDialog(false)
+      setCustomerNewStatus('')
+      setStatusBarSeverity(STATUS_TYPES.SUCCESS)
+      setStatusBarMessage("Success to update customer.")
+    }
+    if (updateCustomerAction.actionType === ACTION_TYPES.ERROR) {
+      setOpenUpdateCustomerStatusDialog(false)
+      setCustomerNewStatus('')
+      setStatusBarSeverity(STATUS_TYPES.ERROR)
+      setStatusBarMessage("Fail to update customer.")
+    }
   }, [updateCustomerAction.actionType])
 
   // update customer status dialog
@@ -376,9 +382,6 @@ const StoreInfo = () => {
     wrapCheckAuthFlow(
       () => {
         makeUpdateStoreDescriptionRequest()
-          .then((response) => {
-            handleCloseUpdateDescriptionDialog()
-          })
       },
       () => {
          // TODO: show error message
@@ -393,10 +396,12 @@ const StoreInfo = () => {
 
   useEffect(() => {
     if (updateStoreDescriptionAction.actionType === ACTION_TYPES.SUCCESS) {
+      handleCloseUpdateDescriptionDialog()
       setStatusBarSeverity(STATUS_TYPES.SUCCESS)
       setStatusBarMessage("Success to update store description.")
     }
     if (updateStoreDescriptionAction.actionType === ACTION_TYPES.ERROR) {
+      handleCloseUpdateDescriptionDialog()
       setStatusBarSeverity(STATUS_TYPES.ERROR)
       setStatusBarMessage("Fail to update store description.")
     }
@@ -442,20 +447,29 @@ const StoreInfo = () => {
       getNormalTokenFromRefreshTokenAction(refreshTokenAction.response) 
       )
   )
+
   const clearCookieAndLocalstorage = () => {
     localStorage.removeItem("storeId")
     document.cookie = "refreshable=true ; expires = Thu, 01 Jan 1970 00:00:00 GMT"
   }
 
+  useEffect(() => {
+    if (closeStoreAction.actionType === ACTION_TYPES.SUCCESS) {
+      handleCloseCloseStoreDialog()
+      clearCookieAndLocalstorage()
+      navigate("/")
+    }
+    if (closeStoreAction.actionType === ACTION_TYPES.ERROR) {
+      handleCloseCloseStoreDialog()
+      setStatusBarSeverity(STATUS_TYPES.ERROR)
+      setStatusBarMessage("Fail to close store.")
+    }
+  }, [closeStoreAction.actionType])
+
   const doMakeCloseStoreRequest = () => {
     wrapCheckAuthFlow(
       () => {
         makeCloseSotreRequest()
-          .then((response) => {
-            handleCloseCloseStoreDialog()
-            clearCookieAndLocalstorage()
-            navigate("/")
-          })
       },
       () => {
          // TODO: show error message

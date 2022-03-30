@@ -15,10 +15,15 @@ import TableCell from '@mui/material/TableCell'
 import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
-import AddBoxIcon from '@mui/icons-material/AddBox';
+import AddBoxIcon from '@mui/icons-material/AddBox'
+import { StatusBar, STATUS_TYPES } from "./StatusBar"
 
 const CreateCustomers = () => {
   let { storeId , sessionId}: {storeId: string, sessionId: string} = useParams()
+
+  // ==================== handle all status ====================
+  const [statusBarSeverity, setStatusBarSeverity] = React.useState('')
+  const [statusBarMessage, setStatusBarMessage] = React.useState('')
   
   // ================= store info sse =================
   const [storeInfo, setStoreInfo] = useState<Store>({})
@@ -29,7 +34,6 @@ const CreateCustomers = () => {
     getStoreInfoSSE = getStoreInfoWithSSE(parseInt(storeId))
 
     getStoreInfoSSE.onmessage = (event) => {
-        // TODO: render customers ui
         setStoreInfo(JSON.parse(event.data))
         setQueuesInfo(JSON.parse(event.data)['queues'])
         // console.log(JSON.parse(event.data))
@@ -149,7 +153,14 @@ const CreateCustomers = () => {
   }, [customersForm])
 
   useEffect(() => {
-    // TODO: handle running, success, error states here.
+    if (addCustomersAction.actionType === ACTION_TYPES.SUCCESS) {
+      setStatusBarSeverity(STATUS_TYPES.SUCCESS)
+      setStatusBarMessage("Success to add customers.")
+    }
+    if (addCustomersAction.actionType === ACTION_TYPES.ERROR) {
+      setStatusBarSeverity(STATUS_TYPES.ERROR)
+      setStatusBarMessage("Fail to add customers.")
+    }
   }, [addCustomersAction.actionType])
 
   useEffect(() => {
@@ -393,13 +404,20 @@ const CreateCustomers = () => {
   }, [scanSessionAction.actionType])
   
   return (
-    <AppBarWDrawer
-      storeInfo={storeInfo}
-      mainContent={mainContent}
-      setSelectedQueueId={setSelectedQueueId}
-      queuesInfo={queuesInfo}
-      StoreDrawer={(<></>)}
-    />
+    <>
+      <AppBarWDrawer
+        storeInfo={storeInfo}
+        mainContent={mainContent}
+        setSelectedQueueId={setSelectedQueueId}
+        queuesInfo={queuesInfo}
+        StoreDrawer={(<></>)}
+      />
+      <StatusBar
+        severity={statusBarSeverity}
+        message={statusBarMessage}
+        setMessage={setStatusBarMessage}
+      />
+    </>
   )
 }
 

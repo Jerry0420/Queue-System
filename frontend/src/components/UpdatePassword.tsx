@@ -4,6 +4,7 @@ import '../styles/style.scss'
 import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
 import { updatePassword } from "../apis/StoreAPIs"
 import { Button, Box, Avatar, Typography, TextField } from "@mui/material"
+import { StatusBar, STATUS_TYPES } from "./StatusBar"
 
 const UpdatePasswordComponent = () => {
   let navigate = useNavigate()
@@ -18,6 +19,11 @@ const UpdatePasswordComponent = () => {
     passwordToken = ""
   }
 
+  // ==================== handle all status ====================
+  const [statusBarSeverity, setStatusBarSeverity] = React.useState('')
+  const [statusBarMessage, setStatusBarMessage] = React.useState('')
+
+  // 
   const [password, setPassword] = useState("")
   const [passwordAlertFlag, setPasswordAlertFlag] = useState(false)
   const handleInputPassword = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -58,7 +64,14 @@ const UpdatePasswordComponent = () => {
   }
 
   useEffect(() => {
-    // TODO: handle running, success, error states here.
+    if (updatePasswordAction.actionType === ACTION_TYPES.SUCCESS) {
+      setStatusBarSeverity(STATUS_TYPES.SUCCESS)
+      setStatusBarMessage("Success to update password.")
+    }
+    if (updatePasswordAction.actionType === ACTION_TYPES.ERROR) {
+      setStatusBarSeverity(STATUS_TYPES.ERROR)
+      setStatusBarMessage("Fail to update password.")
+    }
   }, [updatePasswordAction.actionType])
 
   return (
@@ -110,6 +123,11 @@ const UpdatePasswordComponent = () => {
             </Button>
             {/* <Copyright sx={{ mt: 5 }} /> */}
         </Box>
+        <StatusBar
+          severity={statusBarSeverity}
+          message={statusBarMessage}
+          setMessage={setStatusBarMessage}
+        />
     </Box>
   )
 }

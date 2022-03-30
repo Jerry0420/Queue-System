@@ -12,7 +12,6 @@ const initialRefreshTokenContext: {
     wrapCheckAuthFlow: ((nextStuff: () => void, redirectToMainPage: () => void) => {})
 }
 
-// const {refreshTokenAction, makeRefreshTokenRequest} = useContext(RefreshTokenContext)
 const RefreshTokenContext = createContext(initialRefreshTokenContext)
 
 export {

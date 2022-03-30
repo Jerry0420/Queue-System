@@ -4,13 +4,18 @@ import {
   useNavigate,
 } from 'react-router-dom'
 import { checkExistenceOfRefreshableCookie } from "../apis/helper"
-import { ACTION_TYPES, useApiRequest } from "../apis/reducer"
+import { ACTION_TYPES, useApiRequest, JSONResponse } from "../apis/reducer"
 import { openStore } from "../apis/StoreAPIs"
 import { Chip, Button, Box, Grid, Paper, Avatar, Typography, TextField, Link } from "@mui/material"
 import AddBoxIcon from '@mui/icons-material/AddBox'
+import { StatusBar, STATUS_TYPES } from "./StatusBar"
 
 const SignUp = () => {
   let navigate = useNavigate()
+
+  // ==================== handle all status ====================
+  const [statusBarSeverity, setStatusBarSeverity] = React.useState('')
+  const [statusBarMessage, setStatusBarMessage] = React.useState('')
   
   const timezone: string = Intl.DateTimeFormat().resolvedOptions().timeZone
   
@@ -122,10 +127,24 @@ const SignUp = () => {
   }
 
   useEffect(() => {
-    // TODO: handle running, success, error states here.
     if (openStoreAction.actionType === ACTION_TYPES.SUCCESS) {
-      // TODO: show alert to signin page
-      navigate("/signin")
+      const _jsonResponse = (openStoreAction.response as JSONResponse)
+      if ((_jsonResponse["error_code"])) {
+        setEmail("")
+        setPassword("")
+        setStatusBarSeverity(STATUS_TYPES.ERROR)
+        if (_jsonResponse["error_code"] === 40901) {
+          setStatusBarMessage("The store is already exist, please signin or close the store.")
+        } else {
+          setStatusBarMessage("Fail to find the email in account list.")
+        }
+      } else {
+        navigate("/signin")
+      }
+    }
+    if (openStoreAction.actionType === ACTION_TYPES.ERROR) {
+      setStatusBarSeverity(STATUS_TYPES.ERROR)
+      setStatusBarMessage("Fail to open store.")
     }
   }, [openStoreAction.actionType])
 
@@ -265,6 +284,11 @@ const SignUp = () => {
           </Box>
         </Grid>
       </Grid>
+      <StatusBar
+        severity={statusBarSeverity}
+        message={statusBarMessage}
+        setMessage={setStatusBarMessage}
+      />
     </Box>
   )
 }
