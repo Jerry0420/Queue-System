@@ -67,7 +67,10 @@ const CreateCustomers = () => {
   const [selectedQueueId, setSelectedQueueId] = useState<number | null>(null)
   // helper function
   const countWaitingOrProcessingCustomers = (customers: Customer[]): Customer[] => {
-    return customers.filter((customer: Customer) => customer.status == 'waiting' || customer.status == 'processing')
+    return customers.filter((customer: Customer) => customer.status === 'waiting' || customer.status === 'processing')
+  }
+  const countWaitingCustomers = (customers: Customer[]): Customer[] => {
+    return customers.filter((customer: Customer) => customer.status === 'waiting')
   }
 
   const [customerName, setCustomerName] = useState("")
@@ -304,12 +307,16 @@ const CreateCustomers = () => {
                           <TableCell component="th" scope="row">
                             {queue.name}
                           </TableCell>
+
+                          {/* await */}
                           <TableCell align="right">{countWaitingOrProcessingCustomers(queue.customers).length}</TableCell>
-                          {countWaitingOrProcessingCustomers(queue.customers).length === 0 && (
+                          
+                          {/* Next waiting */}
+                          {countWaitingCustomers(queue.customers).length === 0 && (
                             <TableCell align="right"> - </TableCell>  
                           )}
-                          {countWaitingOrProcessingCustomers(queue.customers).length !== 0 && (
-                            <TableCell align="right">{countWaitingOrProcessingCustomers(queue.customers)[0].name}</TableCell>
+                          {countWaitingCustomers(queue.customers).length !== 0 && (
+                            <TableCell align="right">{countWaitingCustomers(queue.customers)[0].name}</TableCell>
                           )}
                         </TableRow>
                       ))}

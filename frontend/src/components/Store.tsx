@@ -123,7 +123,10 @@ const StoreInfo = () => {
   const [mainContent, setMainContent] = useState<JSX.Element>((<></>)) 
   // helper function
   const countWaitingOrProcessingCustomers = (customers: Customer[]): Customer[] => {
-    return customers.filter((customer: Customer) => customer.status == 'waiting' || customer.status == 'processing')
+    return customers.filter((customer: Customer) => customer.status === 'waiting' || customer.status === 'processing')
+  }
+  const countWaitingCustomers = (customers: Customer[]): Customer[] => {
+    return customers.filter((customer: Customer) => customer.status === 'waiting')
   }
 
   // update customer status
@@ -283,12 +286,16 @@ const StoreInfo = () => {
                           <TableCell component="th" scope="row">
                             {queue.name}
                           </TableCell>
+                          
+                          {/* Await */}
                           <TableCell align="right">{countWaitingOrProcessingCustomers(queue.customers).length}</TableCell>
-                          {countWaitingOrProcessingCustomers(queue.customers).length === 0 && (
+                          
+                          {/* next waiting */}
+                          {countWaitingCustomers(queue.customers).length === 0 && (
                             <TableCell align="right"> - </TableCell>  
                           )}
-                          {countWaitingOrProcessingCustomers(queue.customers).length !== 0 && (
-                            <TableCell align="right">{countWaitingOrProcessingCustomers(queue.customers)[0].name}</TableCell>
+                          {countWaitingCustomers(queue.customers).length !== 0 && (
+                            <TableCell align="right">{countWaitingCustomers(queue.customers)[0].name}</TableCell>
                           )}
                         </TableRow>
                       ))}
@@ -351,10 +358,9 @@ const StoreInfo = () => {
                             <Button sx={{color: 'red'}} onClick={() => handleClickCustomerStatus(customer)}>{customer.status}</Button>
                           </TableCell>
                         )}
-
-                        {UpdateCustomerStatusDialog(openUpdateCustomerStatusDialog, customerNewStatus)}
                       </TableRow>
                     ))}
+                    {UpdateCustomerStatusDialog(openUpdateCustomerStatusDialog, customerNewStatus)}
                   </TableBody>
                 </Table>
               </TableContainer>
