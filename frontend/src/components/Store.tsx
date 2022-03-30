@@ -96,16 +96,27 @@ const StoreInfo = () => {
     })
   }, [sessionScannedURL])
 
+  // helper function
+  const countWaitingOrProcessingCustomers = (customers: Customer[]): Customer[] => {
+    return customers.filter((customer: Customer) => customer.status === 'waiting' || customer.status === 'processing')
+  }
+  const countWaitingCustomers = (customers: Customer[]): Customer[] => {
+    return customers.filter((customer: Customer) => customer.status === 'waiting')
+  }
+  
   // ====================== storeinfo sse ======================
   const [storeInfo, setStoreInfo] = useState<Store>({})
   const [queuesInfo, setQueuesInfo] = useState<Queue[]>([])
+  const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null)
   useEffect(() => {
     let getStoreInfoSSE: EventSource
     getStoreInfoSSE = getStoreInfoWithSSE(parseInt(storeId))
 
     getStoreInfoSSE.onmessage = (event) => {
-      setStoreInfo(JSON.parse(event.data))
-      setQueuesInfo(JSON.parse(event.data)['queues'])
+      const _storeInfo = JSON.parse(event.data)
+      const _queuesInfo = _storeInfo['queues']
+      setStoreInfo(_storeInfo)
+      setQueuesInfo(_queuesInfo)
       // console.log(JSON.parse(event.data))
     }
     
@@ -119,18 +130,28 @@ const StoreInfo = () => {
     }
   }, [getStoreInfoWithSSE, setStoreInfo])
 
-  // ====================== main content ======================
-  const [mainContent, setMainContent] = useState<JSX.Element>((<></>)) 
-  // helper function
-  const countWaitingOrProcessingCustomers = (customers: Customer[]): Customer[] => {
-    return customers.filter((customer: Customer) => customer.status === 'waiting' || customer.status === 'processing')
-  }
-  const countWaitingCustomers = (customers: Customer[]): Customer[] => {
-    return customers.filter((customer: Customer) => customer.status === 'waiting')
-  }
+  const [waitingOrProcessingCustomersOfSelectedQueue, setWaitingOrProcessingCustomersOfSelectedQueue] = useState<Customer[]>([])
+  
+  useEffect(() => {
+    if (selectedQueue !== null) {
+      const _selectedQueue = queuesInfo.filter((queue: Queue) => queue.id === selectedQueue.id)
+      setSelectedQueue(_selectedQueue[0])
+    }
+  }, [queuesInfo])
 
-  // update customer status
-  const [selectedQueueId, setSelectedQueueId] = useState<number | null>(null)
+  useEffect(() => {
+    if (selectedQueue !== null) {
+      if (selectedQueue.customers) {
+        setWaitingOrProcessingCustomersOfSelectedQueue(
+          countWaitingOrProcessingCustomers(selectedQueue.customers)
+          )
+      } else {
+        setWaitingOrProcessingCustomersOfSelectedQueue([])
+      }
+    }
+  }, [selectedQueue])
+  
+  // ====================== main content ======================
   const [openUpdateCustomerStatusDialog, setOpenUpdateCustomerStatusDialog] = React.useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null) 
   const [customerNewStatus, setCustomerNewStatus] = React.useState('')
@@ -155,7 +176,7 @@ const StoreInfo = () => {
         selectedCustomer === null ? -1 : selectedCustomer.id,
         getNormalTokenFromRefreshTokenAction(refreshTokenAction.response), 
         parseInt(storeId),
-        selectedQueueId === null ? -1 : selectedQueueId,
+        selectedQueue === null ? -1 : selectedQueue.id,
         selectedCustomer === null ? '' : selectedCustomer.status,
         customerNewStatus
       )
@@ -199,8 +220,6 @@ const StoreInfo = () => {
 
   // update customer status dialog
   const UpdateCustomerStatusDialog = (
-    openUpdateCustomerStatusDialog: boolean,
-    customerNewStatus: string,
     ): JSX.Element => {
     return (
       <Dialog disableEscapeKeyDown open={openUpdateCustomerStatusDialog} onClose={handleCloseCustomerStatusDialog}>
@@ -232,154 +251,6 @@ const StoreInfo = () => {
       </Dialog>
     )
   }
-  useEffect(() => {
-    if (selectedQueueId === null) {
-      setMainContent((
-        <>
-          <Container maxWidth="md">
-            <Container fixed>
-              <Typography gutterBottom variant="h5" component="h2" align="center">
-                Please scan the QRCode to join the queue.
-              </Typography>
-            </Container>
-            <Grid container rowSpacing={2} justifyContent="center" alignItems="center">
-              <Grid item key={"all"} xs={10} sm={10} md={6}>
-                <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                  <CardMedia
-                    component="img"
-                    sx={{
-                      display: 'block',
-                      marginLeft: 'auto',
-                      marginRight: 'auto',
-                      width: '80%'
-                    }}
-                    src={qrcodeImageURL}
-                    alt="qrcode image"
-                  />
-                  <CardContent sx={{ flexGrow: 1 }}>
-                    <Typography 
-                      gutterBottom 
-                      style={{whiteSpace: 'pre-line'}}
-                    >
-                      {storeInfo.description}
-                    </Typography>
-                    <a href={sessionScannedURL} target="_blank">{sessionScannedURL}</a>
-                  </CardContent>
-                </Card>
-              </Grid>
-              <Grid item key={"queues"} xs={12} sm={12} md={12}>
-                <TableContainer component={Paper}>
-                  <Table sx={{ minWidth: '50vw' }} aria-label="simple table">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Queue Name</TableCell>
-                        <TableCell align="right">Await</TableCell>
-                        <TableCell align="right">Next</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {queuesInfo.map((queue: Queue) => (
-                        <TableRow
-                          key={queue.id}
-                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                        >
-                          <TableCell component="th" scope="row">
-                            {queue.name}
-                          </TableCell>
-                          
-                          {/* Await */}
-                          <TableCell align="right">{countWaitingOrProcessingCustomers(queue.customers).length}</TableCell>
-                          
-                          {/* next waiting */}
-                          {countWaitingCustomers(queue.customers).length === 0 && (
-                            <TableCell align="right"> - </TableCell>  
-                          )}
-                          {countWaitingCustomers(queue.customers).length !== 0 && (
-                            <TableCell align="right">{countWaitingCustomers(queue.customers)[0].name}</TableCell>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Grid>
-            </Grid>
-          </Container>
-        </>
-      ))
-    } else {
-      let processedCustomers: Customer[]
-      const _selectedQueue = queuesInfo.filter((queue: Queue) => queue.id === selectedQueueId)
-      const selectedQueue = _selectedQueue[0]
-      if (selectedQueue.customers) {
-        processedCustomers = countWaitingOrProcessingCustomers(selectedQueue.customers)
-      } else {
-        processedCustomers = []
-      }
-      setMainContent((
-        <>
-          <Box sx={{ width: '100%' }}>
-            <Stack 
-              spacing={2}
-              justifyContent="center"
-              alignItems="center"
-            >
-              <Typography variant="h2" component="h2">{selectedQueue.name}</Typography>
-              <TableContainer component={Paper}>
-                <Table sx={{ minWidth: '40vw' }} aria-label="simple table">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell align="right">Phone</TableCell>
-                      <TableCell align="right">Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {processedCustomers.map((customer: Customer, index) => (
-                      <TableRow
-                        key={customer.id}
-                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                      >
-                        <TableCell component="th" scope="row">
-                          [{index}] {customer.name}
-                        </TableCell>
-
-                        <TableCell align="right">
-                          {customer.phone}
-                        </TableCell>
-
-                        {customer.status === 'waiting' && (
-                          <TableCell align="right">
-                            <Button onClick={() => handleClickCustomerStatus(customer)}>waiting</Button>
-                          </TableCell>
-                        )}
-                        {customer.status === 'processing' && (
-                          <TableCell align="right">
-                            <Button sx={{color: 'red'}} onClick={() => handleClickCustomerStatus(customer)}>{customer.status}</Button>
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))}
-                    {UpdateCustomerStatusDialog(openUpdateCustomerStatusDialog, customerNewStatus)}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Stack>
-          </Box>
-        </>
-      ))
-    }
-  }, [
-    selectedQueueId, 
-    setMainContent, 
-    storeInfo, 
-    queuesInfo, 
-    qrcodeImageURL, 
-    openUpdateCustomerStatusDialog, 
-    customerNewStatus, 
-    setOpenUpdateCustomerStatusDialog, 
-    setCustomerNewStatus,
-  ])
 
   // ====================== store drawer ====================== 
   // update store description
@@ -607,11 +478,137 @@ const StoreInfo = () => {
     <>
       <AppBarWDrawer
         storeInfo={storeInfo}
-        mainContent={mainContent}
-        setSelectedQueueId={setSelectedQueueId}
+        setSelectedQueue={setSelectedQueue}
         queuesInfo={queuesInfo}
         StoreDrawer={StoreDrawer}
-      />
+      >
+        {selectedQueue === null && (
+          <>
+            <Container maxWidth="md">
+              <Container fixed>
+                <Typography gutterBottom variant="h5" component="h2" align="center">
+                  Please scan the QRCode to join the queue.
+                </Typography>
+              </Container>
+              <Grid container rowSpacing={2} justifyContent="center" alignItems="center">
+                <Grid item key={"all"} xs={10} sm={10} md={6}>
+                  <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                    <CardMedia
+                      component="img"
+                      sx={{
+                        display: 'block',
+                        marginLeft: 'auto',
+                        marginRight: 'auto',
+                        width: '80%'
+                      }}
+                      src={qrcodeImageURL}
+                      alt="qrcode image"
+                    />
+                    <CardContent sx={{ flexGrow: 1 }}>
+                      <Typography 
+                        gutterBottom 
+                        style={{whiteSpace: 'pre-line'}}
+                      >
+                        {storeInfo.description}
+                      </Typography>
+                      <a href={sessionScannedURL} target="_blank">{sessionScannedURL}</a>
+                    </CardContent>
+                  </Card>
+                </Grid>
+                <Grid item key={"queues"} xs={12} sm={12} md={12}>
+                  <TableContainer component={Paper}>
+                    <Table sx={{ minWidth: '50vw' }} aria-label="simple table">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Queue Name</TableCell>
+                          <TableCell align="right">Await</TableCell>
+                          <TableCell align="right">Next</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {queuesInfo.map((queue: Queue) => (
+                          <TableRow
+                            key={queue.id}
+                            sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                          >
+                            <TableCell component="th" scope="row">
+                              {queue.name}
+                            </TableCell>
+                            
+                            {/* Await */}
+                            <TableCell align="right">{countWaitingOrProcessingCustomers(queue.customers).length}</TableCell>
+                            
+                            {/* next waiting */}
+                            {countWaitingCustomers(queue.customers).length === 0 && (
+                              <TableCell align="right"> - </TableCell>  
+                            )}
+                            {countWaitingCustomers(queue.customers).length !== 0 && (
+                              <TableCell align="right">{countWaitingCustomers(queue.customers)[0].name}</TableCell>
+                            )}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Grid>
+              </Grid>
+            </Container>
+          </>
+        )}
+
+        {selectedQueue !== null && (
+          <>
+            <Box sx={{ width: '100%' }}>
+              <Stack 
+                spacing={2}
+                justifyContent="center"
+                alignItems="center"
+              >
+                <Typography variant="h2" component="h2">{selectedQueue.name}</Typography>
+                <TableContainer component={Paper}>
+                  <Table sx={{ minWidth: '40vw' }} aria-label="simple table">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell align="right">Phone</TableCell>
+                        <TableCell align="right">Status</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {waitingOrProcessingCustomersOfSelectedQueue.map((customer: Customer, index) => (
+                        <TableRow
+                          key={customer.id}
+                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                        >
+                          <TableCell component="th" scope="row">
+                            [{index}] {customer.name}
+                          </TableCell>
+
+                          <TableCell align="right">
+                            {customer.phone}
+                          </TableCell>
+
+                          {customer.status === 'waiting' && (
+                            <TableCell align="right">
+                              <Button onClick={() => handleClickCustomerStatus(customer)}>waiting</Button>
+                            </TableCell>
+                          )}
+                          {customer.status === 'processing' && (
+                            <TableCell align="right">
+                              <Button sx={{color: 'red'}} onClick={() => handleClickCustomerStatus(customer)}>{customer.status}</Button>
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Stack>
+              {UpdateCustomerStatusDialog()}
+            </Box>
+          </>
+        )}
+      </AppBarWDrawer>
       <StatusBar
         severity={statusBarSeverity}
         message={statusBarMessage}

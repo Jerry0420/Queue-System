@@ -18,12 +18,12 @@ import HailIcon from '@mui/icons-material/Hail'
 import EscalatorWarningIcon from '@mui/icons-material/EscalatorWarning'
 
 const BasicDrawer = (props) => {
-    const { setSelectedQueueId, queuesInfo, StoreDrawer } = props
+    const { setSelectedQueue, queuesInfo, StoreDrawer } = props
     return (
         <div>
         <Toolbar />
         <Divider />
-            <ListItem button key={"All"} onClick={() => {setSelectedQueueId(null)}}>
+            <ListItem button key={"All"} onClick={() => {setSelectedQueue(null)}}>
                 <ListItemIcon>
                 <HomeIcon />
                 </ListItemIcon>
@@ -32,7 +32,7 @@ const BasicDrawer = (props) => {
         <Divider />
         <List>
             {queuesInfo.map((queue: Queue, index: number) => (
-            <ListItem button key={queue.id} onClick={() => {setSelectedQueueId(queue.id)}}>
+            <ListItem button key={queue.id} onClick={() => {setSelectedQueue(queue)}}>
                 <ListItemIcon>
                 {index % 2 === 0 ? <HailIcon /> : <EscalatorWarningIcon />}
                 </ListItemIcon>
@@ -46,7 +46,7 @@ const BasicDrawer = (props) => {
 }
 
 BasicDrawer.propTypes = {
-    setSelectedQueueId: PropTypes.func, 
+    setSelectedQueue: PropTypes.func, 
     queuesInfo: PropTypes.arrayOf(
         PropTypes.shape({
             id: PropTypes.number,
@@ -66,13 +66,13 @@ BasicDrawer.propTypes = {
 }
 
 BasicDrawer.defaultProps = {
-    setSelectedQueueId: (id: number | null) => {},
+    setSelectedQueue: (queue: Queue | null) => {},
     queuesInfo: [],
     StoreDrawer: (<></>),
 }
 
 const AppBarWDrawer = (props) => {
-    const { storeInfo, mainContent, setSelectedQueueId, queuesInfo, StoreDrawer  } = props
+    const { storeInfo, children, setSelectedQueue, queuesInfo, StoreDrawer  } = props
     const drawerWidth = 240
     const [mobileOpen, setMobileOpen] = useState(false)
     const handleDrawerToggle = () => {
@@ -121,7 +121,7 @@ const AppBarWDrawer = (props) => {
               }}
             >
               <BasicDrawer
-                setSelectedQueueId={setSelectedQueueId}
+                setSelectedQueue={setSelectedQueue}
                 queuesInfo={queuesInfo}
                 StoreDrawer={StoreDrawer}
               />
@@ -135,7 +135,7 @@ const AppBarWDrawer = (props) => {
               open
             >
               <BasicDrawer 
-                setSelectedQueueId={setSelectedQueueId}
+                setSelectedQueue={setSelectedQueue}
                 queuesInfo={queuesInfo}
                 StoreDrawer={StoreDrawer}
               />
@@ -146,7 +146,7 @@ const AppBarWDrawer = (props) => {
             sx={{ flexGrow: 1, p: 3, width: { sm: `calc(100% - ${drawerWidth}px)` } }}
           >
             <Toolbar />
-            {mainContent}
+            {children}
           </Box>
         </Box>
       )
@@ -156,8 +156,8 @@ AppBarWDrawer.propTypes = {
     storeInfo: PropTypes.shape({
         name: PropTypes.string
     }),
-    mainContent: PropTypes.node,
-    setSelectedQueueId: PropTypes.func, 
+    children: PropTypes.node,
+    setSelectedQueue: PropTypes.func, 
     queuesInfo: PropTypes.arrayOf(
         PropTypes.shape({
             id: PropTypes.number,
@@ -178,8 +178,8 @@ AppBarWDrawer.propTypes = {
 
 AppBarWDrawer.defaultProps = {
     storeInfo: {"name": ""},
-    mainContent: (<></>),
-    setSelectedQueueId: (id: number | null) => {},
+    children: (<></>),
+    setSelectedQueue: (queue: Queue | null) => {},
     queuesInfo: [],
     StoreDrawer: (<></>),
 }

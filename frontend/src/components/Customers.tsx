@@ -40,14 +40,17 @@ const CreateCustomers = () => {
   // ================= store info sse =================
   const [storeInfo, setStoreInfo] = useState<Store>({})
   const [queuesInfo, setQueuesInfo] = useState<Queue[]>([])
+  const [selectedQueue, setSelectedQueue] = useState<Queue | null>(null)
 
   useEffect(() => {
     let getStoreInfoSSE: EventSource
     getStoreInfoSSE = getStoreInfoWithSSE(parseInt(storeId))
 
     getStoreInfoSSE.onmessage = (event) => {
-        setStoreInfo(JSON.parse(event.data))
-        setQueuesInfo(JSON.parse(event.data)['queues'])
+      const _storeInfo = JSON.parse(event.data)
+      const _queuesInfo = _storeInfo['queues']
+      setStoreInfo(_storeInfo)
+      setQueuesInfo(_queuesInfo)
         // console.log(JSON.parse(event.data))
     }
     
@@ -62,9 +65,28 @@ const CreateCustomers = () => {
     }
   }, [getStoreInfoWithSSE])
 
+  const [waitingOrProcessingCustomersOfSelectedQueue, setWaitingOrProcessingCustomersOfSelectedQueue] = useState<Customer[]>([])
+  
+  useEffect(() => {
+    if (selectedQueue !== null) {
+      const _selectedQueue = queuesInfo.filter((queue: Queue) => queue.id === selectedQueue.id)
+      setSelectedQueue(_selectedQueue[0])
+    }
+  }, [queuesInfo])
+
+  useEffect(() => {
+    if (selectedQueue !== null) {
+      if (selectedQueue.customers) {
+        setWaitingOrProcessingCustomersOfSelectedQueue(
+          countWaitingOrProcessingCustomers(selectedQueue.customers)
+          )
+      } else {
+        setWaitingOrProcessingCustomersOfSelectedQueue([])
+      }
+    }
+  }, [selectedQueue])
+
   // ====================== main content ======================
-  const [mainContent, setMainContent] = useState<JSX.Element>((<></>))
-  const [selectedQueueId, setSelectedQueueId] = useState<number | null>(null)
   // helper function
   const countWaitingOrProcessingCustomers = (customers: Customer[]): Customer[] => {
     return customers.filter((customer: Customer) => customer.status === 'waiting' || customer.status === 'processing')
@@ -178,234 +200,6 @@ const CreateCustomers = () => {
     }
   }, [addCustomersAction.actionType])
 
-  useEffect(() => {
-    if (selectedQueueId === null) {
-      setMainContent((
-        <>
-          <Container maxWidth="md">
-            <Container fixed>
-              <Typography gutterBottom variant="h5" component="h2" align="center">
-                Please fill the form to create customers.
-                <Typography 
-                  gutterBottom 
-                  style={{whiteSpace: 'pre-line'}}
-                >
-                  {storeInfo.description}
-                </Typography>
-              </Typography>
-            </Container>
-            <Grid container rowSpacing={2} justifyContent="center" alignItems="center">
-              <Grid item key={"all"} xs={10} sm={10} md={6}>
-                <Box sx={{ mt: 1 }}>
-                  <TextField
-                    margin="normal"
-                    required
-                    fullWidth
-                    id="name"
-                    label="Name"
-                    name="name"
-                    autoComplete="name"
-                    value={customerName}
-                    onChange={handleInputCustomerName}
-                    error={customerNameAlertFlag}
-                  />
-                  <TextField
-                    margin="normal"
-                    fullWidth
-                    name="phone"
-                    label="Phone"
-                    type="phone"
-                    id="phone"
-                    value={customerPhone}
-                    autoComplete="tel"
-                    onChange={handleInputCustomerPhone}
-                    error={customerPhoneAlertFlag}
-                  />
-                  <Grid 
-                    container 
-                    spacing={2}
-                    alignItems="center"
-                    justifyContent="flex-start"
-                  >
-                    <Grid item xs={8} sm={8}>
-                      <Box component="form" sx={{ display: 'flex', flexWrap: 'wrap' }}>
-                        <FormControl 
-                          sx={{ mt: 3, minWidth: 160 }} 
-                          error={customerQueueIdAlertFlag}
-                        >
-                          <InputLabel id="queue-select-label">Queue</InputLabel>
-                          <Select
-                            labelId="queue-select-label"
-                            id="queue-select"
-                            value={customerQueueId}
-                            onChange={handleInputCustomerQueueId}
-                            input={<OutlinedInput label="Queue" />}
-                          >
-                            <MenuItem value={0}>------</MenuItem>
-                            {queuesInfo.map((queue: Queue) => (
-                              <MenuItem key={queue.id} value={queue.id}>{queue.name}</MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Box>
-                    </Grid>
-                    <Grid item xs={4} sm={4}>
-                      <Button 
-                        variant="contained" 
-                        startIcon={<AddBoxIcon />}
-                        onClick={addCustomerToCustomersForm}
-                        disabled={addCustomerAlertFlag}
-                      >
-                        Add
-                      </Button>
-                    </Grid>
-                  </Grid>              
-
-                  {customersForm.map((customerForm: CustomerForm) => (
-                      <Chip 
-                        sx={{ mb: 1, ml: 1, mr: 1 }}
-                        label={showCustomerNamePhoneQueueName(customerForm)}
-                        key={customerForm.name} 
-                        onDelete={() => {handleDeleteCustomer(customerForm)}}
-                      />
-                    ))}
-
-                  <Typography 
-                    align="center"
-                    variant='subtitle2'
-                    color={customersFormAlertFlag}
-                  >
-                    <em>* Can not add more than 5 customers at a time.</em>
-                  </Typography>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    sx={{ mt: 3, mb: 2 }}
-                    onClick={doMakeAddCustomersRequest}
-                    disabled={addCustomersAlertFlag}
-                  >
-                    Add Customers
-                  </Button>
-                </Box>
-              </Grid>
-              <Grid item key={"queues"} xs={12} sm={12} md={12}>
-                <TableContainer component={Paper}>
-                  <Table sx={{ minWidth: '50vw' }} aria-label="simple table">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Queue Name</TableCell>
-                        <TableCell align="right">Await</TableCell>
-                        <TableCell align="right">Next</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {queuesInfo.map((queue: Queue) => (
-                        <TableRow
-                          key={queue.id}
-                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                        >
-                          <TableCell component="th" scope="row">
-                            {queue.name}
-                          </TableCell>
-
-                          {/* await */}
-                          <TableCell align="right">{countWaitingOrProcessingCustomers(queue.customers).length}</TableCell>
-                          
-                          {/* Next waiting */}
-                          {countWaitingCustomers(queue.customers).length === 0 && (
-                            <TableCell align="right"> - </TableCell>  
-                          )}
-                          {countWaitingCustomers(queue.customers).length !== 0 && (
-                            <TableCell align="right">{countWaitingCustomers(queue.customers)[0].name}</TableCell>
-                          )}
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </Grid>
-            </Grid>
-          </Container>
-        </>
-      ))
-    } else {
-      let processedCustomers: Customer[]
-      const _selectedQueue = queuesInfo.filter((queue: Queue) => queue.id === selectedQueueId)
-      const selectedQueue = _selectedQueue[0]
-      if (selectedQueue.customers) {
-        processedCustomers = countWaitingOrProcessingCustomers(selectedQueue.customers)
-      } else {
-        processedCustomers = []
-      }
-      setMainContent((
-        <>
-          <Box sx={{ width: '100%' }}>
-            <Stack 
-              spacing={2}
-              justifyContent="center"
-              alignItems="center"
-            >
-              <Typography variant="h2" component="h2">{selectedQueue.name}</Typography>
-              <TableContainer component={Paper}>
-                <Table sx={{ minWidth: '40vw' }} aria-label="simple table">
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>Name</TableCell>
-                      <TableCell align="right">Phone</TableCell>
-                      <TableCell align="right">Status</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {processedCustomers.map((customer: Customer, index) => (
-                      <TableRow
-                        key={customer.id}
-                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                      >
-                        <TableCell component="th" scope="row">
-                          [{index}] {customer.name}
-                        </TableCell>
-
-                        <TableCell align="right">
-                          {customer.phone}
-                        </TableCell>
-
-                        {customer.status === 'waiting' && (
-                          <TableCell align="right">
-                            waiting
-                          </TableCell>
-                        )}
-                        {customer.status === 'processing' && (
-                          <TableCell align="right" sx={{color: 'red'}}>
-                            {customer.status}
-                          </TableCell>
-                        )}
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Stack>
-          </Box>
-        </>
-      ))
-    }
-  }, [
-    selectedQueueId, 
-    setMainContent, 
-    storeInfo, 
-    queuesInfo,
-    customerName,
-    customerNameAlertFlag,
-    customerPhone,
-    customerPhoneAlertFlag,
-    customerQueueId,
-    customerQueueIdAlertFlag,
-    customersForm,
-    addCustomerAlertFlag,
-    addCustomersAlertFlag,
-    customersFormAlertFlag
-  ])
-
   // ================= scan session =================  
   const [scanSessionAction, makeScanSessionRequest] = useApiRequest(...scanSession(sessionId, parseInt(storeId)))
   useEffect(() => {
@@ -426,11 +220,212 @@ const CreateCustomers = () => {
     <>
       <AppBarWDrawer
         storeInfo={storeInfo}
-        mainContent={mainContent}
-        setSelectedQueueId={setSelectedQueueId}
+        setSelectedQueue={setSelectedQueue}
         queuesInfo={queuesInfo}
         StoreDrawer={(<></>)}
-      />
+      >
+        {selectedQueue === null && (
+          <>
+            <Container maxWidth="md">
+              <Container fixed>
+                <Typography gutterBottom variant="h5" component="h2" align="center">
+                  Please fill the form to create customers.
+                  <Typography 
+                    gutterBottom 
+                    style={{whiteSpace: 'pre-line'}}
+                  >
+                    {storeInfo.description}
+                  </Typography>
+                </Typography>
+              </Container>
+              <Grid container rowSpacing={2} justifyContent="center" alignItems="center">
+                <Grid item key={"all"} xs={10} sm={10} md={6}>
+                  <Box sx={{ mt: 1 }}>
+                    <TextField
+                      margin="normal"
+                      required
+                      fullWidth
+                      id="name"
+                      label="Name"
+                      name="name"
+                      autoComplete="name"
+                      value={customerName}
+                      onChange={handleInputCustomerName}
+                      error={customerNameAlertFlag}
+                    />
+                    <TextField
+                      margin="normal"
+                      fullWidth
+                      name="phone"
+                      label="Phone"
+                      type="phone"
+                      id="phone"
+                      value={customerPhone}
+                      autoComplete="tel"
+                      onChange={handleInputCustomerPhone}
+                      error={customerPhoneAlertFlag}
+                    />
+                    <Grid 
+                      container 
+                      spacing={2}
+                      alignItems="center"
+                      justifyContent="flex-start"
+                    >
+                      <Grid item xs={8} sm={8}>
+                        <Box component="form" sx={{ display: 'flex', flexWrap: 'wrap' }}>
+                          <FormControl 
+                            sx={{ mt: 3, minWidth: 160 }} 
+                            error={customerQueueIdAlertFlag}
+                          >
+                            <InputLabel id="queue-select-label">Queue</InputLabel>
+                            <Select
+                              labelId="queue-select-label"
+                              id="queue-select"
+                              value={customerQueueId}
+                              onChange={handleInputCustomerQueueId}
+                              input={<OutlinedInput label="Queue" />}
+                            >
+                              <MenuItem value={0}>------</MenuItem>
+                              {queuesInfo.map((queue: Queue) => (
+                                <MenuItem key={queue.id} value={queue.id}>{queue.name}</MenuItem>
+                              ))}
+                            </Select>
+                          </FormControl>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={4} sm={4}>
+                        <Button 
+                          variant="contained" 
+                          startIcon={<AddBoxIcon />}
+                          onClick={addCustomerToCustomersForm}
+                          disabled={addCustomerAlertFlag}
+                        >
+                          Add
+                        </Button>
+                      </Grid>
+                    </Grid>              
+
+                    {customersForm.map((customerForm: CustomerForm) => (
+                        <Chip 
+                          sx={{ mb: 1, ml: 1, mr: 1 }}
+                          label={showCustomerNamePhoneQueueName(customerForm)}
+                          key={customerForm.name} 
+                          onDelete={() => {handleDeleteCustomer(customerForm)}}
+                        />
+                      ))}
+
+                    <Typography 
+                      align="center"
+                      variant='subtitle2'
+                      color={customersFormAlertFlag}
+                    >
+                      <em>* Can not add more than 5 customers at a time.</em>
+                    </Typography>
+                    <Button
+                      fullWidth
+                      variant="contained"
+                      sx={{ mt: 3, mb: 2 }}
+                      onClick={doMakeAddCustomersRequest}
+                      disabled={addCustomersAlertFlag}
+                    >
+                      Add Customers
+                    </Button>
+                  </Box>
+                </Grid>
+                <Grid item key={"queues"} xs={12} sm={12} md={12}>
+                  <TableContainer component={Paper}>
+                    <Table sx={{ minWidth: '50vw' }} aria-label="simple table">
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Queue Name</TableCell>
+                          <TableCell align="right">Await</TableCell>
+                          <TableCell align="right">Next</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {queuesInfo.map((queue: Queue) => (
+                          <TableRow
+                            key={queue.id}
+                            sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                          >
+                            <TableCell component="th" scope="row">
+                              {queue.name}
+                            </TableCell>
+
+                            {/* await */}
+                            <TableCell align="right">{countWaitingOrProcessingCustomers(queue.customers).length}</TableCell>
+                            
+                            {/* Next waiting */}
+                            {countWaitingCustomers(queue.customers).length === 0 && (
+                              <TableCell align="right"> - </TableCell>  
+                            )}
+                            {countWaitingCustomers(queue.customers).length !== 0 && (
+                              <TableCell align="right">{countWaitingCustomers(queue.customers)[0].name}</TableCell>
+                            )}
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                </Grid>
+              </Grid>
+            </Container>
+          </>
+        )}
+
+        {selectedQueue !== null && (
+          <>
+            <Box sx={{ width: '100%' }}>
+              <Stack 
+                spacing={2}
+                justifyContent="center"
+                alignItems="center"
+              >
+                <Typography variant="h2" component="h2">{selectedQueue.name}</Typography>
+                <TableContainer component={Paper}>
+                  <Table sx={{ minWidth: '40vw' }} aria-label="simple table">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Name</TableCell>
+                        <TableCell align="right">Phone</TableCell>
+                        <TableCell align="right">Status</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {waitingOrProcessingCustomersOfSelectedQueue.map((customer: Customer, index: number) => (
+                        <TableRow
+                          key={customer.id}
+                          sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                        >
+                          <TableCell component="th" scope="row">
+                            [{index}] {customer.name}
+                          </TableCell>
+
+                          <TableCell align="right">
+                            {customer.phone}
+                          </TableCell>
+
+                          {customer.status === 'waiting' && (
+                            <TableCell align="right">
+                              waiting
+                            </TableCell>
+                          )}
+                          {customer.status === 'processing' && (
+                            <TableCell align="right" sx={{color: 'red'}}>
+                              {customer.status}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Stack>
+            </Box>
+          </>
+        )}
+
+      </AppBarWDrawer>
       <StatusBar
         severity={statusBarSeverity}
         message={statusBarMessage}
