@@ -1,27 +1,51 @@
 import React, {useEffect, useContext, useState} from "react"
-import { useParams, Link, useNavigate } from "react-router-dom"
+import { useParams, useNavigate } from "react-router-dom"
 import { RefreshTokenContext } from "./contexts"
 import { createSessionWithSSE } from "../apis/SessionAPIs"
 import { validateResponseSuccess } from "../apis/helper"
-import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
+import { ACTION_TYPES, useApiRequest } from "../apis/reducer"
 import { toDataURL } from "qrcode"
 import { closeStore, getStoreInfoWithSSE, updateStoreDescription } from "../apis/StoreAPIs"
 import { getNormalTokenFromRefreshTokenAction, getSessionTokenFromRefreshTokenAction } from "../apis/validator"
-import { TextareaAutosize, OutlinedInput, FormControl, InputLabel, SelectChangeEvent, Select, MenuItem, DialogActions, Button, Dialog, DialogTitle, DialogContent, Stack, CardContent, CardMedia, Container, Card, List, ListItem, ListItemText, ListItemIcon, Divider, AppBar, Box, Grid, Paper, Avatar, Typography, Drawer, Toolbar, IconButton } from "@mui/material"
+import { Customer, Queue, Store } from "../apis/models"
+import { updateCustomer } from "../apis/CustomerAPIs"
+import { AppBarWDrawer } from "./AppBarWDrawer"
+import { StatusBar, STATUS_TYPES } from "./StatusBar"
+import CloseIcon from '@mui/icons-material/Close'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import ExitToAppIcon from '@mui/icons-material/ExitToApp'
+import AlarmIcon from '@mui/icons-material/Alarm'
+import ListItemIcon from '@mui/material/ListItemIcon'
+import Divider from '@mui/material/Divider'
+import Box from '@mui/material/Box'
+import Grid from '@mui/material/Grid'
+import Paper from '@mui/material/Paper'
+import Typography from '@mui/material/Typography'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
+import Stack from '@mui/material/Stack'
+import CardContent from '@mui/material/CardContent'
+import CardMedia from '@mui/material/CardMedia'
+import Container from '@mui/material/Container'
+import Card from '@mui/material/Card'
+import List from '@mui/material/List'
+import ListItem from '@mui/material/ListItem'
+import ListItemText from '@mui/material/ListItemText'
+import TextareaAutosize from '@mui/material/TextareaAutosize'
+import OutlinedInput from '@mui/material/OutlinedInput'
+import FormControl from '@mui/material/FormControl'
+import InputLabel from '@mui/material/InputLabel'
+import Select, {SelectChangeEvent} from '@mui/material/Select'
+import MenuItem from '@mui/material/MenuItem'
+import DialogActions from '@mui/material/DialogActions'
+import Button from '@mui/material/Button'
+import Dialog from '@mui/material/Dialog'
 import Table from '@mui/material/Table'
 import TableBody from '@mui/material/TableBody'
 import TableCell from '@mui/material/TableCell'
 import TableContainer from '@mui/material/TableContainer'
 import TableHead from '@mui/material/TableHead'
 import TableRow from '@mui/material/TableRow'
-import { Customer, Queue, Store } from "../apis/models"
-import CloseIcon from '@mui/icons-material/Close'
-import RefreshIcon from '@mui/icons-material/Refresh'
-import ExitToAppIcon from '@mui/icons-material/ExitToApp'
-import { updateCustomer } from "../apis/CustomerAPIs"
-import { AppBarWDrawer } from "./AppBarWDrawer"
-import AlarmIcon from '@mui/icons-material/Alarm'
-import { StatusBar, STATUS_TYPES } from "./StatusBar"
 
 const StoreInfo = () => {
   let navigate = useNavigate()

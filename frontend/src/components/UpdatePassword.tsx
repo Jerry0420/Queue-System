@@ -1,13 +1,16 @@
 import React, {useEffect, useState} from "react"
-import { useNavigate, useParams, useLocation } from "react-router-dom"
+import { useParams, useLocation } from "react-router-dom"
 import '../styles/style.scss'
-import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
+import { ACTION_TYPES, useApiRequest } from "../apis/reducer"
 import { updatePassword } from "../apis/StoreAPIs"
-import { Button, Box, Avatar, Typography, TextField } from "@mui/material"
 import { StatusBar, STATUS_TYPES } from "./StatusBar"
+import Button from '@mui/material/Button'
+import Box from '@mui/material/Box'
+import Avatar from '@mui/material/Avatar'
+import Typography from '@mui/material/Typography'
+import TextField from '@mui/material/TextField'
 
 const UpdatePasswordComponent = () => {
-  let navigate = useNavigate()
   let { storeId }: {storeId: string} = useParams()
   let location = useLocation()
   let passwordToken = ""
@@ -121,7 +124,6 @@ const UpdatePasswordComponent = () => {
                 >
                 Reset Password
             </Button>
-            {/* <Copyright sx={{ mt: 5 }} /> */}
         </Box>
         <StatusBar
           severity={statusBarSeverity}

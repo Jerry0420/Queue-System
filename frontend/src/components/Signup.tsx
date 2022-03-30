@@ -6,9 +6,18 @@ import {
 import { checkExistenceOfRefreshableCookie } from "../apis/helper"
 import { ACTION_TYPES, useApiRequest, JSONResponse } from "../apis/reducer"
 import { openStore } from "../apis/StoreAPIs"
-import { Chip, Button, Box, Grid, Paper, Avatar, Typography, TextField, Link } from "@mui/material"
 import AddBoxIcon from '@mui/icons-material/AddBox'
 import { StatusBar, STATUS_TYPES } from "./StatusBar"
+import Chip from '@mui/material/Chip'
+import Button from '@mui/material/Button'
+import Box from '@mui/material/Box'
+import Grid from '@mui/material/Grid'
+import Paper from '@mui/material/Paper'
+import Avatar from '@mui/material/Avatar'
+import Typography from '@mui/material/Typography'
+import TextField from '@mui/material/TextField'
+import Link from '@mui/material/Link'
+
 
 const SignUp = () => {
   let navigate = useNavigate()
@@ -279,7 +288,6 @@ const SignUp = () => {
                   </Link>
                 </Grid>
               </Grid>
-              {/* <Copyright sx={{ mt: 5 }} /> */}
             </Box>
           </Box>
         </Grid>

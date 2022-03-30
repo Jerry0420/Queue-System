@@ -3,13 +3,23 @@ import {
   Link as RouterLink,
   useNavigate 
 } from "react-router-dom"
-import classNames from 'classnames'
 import '../styles/style.scss'
 import { checkExistenceOfRefreshableCookie } from "../apis/helper"
 import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
 import { signInStore, forgetPassword } from "../apis/StoreAPIs"
-import { Button, Box, Grid, Paper, Avatar, Typography, TextField, Link, DialogActions, Dialog, DialogTitle, DialogContent } from "@mui/material"
 import { StatusBar, STATUS_TYPES } from "./StatusBar"
+import Button from '@mui/material/Button'
+import Box from '@mui/material/Box'
+import Grid from '@mui/material/Grid'
+import Paper from '@mui/material/Paper'
+import Avatar from '@mui/material/Avatar'
+import Typography from '@mui/material/Typography'
+import TextField from '@mui/material/TextField'
+import Link from '@mui/material/Link'
+import DialogActions from '@mui/material/DialogActions'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
 
 const SignIn = () => {
   let navigate = useNavigate()
@@ -230,7 +240,6 @@ const SignIn = () => {
                   </Link>
                 </Grid>
               </Grid>
-              {/* <Copyright sx={{ mt: 5 }} /> */}
             </Box>
           </Box>
         </Grid>
