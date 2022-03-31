@@ -4,6 +4,11 @@ COPY ./frontend/public ./public
 COPY ./frontend/src ./src
 COPY ./frontend/package.json ./package.json
 COPY ./frontend/package-lock.json ./package-lock.json
+COPY ./frontend/tailwind.config.js ./tailwind.config.js
+COPY ./frontend/tsconfig.json ./tsconfig.json
+COPY ./frontend/webpack.config.js ./webpack.config.js
+COPY ./frontend/postcss.config.js ./postcss.config.js
+COPY ./frontend/.eslintrc.js ./.eslintrc.js
 
 FROM base AS builder
 RUN npm install && npm run build

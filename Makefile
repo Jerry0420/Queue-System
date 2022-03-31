@@ -115,7 +115,7 @@ microk8s_load_images_grpc:
 	microk8s ctr image import queue-system-grpc.tar 
 
 microk8s_enable_addons:
-	microk8s enable dns ingress storage metallb
+	microk8s enable dns ingress storage prometheus metallb
 
 # microk8s config
 # hostname -I | awk '{print $1}'

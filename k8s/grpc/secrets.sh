@@ -31,3 +31,13 @@ metadata:
 data:
   SERVER-KEY: $(cat $CURRENTDIR/../../cert/server.key | base64 | tr -d "[:space:]")
 EOF
+
+# cat <<EOF | kubectl apply -f -
+# apiVersion: v1
+# kind: Secret
+# metadata:
+#   namespace: queue-system
+#   name: ca-crt
+# data:
+#   CA-CRT: $(cat $CURRENTDIR/../../cert/ca.crt | base64 | tr -d "[:space:]")
+# EOF
