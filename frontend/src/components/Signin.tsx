@@ -3,15 +3,29 @@ import {
   Link as RouterLink,
   useNavigate 
 } from "react-router-dom"
-import classNames from 'classnames'
-import '../styles/style.scss'
 import { checkExistenceOfRefreshableCookie } from "../apis/helper"
 import { ACTION_TYPES, JSONResponse, useApiRequest } from "../apis/reducer"
 import { signInStore, forgetPassword } from "../apis/StoreAPIs"
-import { Button, Box, Grid, Paper, Avatar, Typography, TextField, Link, DialogActions, Dialog, DialogTitle, DialogContent } from "@mui/material"
+import { StatusBar, STATUS_TYPES } from "./StatusBar"
+import Button from '@mui/material/Button'
+import Box from '@mui/material/Box'
+import Grid from '@mui/material/Grid'
+import Paper from '@mui/material/Paper'
+import Avatar from '@mui/material/Avatar'
+import Typography from '@mui/material/Typography'
+import TextField from '@mui/material/TextField'
+import Link from '@mui/material/Link'
+import DialogActions from '@mui/material/DialogActions'
+import Dialog from '@mui/material/Dialog'
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
 
 const SignIn = () => {
   let navigate = useNavigate()
+
+  // ==================== handle all status ====================
+  const [statusBarSeverity, setStatusBarSeverity] = React.useState('')
+  const [statusBarMessage, setStatusBarMessage] = React.useState('')
 
   const [email, setEmail] = useState("")
   const [emailAlertFlag, setEmailAlertFlag] = useState(false)
@@ -55,12 +69,28 @@ const SignIn = () => {
   }
 
   useEffect(() => {
-    // TODO: handle running, success, error states here.
     if (signInStoreAction.actionType === ACTION_TYPES.SUCCESS) {
       const _jsonResponse = (signInStoreAction.response as JSONResponse)
-      const storeId: number = (_jsonResponse["id"] as number)
-      localStorage.setItem("storeId", storeId.toString())
-      navigate(`/stores/${storeId}`)
+      if ((_jsonResponse["error_code"])) {
+        setEmail("")
+        setPassword("")
+        setStatusBarSeverity(STATUS_TYPES.ERROR)
+        if (_jsonResponse["error_code"] === 40003) {
+          setStatusBarMessage("Wrong password.")
+        } else {
+          setStatusBarMessage("Fail to find the email in account list.")
+        }
+      } else {
+        const storeId: number = (_jsonResponse["id"] as number)
+        localStorage.setItem("storeId", storeId.toString())
+        navigate(`/stores/${storeId}`)
+      }
+    }
+    if (signInStoreAction.actionType === ACTION_TYPES.ERROR) {
+      setEmail("")
+      setPassword("")
+      setStatusBarSeverity(STATUS_TYPES.ERROR)
+      setStatusBarMessage("Fail to signin.")
     }
   }, [signInStoreAction.actionType])
 
@@ -94,10 +124,21 @@ const SignIn = () => {
       setForgetPasswordEmailAlertFlag(true)
       return
     }
-    makeForgetPasswordRequest().then((response) => {
-      setOpenForgetPasswordDialog(false)
-    })
+    makeForgetPasswordRequest()
   }
+
+  useEffect(() => {
+    if (forgetPasswordAction.actionType === ACTION_TYPES.SUCCESS) {
+      setOpenForgetPasswordDialog(false)
+      setStatusBarSeverity(STATUS_TYPES.SUCCESS)
+      setStatusBarMessage("Success to send forget password email.")
+    }
+    if (forgetPasswordAction.actionType === ACTION_TYPES.ERROR) {
+      setOpenForgetPasswordDialog(false)
+      setStatusBarSeverity(STATUS_TYPES.ERROR)
+      setStatusBarMessage("Fail to send forget password email.")
+    }
+  }, [forgetPasswordAction.actionType])
 
   return (
     <Box sx={{flexGrow: 1}}>
@@ -139,6 +180,7 @@ const SignIn = () => {
                 label="Email Address"
                 name="email"
                 autoComplete="email"
+                value={email}
                 onChange={handleInputEmail}
                 error={emailAlertFlag}
               />
@@ -150,6 +192,7 @@ const SignIn = () => {
                 label="Password"
                 type="password"
                 id="password"
+                value={window.atob(password)}
                 autoComplete="current-password"
                 onChange={handleInputPassword}
                 error={passwordAlertFlag}
@@ -196,11 +239,15 @@ const SignIn = () => {
                   </Link>
                 </Grid>
               </Grid>
-              {/* <Copyright sx={{ mt: 5 }} /> */}
             </Box>
           </Box>
         </Grid>
       </Grid>
+      <StatusBar
+        severity={statusBarSeverity}
+        message={statusBarMessage}
+        setMessage={setStatusBarMessage}
+      />
     </Box>
   )
 }
