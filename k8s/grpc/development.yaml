@@ -52,12 +52,14 @@ spec:
         livenessProbe:
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:8002", "-tls=true", "-tls-ca-cert=/run/secrets/ca-crt/.ca-crt", "-tls-server-name=queue-system"]
+            # command: ["/bin/grpc_health_probe", "-addr=:8002"]
           initialDelaySeconds: 5
           periodSeconds: 5
         
         readinessProbe:
           exec:
             command: ["/bin/grpc_health_probe", "-addr=:8002", "-tls=true", "-tls-ca-cert=/run/secrets/ca-crt/.ca-crt", "-tls-server-name=queue-system"]
+            # command: ["/bin/grpc_health_probe", "-addr=:8002"]
           initialDelaySeconds: 8
           periodSeconds: 10  
           failureThreshold: 5

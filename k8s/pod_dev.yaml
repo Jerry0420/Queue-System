@@ -14,29 +14,17 @@ spec:
           limits:
             memory: "64Mi"
             cpu: "0.2"
-    command: 
-      - sleep 
-      - "10000" 
+    command: ["/bin/sh","-c"]
+    args: 
+      - wget -qO/bin/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/v0.4.6/grpc_health_probe-linux-amd64;
+        chmod +x /bin/grpc_health_probe;
+        apk add curl;
+        sleep 10000;
     imagePullPolicy: IfNotPresent 
     volumeMounts:
-      - name: backend-env
-        mountPath: /etc/config
-        readOnly: true
-      - name: backend-secret
-        mountPath: "/run/secrets/backend-secret"
       - name: ca-crt
         mountPath: "/run/secrets/ca-crt"
   volumes:
-    - name: backend-env
-      configMap: 
-        name: backend-env
-    - name: backend-secret
-      secret:
-        secretName: backend-secret
-        items:
-        - key: BACKEND-SECRET
-          path: .backend-secret
-          mode: 0444
     - name: ca-crt
       secret:
         secretName: ca-crt
