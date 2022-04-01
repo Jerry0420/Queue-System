@@ -153,13 +153,13 @@ func (suite *BackendTestSuite) Test_GetStoreInfoWithSSE() {
 	suite.Equal(2, len(matches))
 
 	// ========================== check store_sesisons in db ==========================
-	query := `SELECT status 
+	query := `SELECT state 
 				FROM store_sessions
 				WHERE id=$1`
 	rows := suite.db.QueryRow(query, sessionID)
-	sessionStatus := ""
-	err := rows.Scan(&sessionStatus)
+	sessionState := ""
+	err := rows.Scan(&sessionState)
 	suite.NoError(err)
-	suite.Equal("used", sessionStatus)
+	suite.Equal("used", sessionState)
 
 }

@@ -27,7 +27,7 @@ func (pcr *pgDBCustomerRepository) CreateCustomers(ctx context.Context, tx PgDBI
 	variableCounts := 1
 	var query bytes.Buffer
 	var queryRowParams []interface{}
-	query.WriteString("INSERT INTO customers (name, phone, queue_id, status) VALUES ")
+	query.WriteString("INSERT INTO customers (name, phone, queue_id, state) VALUES ")
 	for index, customer := range customers {
 		query.WriteString("($")
 		query.WriteString(strconv.Itoa(variableCounts))
@@ -39,7 +39,7 @@ func (pcr *pgDBCustomerRepository) CreateCustomers(ctx context.Context, tx PgDBI
 		query.WriteString(strconv.Itoa(variableCounts + 3))
 		query.WriteString(")")
 		variableCounts = variableCounts + 4
-		queryRowParams = append(queryRowParams, customer.Name, customer.Phone, customer.QueueID, customer.Status)
+		queryRowParams = append(queryRowParams, customer.Name, customer.Phone, customer.QueueID, customer.State)
 		if index != len(customers)-1 {
 			query.WriteString(", ")
 		}
@@ -60,7 +60,7 @@ func (pcr *pgDBCustomerRepository) CreateCustomers(ctx context.Context, tx PgDBI
 			pcr.logger.ERRORf("error %v", err)
 			return domain.ServerError50002
 		}
-		customer.Status = domain.CustomerStatus.WAITING
+		customer.State = domain.CustomerState.WAITING
 		customers = append(customers, customer)
 
 	}
@@ -69,12 +69,12 @@ func (pcr *pgDBCustomerRepository) CreateCustomers(ctx context.Context, tx PgDBI
 	return nil
 }
 
-func (pcr *pgDBCustomerRepository) UpdateCustomer(ctx context.Context, oldStatus string, newStatus string, customer *domain.Customer) error {
+func (pcr *pgDBCustomerRepository) UpdateCustomer(ctx context.Context, oldState string, newState string, customer *domain.Customer) error {
 	ctx, cancel := context.WithTimeout(ctx, pcr.contextTimeOut)
 	defer cancel()
 
-	query := `UPDATE customers SET status=$1 WHERE id=$2 and status=$3`
-	result, err := pcr.db.ExecContext(ctx, query, newStatus, customer.ID, oldStatus)
+	query := `UPDATE customers SET state=$1 WHERE id=$2 and state=$3`
+	result, err := pcr.db.ExecContext(ctx, query, newState, customer.ID, oldState)
 	if err != nil {
 		pcr.logger.ERRORf("error %v", err)
 		return domain.ServerError50002
@@ -100,7 +100,7 @@ func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStore(ctx context.Con
 					stores.timezone AS timezone, 
 					queues.name AS queue_name, 
 					customers.name AS customer_name, customers.phone AS customer_phone,
-					customers.status AS customer_status, customers.created_at AS customer_created_at
+					customers.state AS customer_state, customers.created_at AS customer_created_at
 				FROM queues
 				INNER JOIN customers ON queues.id = customers.queue_id
 				INNER JOIN stores ON stores.id = queues.store_id
@@ -120,7 +120,7 @@ func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStore(ctx context.Con
 		err := rows.Scan(
 			&store.Timezone,
 			&queue.Name,
-			&customer.Name, &customer.Phone, &customer.Status, &customer.CreatedAt,
+			&customer.Name, &customer.Phone, &customer.State, &customer.CreatedAt,
 		)
 		if err != nil {
 			pcr.logger.ERRORf("error %v", err)
@@ -135,14 +135,14 @@ func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStore(ctx context.Con
 					"queue_name",
 					"customer_name",
 					"customer_phone",
-					"customer_status",
+					"customer_state",
 					"customer_created_at",
 				},
 				[]string{
 					queue.Name,
 					customer.Name,
 					customer.Phone,
-					customer.Status,
+					customer.State,
 					customer.CreatedAt.UTC().In(timezone).String(),
 				},
 			}
@@ -151,7 +151,7 @@ func (pcr *pgDBCustomerRepository) GetCustomersWithQueuesByStore(ctx context.Con
 				queue.Name,
 				customer.Name,
 				customer.Phone,
-				customer.Status,
+				customer.State,
 				customer.CreatedAt.UTC().In(timezone).String(),
 			})
 		}

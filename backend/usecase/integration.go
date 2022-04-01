@@ -59,8 +59,8 @@ func NewIntegrationUsecase(
 func (iu *integrationUsecase) CreateCustomers(
 	ctx context.Context,
 	session *domain.StoreSession,
-	oldStatus string,
-	newStatus string,
+	oldState string,
+	newState string,
 	customers []domain.Customer,
 ) error {
 	tx, err := iu.pgDBTx.BeginTx()
@@ -69,11 +69,11 @@ func (iu *integrationUsecase) CreateCustomers(
 	}
 	defer iu.pgDBTx.RollbackTx(tx)
 
-	err = iu.pgDBSessionRepository.UpdateSessionStatus(ctx, tx, session, oldStatus, newStatus)
+	err = iu.pgDBSessionRepository.UpdateSessionState(ctx, tx, session, oldState, newState)
 	if err != nil {
 		return err
 	}
-	session.StoreSessionStatus = newStatus
+	session.StoreSessionState = newState
 
 	err = iu.pgDBCustomerRepository.CreateCustomers(ctx, tx, customers)
 	if err != nil {

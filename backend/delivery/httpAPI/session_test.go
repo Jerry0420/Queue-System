@@ -17,18 +17,18 @@ import (
 func TestScannedSession(t *testing.T) {
 	_, sessionUseCase, _, _, httpAPIDelivery, router, broker := setUpHttpAPITest()
 	defer broker.CloseAll()
-	expectedMockSessionStatus := domain.StoreSessionStatus.SCANNED
+	expectedMockSessionState := domain.StoreSessionState.SCANNED
 	mockSession := domain.StoreSession{
 		ID:                 "im_session_id",
 		StoreId:            1,
-		StoreSessionStatus: domain.StoreSessionStatus.NORMAL,
+		StoreSessionState: domain.StoreSessionState.NORMAL,
 	}
 
-	sessionUseCase.On("UpdateSessionStatus", mock.Anything, &mockSession, mockSession.StoreSessionStatus, expectedMockSessionStatus).
+	sessionUseCase.On("UpdateSessionState", mock.Anything, &mockSession, mockSession.StoreSessionState, expectedMockSessionState).
 		Return(nil).Run(func(args mock.Arguments) {
 			session := args.Get(1).(*domain.StoreSession)
-			newSessionStatus := args.Get(3).(string)
-			session.StoreSessionStatus = newSessionStatus
+			newSessionState := args.Get(3).(string)
+			session.StoreSessionState = newSessionState
 		}).Once()
 	sessionUseCase.On("TopicNameOfUpdateSession", mockSession.StoreId).Return("im_topic").Once()
 
@@ -50,5 +50,5 @@ func TestScannedSession(t *testing.T) {
 
 	var decodedResponse map[string]interface{}
 	json.NewDecoder(w.Result().Body).Decode(&decodedResponse)
-	assert.Equal(t, expectedMockSessionStatus, decodedResponse["status"].(string))
+	assert.Equal(t, expectedMockSessionState, decodedResponse["state"].(string))
 }

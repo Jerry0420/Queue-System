@@ -20,7 +20,7 @@ func NewCustomerUsecase(
 	return &customerUsecase{pgDBCustomerRepository, logger}
 }
 
-func (cu *customerUsecase) UpdateCustomer(ctx context.Context, oldStatus string, newStatus string, customer *domain.Customer) error {
-	err := cu.pgDBCustomerRepository.UpdateCustomer(ctx, oldStatus, newStatus, customer)
+func (cu *customerUsecase) UpdateCustomer(ctx context.Context, oldState string, newState string, customer *domain.Customer) error {
+	err := cu.pgDBCustomerRepository.UpdateCustomer(ctx, oldState, newState, customer)
 	return err
 }

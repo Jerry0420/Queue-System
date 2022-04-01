@@ -57,12 +57,12 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesAndCustomersById(ctx context.C
 					customers.id AS customer_id, 
 					customers.name AS customer_name, 
 					customers.phone AS customer_phone, 
-					customers.status AS customer_status,
+					customers.state AS customer_state,
 					customers.created_at AS customer_created_at
 				FROM stores
 				INNER JOIN queues ON stores.id = queues.store_id
 				INNER JOIN customers ON queues.id = customers.queue_id
-				WHERE stores.id=$1 and customers.status='waiting' OR customers.status='processing'
+				WHERE stores.id=$1 and customers.state='waiting' OR customers.state='processing'
 				UNION
 				SELECT 
 					stores.email, 
@@ -74,7 +74,7 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesAndCustomersById(ctx context.C
 					-1 AS customer_id, 
 					'' AS customer_name, 
 					'' AS customer_phone, 
-					'waiting' AS customer_status,
+					'waiting' AS customer_state,
 					'1970-01-1 00:00:00.00000' AS customer_created_at
 				FROM stores
 				INNER JOIN queues ON stores.id = queues.store_id
@@ -98,7 +98,7 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesAndCustomersById(ctx context.C
 		err := rows.Scan(
 			&store.Email, &store.Name, &store.Description, &store.CreatedAt,
 			&queue.ID, &queue.Name,
-			&customer.ID, &customer.Name, &customer.Phone, &customer.Status, &customer.CreatedAt,
+			&customer.ID, &customer.Name, &customer.Phone, &customer.State, &customer.CreatedAt,
 		)
 		if err != nil {
 			psr.logger.ERRORf("error %v", err)
@@ -230,7 +230,7 @@ func (psr *pgDBStoreRepository) GetAllExpiredStoresInSlice(ctx context.Context, 
 					stores.id, stores.email, stores.name, stores.created_at, stores.timezone,
 					queues.name AS queue_name, 
 					customers.name AS customer_name, customers.phone AS customer_phone, 
-					customers.status AS customer_status,
+					customers.state AS customer_state,
 					customers.created_at AS customer_created_at
 			FROM stores
 			INNER JOIN queues ON stores.id = queues.store_id
@@ -251,7 +251,7 @@ func (psr *pgDBStoreRepository) GetAllExpiredStoresInSlice(ctx context.Context, 
 		err := rows.Scan(
 			&store.ID, &store.Email, &store.Name, &store.CreatedAt, &store.Timezone,
 			&queue.Name,
-			&customer.Name, &customer.Phone, &customer.Status, &customer.CreatedAt,
+			&customer.Name, &customer.Phone, &customer.State, &customer.CreatedAt,
 		)
 		if err != nil {
 			psr.logger.ERRORf("error %v", err)
@@ -264,7 +264,7 @@ func (psr *pgDBStoreRepository) GetAllExpiredStoresInSlice(ctx context.Context, 
 				queue.Name,
 				customer.Name,
 				customer.Phone,
-				customer.Status,
+				customer.State,
 				customer.CreatedAt.UTC().In(timezone).String(),
 			})
 		} else {
@@ -279,14 +279,14 @@ func (psr *pgDBStoreRepository) GetAllExpiredStoresInSlice(ctx context.Context, 
 					"queue_name",
 					"customer_name",
 					"customer_phone",
-					"customer_status",
+					"customer_state",
 					"customer_created_at",
 				},
 				[]string{
 					queue.Name,
 					customer.Name,
 					customer.Phone,
-					customer.Status,
+					customer.State,
 					customer.CreatedAt.UTC().In(timezone).String(),
 				},
 			}

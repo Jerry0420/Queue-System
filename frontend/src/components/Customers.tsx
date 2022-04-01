@@ -89,10 +89,10 @@ const CreateCustomers = () => {
   // ====================== main content ======================
   // helper function
   const countWaitingOrProcessingCustomers = (customers: Customer[]): Customer[] => {
-    return customers.filter((customer: Customer) => customer.status === 'waiting' || customer.status === 'processing')
+    return customers.filter((customer: Customer) => customer.state === 'waiting' || customer.state === 'processing')
   }
   const countWaitingCustomers = (customers: Customer[]): Customer[] => {
-    return customers.filter((customer: Customer) => customer.status === 'waiting')
+    return customers.filter((customer: Customer) => customer.state === 'waiting')
   }
 
   const [customerName, setCustomerName] = useState("")
@@ -388,7 +388,7 @@ const CreateCustomers = () => {
                       <TableRow>
                         <TableCell>Name</TableCell>
                         <TableCell align="right">Phone</TableCell>
-                        <TableCell align="right">Status</TableCell>
+                        <TableCell align="right">State</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -405,14 +405,14 @@ const CreateCustomers = () => {
                             {customer.phone}
                           </TableCell>
 
-                          {customer.status === 'waiting' && (
+                          {customer.state === 'waiting' && (
                             <TableCell align="right">
                               waiting
                             </TableCell>
                           )}
-                          {customer.status === 'processing' && (
+                          {customer.state === 'processing' && (
                             <TableCell align="right" sx={{color: 'red'}}>
-                              {customer.status}
+                              {customer.state}
                             </TableCell>
                           )}
                         </TableRow>

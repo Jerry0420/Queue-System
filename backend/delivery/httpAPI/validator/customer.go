@@ -49,7 +49,7 @@ func CustomerCreate(r *http.Request) (session domain.StoreSession, customers []d
 		}
 		customers = append(
 			customers, 
-			domain.Customer{Name: name, Phone: phone, QueueID: int(queueId), Status: domain.CustomerStatus.WAITING},
+			domain.Customer{Name: name, Phone: phone, QueueID: int(queueId), State: domain.CustomerState.WAITING},
 		)
 	}
 
@@ -60,50 +60,50 @@ func CustomerCreate(r *http.Request) (session domain.StoreSession, customers []d
 	return session, customers, nil
 }
 
-func CustomerUpdate(r *http.Request) (storeId int, oldCustomerStatus string, newCustomerStatus string, customer domain.Customer, err error) {
+func CustomerUpdate(r *http.Request) (storeId int, oldCustomerState string, newCustomerState string, customer domain.Customer, err error) {
 	tokenClaims := r.Context().Value(domain.SignKeyTypes.NORMAL).(domain.TokenClaims)
 
 	vars := mux.Vars(r)
 	customerId, err := strconv.Atoi(vars["id"])
 	if err != nil {
-		return storeId, oldCustomerStatus, newCustomerStatus, customer, domain.ServerError40001
+		return storeId, oldCustomerState, newCustomerState, customer, domain.ServerError40001
 	}
 
 	var jsonBody map[string]interface{}
 	err = json.NewDecoder(r.Body).Decode(&jsonBody)
 	if err != nil {
-		return storeId, oldCustomerStatus, newCustomerStatus, customer, domain.ServerError40001
+		return storeId, oldCustomerState, newCustomerState, customer, domain.ServerError40001
 	}
 
 	storeIdFloat64, ok := jsonBody["store_id"].(float64)
 	if !ok {
-		return storeId, oldCustomerStatus, newCustomerStatus, customer, domain.ServerError40001
+		return storeId, oldCustomerState, newCustomerState, customer, domain.ServerError40001
 	}
 
 	if int(storeIdFloat64) != tokenClaims.StoreID {
-		return storeId, oldCustomerStatus, newCustomerStatus, customer, domain.ServerError40004
+		return storeId, oldCustomerState, newCustomerState, customer, domain.ServerError40004
 	}
 
 	queueIdFloat64, ok := jsonBody["queue_id"].(float64)
 	if !ok {
-		return storeId, oldCustomerStatus, newCustomerStatus, customer, domain.ServerError40001
+		return storeId, oldCustomerState, newCustomerState, customer, domain.ServerError40001
 	}
 
-	oldCustomerStatus, ok = jsonBody["old_customer_status"].(string)
-	if !ok || oldCustomerStatus == "" {
-		return storeId, oldCustomerStatus, newCustomerStatus, customer, domain.ServerError40001
+	oldCustomerState, ok = jsonBody["old_customer_state"].(string)
+	if !ok || oldCustomerState == "" {
+		return storeId, oldCustomerState, newCustomerState, customer, domain.ServerError40001
 	}
 
-	newCustomerStatus, ok = jsonBody["new_customer_status"].(string)
-	if !ok || newCustomerStatus == "" {
-		return storeId, oldCustomerStatus, newCustomerStatus, customer, domain.ServerError40001
+	newCustomerState, ok = jsonBody["new_customer_state"].(string)
+	if !ok || newCustomerState == "" {
+		return storeId, oldCustomerState, newCustomerState, customer, domain.ServerError40001
 	}
 
 	customer = domain.Customer{
 		ID: customerId,
 		QueueID: int(queueIdFloat64),
-		Status: newCustomerStatus,
+		State: newCustomerState,
 	}
 
-	return int(storeIdFloat64), oldCustomerStatus, newCustomerStatus, customer, nil
+	return int(storeIdFloat64), oldCustomerState, newCustomerState, customer, nil
 }

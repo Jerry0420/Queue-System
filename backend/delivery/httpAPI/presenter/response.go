@@ -24,7 +24,7 @@ func JsonResponse(w http.ResponseWriter, response interface{}, err error) {
 			panic("err must be ServerError")
 		}
 		errorResponse := map[string]interface{}{"error_code": serverError.Code}
-		if config.ServerConfig.ENV() != config.EnvStatus.PROD {
+		if config.ServerConfig.ENV() != config.EnvState.PROD {
 			errorResponse["description"] = serverError.Description
 		}
 

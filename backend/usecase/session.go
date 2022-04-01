@@ -26,9 +26,9 @@ func (su *sessionUsecase) CreateSession(ctx context.Context, store domain.Store)
 	return session, err
 }
 
-func (su *sessionUsecase) UpdateSessionStatus(ctx context.Context, session *domain.StoreSession, oldStatus string, newStatus string) error {
-	err := su.pgDBSessionRepository.UpdateSessionStatus(ctx, nil, session, oldStatus, newStatus)
-	session.StoreSessionStatus = newStatus
+func (su *sessionUsecase) UpdateSessionState(ctx context.Context, session *domain.StoreSession, oldState string, newState string) error {
+	err := su.pgDBSessionRepository.UpdateSessionState(ctx, nil, session, oldState, newState)
+	session.StoreSessionState = newState
 	return err
 }
 

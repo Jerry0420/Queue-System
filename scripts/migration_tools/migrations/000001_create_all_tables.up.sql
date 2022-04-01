@@ -14,12 +14,12 @@ CREATE TABLE IF NOT EXISTS stores(
 
 -- ----------------------------
 
-CREATE TYPE store_session_status AS ENUM ('normal', 'scanned', 'used');
+CREATE TYPE store_session_state AS ENUM ('normal', 'scanned', 'used');
 
 CREATE TABLE IF NOT EXISTS store_sessions(
    id uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
    store_id integer REFERENCES stores ON DELETE CASCADE,
-   status store_session_status DEFAULT 'normal'
+   state store_session_state DEFAULT 'normal'
 );
 
 -- ----------------------------
@@ -43,14 +43,14 @@ CREATE TABLE IF NOT EXISTS queues(
 
 -- ----------------------------
 
-CREATE TYPE customer_status AS ENUM ('waiting', 'processing', 'done', 'delete');
+CREATE TYPE customer_state AS ENUM ('waiting', 'processing', 'done', 'delete');
 
 CREATE TABLE IF NOT EXISTS customers(
    id serial PRIMARY KEY,
    name varchar(64) NOT NULL,
    phone varchar(30) NOT NULL,
    queue_id integer REFERENCES queues ON DELETE CASCADE,
-   status customer_status DEFAULT 'waiting',
+   state customer_state DEFAULT 'waiting',
    created_at timestamp NOT NULL DEFAULT clock_timestamp()
 );
 

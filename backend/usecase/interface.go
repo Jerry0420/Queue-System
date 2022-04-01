@@ -8,7 +8,7 @@ import (
 )
 
 type IntegrationUseCaseInterface interface {
-	CreateCustomers(ctx context.Context, session *domain.StoreSession, oldStatus string, newStatus string, customers []domain.Customer) error
+	CreateCustomers(ctx context.Context, session *domain.StoreSession, oldState string, newState string, customers []domain.Customer) error
 	CreateStore(ctx context.Context, store *domain.Store, queues []domain.Queue) error
 	SigninStore(ctx context.Context, email string, password string) (
 		store domain.Store,
@@ -33,12 +33,12 @@ type IntegrationUseCaseInterface interface {
 }
 
 type CustomerUseCaseInterface interface {
-	UpdateCustomer(ctx context.Context, oldStatus string, newStatus string, customer *domain.Customer) error
+	UpdateCustomer(ctx context.Context, oldState string, newState string, customer *domain.Customer) error
 }
 
 type SessionUseCaseInterface interface {
 	CreateSession(ctx context.Context, store domain.Store) (domain.StoreSession, error)
-	UpdateSessionStatus(ctx context.Context, session *domain.StoreSession, oldStatus string, newStatus string) error
+	UpdateSessionState(ctx context.Context, session *domain.StoreSession, oldState string, newState string) error
 	TopicNameOfUpdateSession(storeId int) string
 	GetSessionById(ctx context.Context, sessionId string) (session domain.StoreSession, err error)
 }

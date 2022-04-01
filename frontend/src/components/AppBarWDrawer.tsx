@@ -57,7 +57,7 @@ BasicDrawer.propTypes = {
                     id: PropTypes.number,
                     name: PropTypes.string,
                     phone: PropTypes.string,
-                    status: PropTypes.string,
+                    state: PropTypes.string,
                 })
             )
         })
@@ -168,7 +168,7 @@ AppBarWDrawer.propTypes = {
                     id: PropTypes.number,
                     name: PropTypes.string,
                     phone: PropTypes.string,
-                    status: PropTypes.string,
+                    state: PropTypes.string,
                 })
             )
         })

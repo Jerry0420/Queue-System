@@ -18,8 +18,8 @@ func (had *HttpAPIDelivery) CustomersCreate(w http.ResponseWriter, r *http.Reque
 	err = had.integrationUsecase.CreateCustomers(
 		r.Context(),
 		&session,
-		domain.StoreSessionStatus.SCANNED,
-		domain.StoreSessionStatus.USED,
+		domain.StoreSessionState.SCANNED,
+		domain.StoreSessionState.USED,
 		customers,
 	)
 	if err != nil {
@@ -37,13 +37,13 @@ func (had *HttpAPIDelivery) CustomersCreate(w http.ResponseWriter, r *http.Reque
 
 // for used in store...
 func (had *HttpAPIDelivery) CustomerUpdate(w http.ResponseWriter, r *http.Request) {
-	storeId, oldCustomerStatus, newCustomerStatus, customer, err := validator.CustomerUpdate(r)
+	storeId, oldCustomerState, newCustomerState, customer, err := validator.CustomerUpdate(r)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return
 	}
 
-	err = had.customerUsecase.UpdateCustomer(r.Context(), oldCustomerStatus, newCustomerStatus, &customer)
+	err = had.customerUsecase.UpdateCustomer(r.Context(), oldCustomerState, newCustomerState, &customer)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)
 		return

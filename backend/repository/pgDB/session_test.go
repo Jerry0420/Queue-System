@@ -29,14 +29,14 @@ func TestGetSessionById(t *testing.T) {
 	mockStoreSession := domain.StoreSession{
 		ID:                 "im_session_id",
 		StoreId:            1,
-		StoreSessionStatus: domain.StoreSessionStatus.NORMAL,
+		StoreSessionState: domain.StoreSessionState.NORMAL,
 	}
 	
-	// store_id, session_status
-	rows := sqlmock.NewRows([]string{"id", "status"}).
-		AddRow(mockStoreSession.StoreId, mockStoreSession.StoreSessionStatus)
+	// store_id, session_state
+	rows := sqlmock.NewRows([]string{"id", "state"}).
+		AddRow(mockStoreSession.StoreId, mockStoreSession.StoreSessionState)
 
-	query := `SELECT stores.id, store_sessions.status 
+	query := `SELECT stores.id, store_sessions.state 
 				FROM store_sessions
 				INNER JOIN stores ON stores.id = store_sessions.store_id WHERE store_sessions.id=$1`
 	mock.ExpectQuery(query).WithArgs(mockStoreSession.ID).WillReturnRows(rows)

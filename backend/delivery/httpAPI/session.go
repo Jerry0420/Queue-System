@@ -64,11 +64,11 @@ func (had *HttpAPIDelivery) ScannedSession(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	err = had.sessionUsecase.UpdateSessionStatus(
+	err = had.sessionUsecase.UpdateSessionState(
 		r.Context(),
 		&session,
-		domain.StoreSessionStatus.NORMAL,  //oldStatus
-		domain.StoreSessionStatus.SCANNED, //newStatus
+		domain.StoreSessionState.NORMAL,  //oldState
+		domain.StoreSessionState.SCANNED, //newState
 	)
 	if err != nil {
 		presenter.JsonResponse(w, nil, err)

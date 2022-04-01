@@ -32,7 +32,7 @@ func TestGetSessionById(t *testing.T) {
 		expectedMockSession := domain.StoreSession{
 			ID:                 "im_esssion_id",
 			StoreId:            1,
-			StoreSessionStatus: domain.StoreSessionStatus.SCANNED,
+			StoreSessionState: domain.StoreSessionState.SCANNED,
 		}
 
 		pgDBSessionRepository.
