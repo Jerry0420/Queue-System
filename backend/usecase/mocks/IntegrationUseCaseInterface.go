@@ -44,13 +44,13 @@ func (_m *IntegrationUseCaseInterface) CloseStoreRoutine(ctx context.Context) er
 	return r0
 }
 
-// CreateCustomers provides a mock function with given fields: ctx, session, oldStatus, newStatus, customers
-func (_m *IntegrationUseCaseInterface) CreateCustomers(ctx context.Context, session *domain.StoreSession, oldStatus string, newStatus string, customers []domain.Customer) error {
-	ret := _m.Called(ctx, session, oldStatus, newStatus, customers)
+// CreateCustomers provides a mock function with given fields: ctx, session, oldState, newState, customers
+func (_m *IntegrationUseCaseInterface) CreateCustomers(ctx context.Context, session *domain.StoreSession, oldState string, newState string, customers []domain.Customer) error {
+	ret := _m.Called(ctx, session, oldState, newState, customers)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, *domain.StoreSession, string, string, []domain.Customer) error); ok {
-		r0 = rf(ctx, session, oldStatus, newStatus, customers)
+		r0 = rf(ctx, session, oldState, newState, customers)
 	} else {
 		r0 = ret.Error(0)
 	}
