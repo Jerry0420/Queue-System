@@ -58,13 +58,13 @@ func (_m *PgDBSessionRepositoryInterface) GetSessionById(ctx context.Context, se
 	return r0, r1
 }
 
-// UpdateSessionStatus provides a mock function with given fields: ctx, tx, session, oldStatus, newStatus
-func (_m *PgDBSessionRepositoryInterface) UpdateSessionStatus(ctx context.Context, tx pgDB.PgDBInterface, session *domain.StoreSession, oldStatus string, newStatus string) error {
-	ret := _m.Called(ctx, tx, session, oldStatus, newStatus)
+// UpdateSessionState provides a mock function with given fields: ctx, tx, session, oldState, newState
+func (_m *PgDBSessionRepositoryInterface) UpdateSessionState(ctx context.Context, tx pgDB.PgDBInterface, session *domain.StoreSession, oldState string, newState string) error {
+	ret := _m.Called(ctx, tx, session, oldState, newState)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, pgDB.PgDBInterface, *domain.StoreSession, string, string) error); ok {
-		r0 = rf(ctx, tx, session, oldStatus, newStatus)
+		r0 = rf(ctx, tx, session, oldState, newState)
 	} else {
 		r0 = ret.Error(0)
 	}

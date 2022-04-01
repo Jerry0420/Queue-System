@@ -53,13 +53,13 @@ func (_m *PgDBCustomerRepositoryInterface) GetCustomersWithQueuesByStore(ctx con
 	return r0, r1
 }
 
-// UpdateCustomer provides a mock function with given fields: ctx, oldStatus, newStatus, customer
-func (_m *PgDBCustomerRepositoryInterface) UpdateCustomer(ctx context.Context, oldStatus string, newStatus string, customer *domain.Customer) error {
-	ret := _m.Called(ctx, oldStatus, newStatus, customer)
+// UpdateCustomer provides a mock function with given fields: ctx, oldState, newState, customer
+func (_m *PgDBCustomerRepositoryInterface) UpdateCustomer(ctx context.Context, oldState string, newState string, customer *domain.Customer) error {
+	ret := _m.Called(ctx, oldState, newState, customer)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, *domain.Customer) error); ok {
-		r0 = rf(ctx, oldStatus, newStatus, customer)
+		r0 = rf(ctx, oldState, newState, customer)
 	} else {
 		r0 = ret.Error(0)
 	}

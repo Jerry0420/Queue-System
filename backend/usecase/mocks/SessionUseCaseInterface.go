@@ -70,13 +70,13 @@ func (_m *SessionUseCaseInterface) TopicNameOfUpdateSession(storeId int) string 
 	return r0
 }
 
-// UpdateSessionStatus provides a mock function with given fields: ctx, session, oldStatus, newStatus
-func (_m *SessionUseCaseInterface) UpdateSessionStatus(ctx context.Context, session *domain.StoreSession, oldStatus string, newStatus string) error {
-	ret := _m.Called(ctx, session, oldStatus, newStatus)
+// UpdateSessionState provides a mock function with given fields: ctx, session, oldState, newState
+func (_m *SessionUseCaseInterface) UpdateSessionState(ctx context.Context, session *domain.StoreSession, oldState string, newState string) error {
+	ret := _m.Called(ctx, session, oldState, newState)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, *domain.StoreSession, string, string) error); ok {
-		r0 = rf(ctx, session, oldStatus, newStatus)
+		r0 = rf(ctx, session, oldState, newState)
 	} else {
 		r0 = ret.Error(0)
 	}

@@ -76,7 +76,7 @@ func (hahp *HttpAPIHealthProbes) readiness(w http.ResponseWriter, r *http.Reques
 	}
 
 	// check vault only in production
-	if hahp.env == config.EnvStatus.PROD {
+	if hahp.env == config.EnvState.PROD {
 		httpClient := http.Client{Timeout: 3 * time.Second}
 		response, err := httpClient.Get(hahp.vaultServer + "/v1/sys/health") // url in vault server.
 		if err != nil || response.StatusCode != http.StatusOK {

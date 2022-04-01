@@ -19,13 +19,13 @@ func TestCustomerUpdate(t *testing.T) {
 	customerUseCase, _, storeUseCase, _, httpAPIDelivery, router, broker := setUpHttpAPITest()
 	defer broker.CloseAll()
 
-	originalCustomerStatus := domain.CustomerStatus.WAITING
-	expectedCustomerStatus := domain.CustomerStatus.PROCESSING
+	originalCustomerState := domain.CustomerState.WAITING
+	expectedCustomerState := domain.CustomerState.PROCESSING
 
 	mockCustomer := domain.Customer{
 		ID: 1,
 		QueueID: 1,
-		Status:  expectedCustomerStatus,
+		State:  expectedCustomerState,
 	}
 
 	mockTokenClaims := domain.TokenClaims{
@@ -33,7 +33,7 @@ func TestCustomerUpdate(t *testing.T) {
 		Email:   "storeemail",
 		Name:    "storename",
 	}
-	customerUseCase.On("UpdateCustomer", mock.Anything, originalCustomerStatus, expectedCustomerStatus, &mockCustomer).Return(nil).Once()
+	customerUseCase.On("UpdateCustomer", mock.Anything, originalCustomerState, expectedCustomerState, &mockCustomer).Return(nil).Once()
 	storeUseCase.On("TopicNameOfUpdateCustomer", mockTokenClaims.StoreID).Return("im_topic").Once()
 
 	router.HandleFunc(
@@ -46,8 +46,8 @@ func TestCustomerUpdate(t *testing.T) {
 	params := map[string]interface{}{
 		"store_id":            mockTokenClaims.StoreID,
 		"queue_id":            mockCustomer.QueueID,
-		"old_customer_status": originalCustomerStatus,
-		"new_customer_status": expectedCustomerStatus,
+		"old_customer_state": originalCustomerState,
+		"new_customer_state": expectedCustomerState,
 	}
 	jsonBody, _ := json.Marshal(params)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, "/api/v1/customers/"+strconv.Itoa(mockCustomer.ID), bytes.NewBuffer(jsonBody))
@@ -57,5 +57,5 @@ func TestCustomerUpdate(t *testing.T) {
 
 	var decodedResponse map[string]interface{}
 	json.NewDecoder(w.Result().Body).Decode(&decodedResponse)
-	assert.Equal(t, expectedCustomerStatus, decodedResponse["status"].(string))
+	assert.Equal(t, expectedCustomerState, decodedResponse["state"].(string))
 }

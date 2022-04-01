@@ -9,7 +9,7 @@ interface Customer {
     id: number
     name: string
     phone: string
-    status: string
+    state: string
 }
 
 interface Queue {

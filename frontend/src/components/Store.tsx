@@ -98,10 +98,10 @@ const StoreInfo = () => {
 
   // helper function
   const countWaitingOrProcessingCustomers = (customers: Customer[]): Customer[] => {
-    return customers.filter((customer: Customer) => customer.status === 'waiting' || customer.status === 'processing')
+    return customers.filter((customer: Customer) => customer.state === 'waiting' || customer.state === 'processing')
   }
   const countWaitingCustomers = (customers: Customer[]): Customer[] => {
-    return customers.filter((customer: Customer) => customer.status === 'waiting')
+    return customers.filter((customer: Customer) => customer.state === 'waiting')
   }
   
   // ====================== storeinfo sse ======================
@@ -152,22 +152,22 @@ const StoreInfo = () => {
   }, [selectedQueue])
   
   // ====================== main content ======================
-  const [openUpdateCustomerStatusDialog, setOpenUpdateCustomerStatusDialog] = React.useState(false)
+  const [openUpdateCustomerStateDialog, setOpenUpdateCustomerStateDialog] = React.useState(false)
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null) 
-  const [customerNewStatus, setCustomerNewStatus] = React.useState('')
-  const handleChangeCustomerNewStatus = (event: SelectChangeEvent<typeof customerNewStatus>) => {
-    setCustomerNewStatus(event.target.value)
+  const [customerNewState, setCustomerNewState] = React.useState('')
+  const handleChangeCustomerNewState = (event: SelectChangeEvent<typeof customerNewState>) => {
+    setCustomerNewState(event.target.value)
   }
 
-  const handleClickCustomerStatus = (customer: Customer) => {
-    setOpenUpdateCustomerStatusDialog(true)
+  const handleClickCustomerState = (customer: Customer) => {
+    setOpenUpdateCustomerStateDialog(true)
     setSelectedCustomer(customer)
-    setCustomerNewStatus(customer.status) //default status
+    setCustomerNewState(customer.state) //default state
   }
 
-  const handleCloseCustomerStatusDialog = (event: React.SyntheticEvent<unknown>, reason?: string) => {
-    setOpenUpdateCustomerStatusDialog(false)
-    setCustomerNewStatus('')
+  const handleCloseCustomerStateDialog = (event: React.SyntheticEvent<unknown>, reason?: string) => {
+    setOpenUpdateCustomerStateDialog(false)
+    setCustomerNewState('')
     setSelectedCustomer(null)
   }
 
@@ -177,8 +177,8 @@ const StoreInfo = () => {
         getNormalTokenFromRefreshTokenAction(refreshTokenAction.response), 
         parseInt(storeId),
         selectedQueue === null ? -1 : selectedQueue.id,
-        selectedCustomer === null ? '' : selectedCustomer.status,
-        customerNewStatus
+        selectedCustomer === null ? '' : selectedCustomer.state,
+        customerNewState
       )
   )
   const doMakeUpdateCustomerRequest = () => {
@@ -193,11 +193,11 @@ const StoreInfo = () => {
     )
   }
 
-  const handleUpdateCustomerNewStatus = () => {
-    if (!customerNewStatus) {
+  const handleUpdateCustomerNewState = () => {
+    if (!customerNewState) {
       return
     }
-    if ((selectedCustomer as Customer).status === customerNewStatus) {
+    if ((selectedCustomer as Customer).state === customerNewState) {
       return
     }
     doMakeUpdateCustomerRequest()
@@ -205,35 +205,35 @@ const StoreInfo = () => {
 
   useEffect(() => {
     if (updateCustomerAction.actionType === ACTION_TYPES.SUCCESS) {
-      setOpenUpdateCustomerStatusDialog(false)
-      setCustomerNewStatus('')
+      setOpenUpdateCustomerStateDialog(false)
+      setCustomerNewState('')
       setStatusBarSeverity(STATUS_TYPES.SUCCESS)
       setStatusBarMessage("Success to update customer.")
     }
     if (updateCustomerAction.actionType === ACTION_TYPES.ERROR) {
-      setOpenUpdateCustomerStatusDialog(false)
-      setCustomerNewStatus('')
+      setOpenUpdateCustomerStateDialog(false)
+      setCustomerNewState('')
       setStatusBarSeverity(STATUS_TYPES.ERROR)
       setStatusBarMessage("Fail to update customer.")
     }
   }, [updateCustomerAction.actionType])
 
-  // update customer status dialog
-  const UpdateCustomerStatusDialog = (
+  // update customer state dialog
+  const UpdateCustomerStateDialog = (
     ): JSX.Element => {
     return (
-      <Dialog disableEscapeKeyDown open={openUpdateCustomerStatusDialog} onClose={handleCloseCustomerStatusDialog}>
-        <DialogTitle>Update Customer Status</DialogTitle>
+      <Dialog disableEscapeKeyDown open={openUpdateCustomerStateDialog} onClose={handleCloseCustomerStateDialog}>
+        <DialogTitle>Update Customer State</DialogTitle>
         <DialogContent>
           <Box component="form" sx={{ display: 'flex', flexWrap: 'wrap' }}>
             <FormControl sx={{ m: 1, minWidth: 120 }}>
-              <InputLabel id="dialog-select-label">Status</InputLabel>
+              <InputLabel id="dialog-select-label">State</InputLabel>
               <Select
                 labelId="dialog-select-label"
                 id="dialog-select"
-                value={customerNewStatus}
-                onChange={handleChangeCustomerNewStatus}
-                input={<OutlinedInput label="Status" />}
+                value={customerNewState}
+                onChange={handleChangeCustomerNewState}
+                input={<OutlinedInput label="State" />}
               >
                 <MenuItem value="">------</MenuItem>
                 <MenuItem value={'waiting'}>Waiting</MenuItem>
@@ -245,8 +245,8 @@ const StoreInfo = () => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseCustomerStatusDialog}>Cancel</Button>
-          <Button onClick={handleUpdateCustomerNewStatus}>Ok</Button>
+          <Button onClick={handleCloseCustomerStateDialog}>Cancel</Button>
+          <Button onClick={handleUpdateCustomerNewState}>Ok</Button>
         </DialogActions>
       </Dialog>
     )
@@ -571,7 +571,7 @@ const StoreInfo = () => {
                       <TableRow>
                         <TableCell>Name</TableCell>
                         <TableCell align="right">Phone</TableCell>
-                        <TableCell align="right">Status</TableCell>
+                        <TableCell align="right">State</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -588,14 +588,14 @@ const StoreInfo = () => {
                             {customer.phone}
                           </TableCell>
 
-                          {customer.status === 'waiting' && (
+                          {customer.state === 'waiting' && (
                             <TableCell align="right">
-                              <Button onClick={() => handleClickCustomerStatus(customer)}>waiting</Button>
+                              <Button onClick={() => handleClickCustomerState(customer)}>waiting</Button>
                             </TableCell>
                           )}
-                          {customer.status === 'processing' && (
+                          {customer.state === 'processing' && (
                             <TableCell align="right">
-                              <Button sx={{color: 'red'}} onClick={() => handleClickCustomerStatus(customer)}>{customer.status}</Button>
+                              <Button sx={{color: 'red'}} onClick={() => handleClickCustomerState(customer)}>{customer.state}</Button>
                             </TableCell>
                           )}
                         </TableRow>
@@ -604,7 +604,7 @@ const StoreInfo = () => {
                   </Table>
                 </TableContainer>
               </Stack>
-              {UpdateCustomerStatusDialog()}
+              {UpdateCustomerStateDialog()}
             </Box>
           </>
         )}

@@ -32,7 +32,7 @@ func main() {
 	var grpcConn *grpc.ClientConn
 	var grpcClient grpcServices.GrpcServiceClient
 
-	if config.ServerConfig.ENV() == config.EnvStatus.PROD {
+	if config.ServerConfig.ENV() == config.EnvState.PROD {
 		vaultConnectionConfig := config.ServerConfig.VAULT_CONNECTION_CONFIG()
 		logical, token, sys := config.NewVaultConnection(logger, &vaultConnectionConfig)
 		vaultWrapper := config.NewVaultWrapper(
@@ -121,7 +121,7 @@ func main() {
 			TokenDuration:         config.ServerConfig.TOKENDURATION(),
 			PasswordTokenDuration: config.ServerConfig.PASSWORDTOKENDURATION(),
 			Domain:                config.ServerConfig.DOMAIN(),
-			IsProdEnv:             config.ServerConfig.ENV() == config.EnvStatus.PROD,
+			IsProdEnv:             config.ServerConfig.ENV() == config.EnvState.PROD,
 		},
 	)
 

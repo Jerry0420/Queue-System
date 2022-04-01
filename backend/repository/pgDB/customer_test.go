@@ -26,21 +26,21 @@ func setUpCustomerTest(t *testing.T) (pgDBCustomerRepository pgDB.PgDBCustomerRe
 
 func TestUpdateCustomer(t *testing.T) {
 	pgDBCustomerRepository, _, mock := setUpCustomerTest(t)
-	oldMockCustomerStatus := domain.CustomerStatus.PROCESSING
-	newMockCustomerStatus := domain.CustomerStatus.DONE
+	oldMockCustomerState := domain.CustomerState.PROCESSING
+	newMockCustomerState := domain.CustomerState.DONE
 	mockCustomer := domain.Customer{
 		ID: 1,
 		Name: "customer1",
 		Phone: "0000000000",
 		QueueID: 1,
-		Status: oldMockCustomerStatus,
+		State: oldMockCustomerState,
 		CreatedAt: time.Now(),
 	}
-	query := `UPDATE customers SET status=$1 WHERE id=$2 and status=$3`
+	query := `UPDATE customers SET state=$1 WHERE id=$2 and state=$3`
 	mock.ExpectExec(query).
-		WithArgs(newMockCustomerStatus, mockCustomer.ID, oldMockCustomerStatus).
+		WithArgs(newMockCustomerState, mockCustomer.ID, oldMockCustomerState).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 
-	err := pgDBCustomerRepository.UpdateCustomer(context.TODO(), oldMockCustomerStatus, newMockCustomerStatus, &mockCustomer)
+	err := pgDBCustomerRepository.UpdateCustomer(context.TODO(), oldMockCustomerState, newMockCustomerState, &mockCustomer)
 	assert.NoError(t, err)
 }

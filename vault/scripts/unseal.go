@@ -35,13 +35,13 @@ func unseal() {
 
 	cmd := "vault operator init -format=json -status=true"
 	out, _ := exec.Command("sh", "-c", cmd).Output()
-	var unsealStatus map[string]interface{}
-	json.Unmarshal(out, &unsealStatus)
+	var unsealState map[string]interface{}
+	json.Unmarshal(out, &unsealState)
 
 	var unsealKeys []interface{}
 	var rootToken string
 
-	if unsealStatus["Initialized"].(bool) == false {
+	if unsealState["Initialized"].(bool) == false {
 		cmd = "vault operator init -format=json"
 		out, _ = exec.Command("sh", "-c", cmd).Output()
 		var initResults map[string]interface{}

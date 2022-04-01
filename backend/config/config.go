@@ -53,9 +53,9 @@ func (config Config) get(key string) string {
 	return content
 }
 
-type envStatus struct{ DEV, PROD, TESTING string }
+type envState struct{ DEV, PROD, TESTING string }
 
-var EnvStatus envStatus = envStatus{DEV: "dev", PROD: "prod", TESTING: "testing"}
+var EnvState envState = envState{DEV: "dev", PROD: "prod", TESTING: "testing"}
 
 // read only
 func (config Config) ENV() string {

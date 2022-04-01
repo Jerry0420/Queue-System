@@ -24,7 +24,7 @@ func (psr *pgDBSessionRepository) CreateSession(ctx context.Context, store domai
 	ctx, cancel := context.WithTimeout(ctx, psr.contextTimeOut)
 	defer cancel()
 
-	session := domain.StoreSession{StoreId: store.ID, StoreSessionStatus: domain.StoreSessionStatus.NORMAL}
+	session := domain.StoreSession{StoreId: store.ID, StoreSessionState: domain.StoreSessionState.NORMAL}
 
 	query := `INSERT INTO store_sessions (store_id) VALUES ($1) RETURNING id`
 	row := psr.db.QueryRowContext(ctx, query, store.ID)
@@ -36,21 +36,21 @@ func (psr *pgDBSessionRepository) CreateSession(ctx context.Context, store domai
 	return session, nil
 }
 
-func (psr *pgDBSessionRepository) UpdateSessionStatus(ctx context.Context, tx PgDBInterface, session *domain.StoreSession, oldStatus string, newStatus string) error {
+func (psr *pgDBSessionRepository) UpdateSessionState(ctx context.Context, tx PgDBInterface, session *domain.StoreSession, oldState string, newState string) error {
 	ctx, cancel := context.WithTimeout(ctx, psr.contextTimeOut)
 	defer cancel()
 
-	sessionStatusInDb := ""
+	sessionStateInDb := ""
 	var err error
 	var row *sql.Row
 
-	query := `SELECT status FROM store_sessions WHERE id=$1`
+	query := `SELECT state FROM store_sessions WHERE id=$1`
 	if tx == nil {
 		row = psr.db.QueryRowContext(ctx, query, session.ID)
 	} else {
 		row = tx.QueryRowContext(ctx, query, session.ID)
 	}
-	err = row.Scan(&sessionStatusInDb)
+	err = row.Scan(&sessionStateInDb)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		psr.logger.ERRORf("error %v", err)
@@ -60,13 +60,13 @@ func (psr *pgDBSessionRepository) UpdateSessionStatus(ctx context.Context, tx Pg
 		return domain.ServerError50002
 	}
 
-	if sessionStatusInDb == oldStatus {
-		query = `UPDATE store_sessions SET status=$1 WHERE id=$2 and status=$3`
+	if sessionStateInDb == oldState {
+		query = `UPDATE store_sessions SET state=$1 WHERE id=$2 and state=$3`
 		var result sql.Result
 		if tx == nil {
-			result, err = psr.db.ExecContext(ctx, query, newStatus, session.ID, oldStatus)
+			result, err = psr.db.ExecContext(ctx, query, newState, session.ID, oldState)
 		} else {
-			result, err = tx.ExecContext(ctx, query, newStatus, session.ID, oldStatus)
+			result, err = tx.ExecContext(ctx, query, newState, session.ID, oldState)
 		}
 		if err != nil {
 			psr.logger.ERRORf("error %v", err)
@@ -82,10 +82,10 @@ func (psr *pgDBSessionRepository) UpdateSessionStatus(ctx context.Context, tx Pg
 		}
 		return nil
 	} else {
-		switch sessionStatusInDb {
-			case domain.StoreSessionStatus.SCANNED: 
+		switch sessionStateInDb {
+			case domain.StoreSessionState.SCANNED: 
 				return domain.ServerError40007
-			case domain.StoreSessionStatus.USED: 
+			case domain.StoreSessionState.USED: 
 				return domain.ServerError40008
 		}
 	}
@@ -100,11 +100,11 @@ func (psr *pgDBSessionRepository) GetSessionById(ctx context.Context, sessionId 
 	session := domain.StoreSession{}
 	store := domain.Store{}
 
-	query := `SELECT stores.id, store_sessions.status 
+	query := `SELECT stores.id, store_sessions.state 
 				FROM store_sessions
 				INNER JOIN stores ON stores.id = store_sessions.store_id WHERE store_sessions.id=$1`
 	row := psr.db.QueryRowContext(ctx, query, sessionId)
-	err := row.Scan(&store.ID, &session.StoreSessionStatus)
+	err := row.Scan(&store.ID, &session.StoreSessionState)
 	switch {
 	case errors.Is(err, sql.ErrNoRows):
 		psr.logger.ERRORf("error %v", err)
