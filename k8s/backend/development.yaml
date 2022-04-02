@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: queue-system
+  name: backend-development
+  labels:
+    app: backend
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+        app.kubernetes.io/name: backend
+        app.kubernetes.io/instance: backend
+    spec:
+      restartPolicy: Always
+      initContainers:
+      - name: volume-chown
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000:1001 /app/backend/logs"]
+        volumeMounts:
+          - mountPath: /app/backend/logs
+            name: backend-log-dir
+      containers:
+      - name: backend
+        image: queue-system-backend:v0.0.1
+        imagePullPolicy: IfNotPresent 
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "0.25"
+          limits:
+            memory: "256Mi"
+            cpu: "0.5"
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1001
+        ports:
+          - name: backend-port
+            containerPort: 8000
+
+        livenessProbe:
+          httpGet:
+            path: /api/routine/liveness
+            port: backend-port
+          initialDelaySeconds: 5
+          periodSeconds: 5  
+        
+        readinessProbe:
+          httpGet:
+            path: /api/routine/readiness
+            port: backend-port
+          initialDelaySeconds: 8
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 5
+
+        volumeMounts:
+          - mountPath: /app/backend/logs
+            name: backend-log-dir
+          - name: backend-secret
+            mountPath: "/run/secrets/backend-secret"
+          - name: ca-crt
+            mountPath: "/run/secrets/ca-crt"
+          - name: backend-env
+            mountPath: /etc/config
+            readOnly: true
+      volumes:
+        - name: backend-log-dir
+          hostPath:
+            path: /app/backend/logs
+            type: DirectoryOrCreate
+        - name: backend-secret
+          secret:
+            secretName: backend-secret
+            items:
+            - key: BACKEND-SECRET
+              path: .backend-secret
+              mode: 0444
+        - name: ca-crt
+          secret:
+            secretName: ca-crt
+            items:
+            - key: CA-CRT
+              path: .ca-crt
+              mode: 0444
+        - name: backend-env
+          configMap: 
+            name: backend-env

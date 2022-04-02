@@ -1,3 +1,26 @@
+# dependencies
+/frontend/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# production
+/frontend/build
+/frontend/dist
+
+# misc
+.DS_Store
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
 # Binaries for programs and plugins
 *.exe
 *.exe~
@@ -16,5 +39,31 @@
 
 .vscode
 .env
+.env.db
+.env.frontend
+.env.grpc
+.env.nginx
+logs
+.secret
+.secret_grpc
+*.crt
+*.key
+*.csr
+*.srl
+*.csv
 
-config.json
+queue-system-*.tar
+
+# for dev...
+env.json
+env_grpc.json
+gin-bin
+todo.txt
+test.sql
+test.sh
+test.go
+test.pgsql
+test.js
+test.html
+report.out
+report.html

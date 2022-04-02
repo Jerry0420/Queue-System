@@ -1,0 +1,17 @@
+name: Run Deploy
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+
+  deploy:
+    name: build and deploy to instance
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Check out code into the Go module directory
+      uses: actions/checkout@v2

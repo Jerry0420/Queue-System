@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  namespace: queue-system
+  name: stores-routine
+spec:
+  schedule: "* * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: curl 
+            image: curlimages/curl:latest
+            imagePullPolicy: IfNotPresent
+            resources:
+              requests:
+                memory: "8Mi"
+                cpu: "0.1"
+              limits:
+                memory: "16Mi"
+                cpu: "0.2"
+            command:
+            - /bin/sh
+            - -c
+            - curl --max-time 30 --connect-timeout 5 -X DELETE --url http://backend-service:80/api/v1/routine/stores
+          restartPolicy: OnFailure

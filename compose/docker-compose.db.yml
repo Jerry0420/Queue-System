@@ -1,0 +1,66 @@
+version: "3.7"
+
+services:     
+  db:
+    image: postgres:14.0-alpine
+    container_name: db
+    restart: always
+    ports:
+      - "5432:5432"
+    networks:
+      - queue_system
+    env_file: 
+      - ../envs/.env.db
+    environment:
+      - POSTGRES_INITDB_ARGS=--data-checksums
+    volumes:
+      - ../scripts/create-db-user.sh:/docker-entrypoint-initdb.d/create-db-user.sh
+      - db_data:/var/lib/postgresql/data
+  
+  vault:
+    build:
+      context: ../vault
+      dockerfile: Dockerfile.vault
+    container_name: vault
+    restart: always
+    ports:
+      - "8200:8200"
+      - "8300:8300"
+    networks:
+      - queue_system
+    env_file: 
+      - ../envs/.env.db
+    environment:
+      - VAULT_ADDR=http://127.0.0.1:8200
+      - VAULT_API_ADDR=http://127.0.0.1:8200
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - ../vault/config:/vault/config
+      - ../vault/policies:/vault/policies
+      - ../vault/scripts:/vault/scripts
+      - vault_file:/vault/file
+      - vault_logs:/vault/logs
+    command: server -config=/vault/config/vault-config.json
+
+  migration_tools:
+    image: alpine:3.14
+    container_name: migration_tools
+    networks:
+      - queue_system
+    env_file: 
+      - ../envs/.env.db
+    working_dir: /migration_tools
+    stdin_open: true
+    tty: true
+    volumes:
+      - ../scripts/migration_tools:/migration_tools
+      
+volumes: 
+  db_data: {}
+  vault_file: {}
+  vault_logs: {}
+
+networks: 
+  queue_system:
+    external: true

@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: queue-system
+  name: frontend-development
+  labels:
+    app: frontend
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/instance: frontend
+    spec:
+      restartPolicy: Always
+      initContainers:
+      - name: volume-chown
+        image: busybox
+        command: ["sh", "-c", "chown -R 1000:1001 /var/log/nginx"]
+        volumeMounts:
+          - mountPath: /var/log/nginx
+            name: log-dir
+      containers:
+      - name: frontend
+        image: queue-system-frontend:v0.0.1
+        imagePullPolicy: IfNotPresent 
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "0.25"
+          limits:
+            memory: "256Mi"
+            cpu: "0.5"
+        securityContext:
+          runAsUser: 1000
+          runAsGroup: 1001
+        ports:
+          - name: frontend-port
+            containerPort: 3000
+        
+        livenessProbe:
+          httpGet:
+            path: /routine/liveness
+            port: frontend-port
+          initialDelaySeconds: 5
+          periodSeconds: 5  
+        
+        readinessProbe:
+          httpGet:
+            path: /routine/readiness
+            port: frontend-port
+          initialDelaySeconds: 8
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 5
+          
+        volumeMounts:
+          - mountPath: /var/log/nginx
+            name: log-dir
+          - name: frontend-env
+            mountPath: /etc/config
+            readOnly: true
+      volumes:
+        - name: log-dir
+          hostPath:
+            path: /var/log/nginx
+            type: DirectoryOrCreate
+        - name: frontend-env
+          configMap: 
+            name: frontend-env

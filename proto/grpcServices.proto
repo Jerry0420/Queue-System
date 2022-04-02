@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package grpcServices;
+option go_package = "proto/grpcServices";
+
+message GenerateCSVRequest {
+  string name = 1;
+  bytes content = 2;
+}
+
+message GenerateCSVResponse {
+  string filepath = 1;
+}
+
+message SendEmailRequest {
+  string subject = 1;
+  string content = 2;
+  string email = 3;
+  string filepath = 4;
+}
+
+message SendEmailResponse {
+  bool result = 1;
+}
+
+service GrpcService {
+  rpc GenerateCSV(GenerateCSVRequest) returns (GenerateCSVResponse) {};
+  rpc SendEmail(SendEmailRequest) returns (SendEmailResponse) {};
+}
