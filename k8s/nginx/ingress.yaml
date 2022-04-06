@@ -4,7 +4,7 @@ metadata:
   name: queue-system-ingress
   namespace: queue-system
   annotations:
-    # tlw
+    # tls
     # cert-manager.io/cluster-issuer: "letsencrypt-issuer"
     # cert-manager.io/acme-challenge-type: http01
     # rate limit
@@ -17,6 +17,8 @@ metadata:
     # nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS, PUT, DELETE, PATCH"
     # nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Connection,Authorization"
     # nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
+    # redirect to https
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
     # others
     nginx.ingress.kubernetes.io/configuration-snippet: |
       send_timeout 75s;
