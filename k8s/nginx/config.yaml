@@ -19,4 +19,7 @@ data:
   use-forwarded-headers: "true"
   limit-req-status-code: "429"
   limit-conn-status-code: "429"
+  hsts: "true"
+  hsts-include-subdomains: "true"
+  hsts-max-age: "31536000"
   
