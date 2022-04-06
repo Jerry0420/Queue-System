@@ -511,7 +511,8 @@ const StoreInfo = () => {
                       >
                         {storeInfo.description}
                       </Typography>
-                      <a href={sessionScannedURL} target="_blank">{sessionScannedURL}</a>
+                      {/* TODO: remove! */}
+                      {/* <a href={sessionScannedURL} target="_blank">{sessionScannedURL}</a> */}
                     </CardContent>
                   </Card>
                 </Grid>
