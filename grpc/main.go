@@ -116,7 +116,7 @@ func dialAndSendEmail(grpcServicesServer *GrpcServicesServer) {
 		if err != nil {
 			fmt.Println(err)
 			// TODO: keep it!
-			// continue
+			continue
 		}
 
 		if content.filePath != "" {
