@@ -29,31 +29,37 @@ Every account will persist for 24 hrs. After 24 hrs, Queue System will suspend t
 
 # Screenshots
 
-=======    
-Open Store (signup an account).   
+![](https://raw.githubusercontent.com/Jerry0420/queue-system/main/images/open-store.png)
+* Open Store (signup an account). 
+* Every account will persist for 24 hrs. After 24 hrs, Queue System will suspend the account (a.k.a. close store). Next time, the store owner can signup an account again (a.k.a. open store) to use Queue System.
+<br /><br />
 
-Every account will persist for 24 hrs. After 24 hrs, Queue System will suspend the account (a.k.a. close store). Next time, the store owner can signup an account again (a.k.a. open store) to use Queue System.   
+![](https://raw.githubusercontent.com/Jerry0420/queue-system/main/images/signin-store.png)
+* Sign in to the account
+<br /><br />
 
-========    
-Sign in to the account and forget the password.   
+![](https://raw.githubusercontent.com/Jerry0420/queue-system/main/images/close-store.png)
+* The store can be actively closed by the store owner or passively closed by Queue System. 24 hrs after opening, Queue System will suspend the account (a.k.a. close store). 
+<br /><br />
 
-=======       
-Reset password.    
+![](https://raw.githubusercontent.com/Jerry0420/queue-system/main/images/csv-content.png)
+* Once the store is closed, Queue System will send a CSV report to the store owner. This CSV file contains all customers' detailed information to let the store owner implement further business analysis.   
+<br /><br />
 
-=======   
-The store can be actively closed by the store owner or passively closed by Queue System. 24 hrs after opening, Queue System will suspend the account (a.k.a. close store). Once the store is closed, Queue System will send a CSV report to the store owner. This CSV file contains all customers' detailed information to let the store owner implement further business analysis.   
+![](https://raw.githubusercontent.com/Jerry0420/queue-system/main/images/store-summary.png)
+* The store owner can see the summary of all queues and the QRcode block after signing into their account.
+<br /><br />
 
-=======   
-The store owner can see the summary of all queues and the QRcode block after signing into their account.   
+![](https://raw.githubusercontent.com/Jerry0420/queue-system/main/images/customer-scan.png)
+* Once a customer scans a QRcode, the QRcode will change automatically.    
+<br /><br />
 
-=======   
-Once a customer scans a QRcode, the QRcode will change automatically.    
+![](https://raw.githubusercontent.com/Jerry0420/queue-system/main/images/update-customer.png)
+* The store owner can change every single customer's status at any time.
+<br /><br />
 
-=========     
-The store owner can change every single customer's status at any time.    
-
-========     
-When a new customer joins the line or the state of a customer is updated, the website will refresh immediately and automatically.   
+![](https://raw.githubusercontent.com/Jerry0420/queue-system/main/images/update-customer-refresh.png)
+* When a new customer joins the line or the state of a customer is updated, the website will refresh immediately and automatically.   
 
 # Architecture
 ![](https://raw.githubusercontent.com/Jerry0420/queue-system/main/images/architecture.png)

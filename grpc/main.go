@@ -115,7 +115,8 @@ func dialAndSendEmail(grpcServicesServer *GrpcServicesServer) {
 		err := grpcServicesServer.dialer.DialAndSend(content.message)
 		if err != nil {
 			fmt.Println(err)
-			continue
+			// TODO: keep it!
+			// continue
 		}
 
 		if content.filePath != "" {

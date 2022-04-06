@@ -409,7 +409,7 @@ func (iu *integrationUsecase) VerifySessionToken(ctx context.Context, sessionTok
 		ctx,
 		sessionToken,
 		domain.SignKeyTypes.SESSION,
-		true, // TODO: change to false to RemoveSignKeyByID
+		false, // TODO: change to false to RemoveSignKeyByID
 	)
 	if err != nil {
 		return store, err

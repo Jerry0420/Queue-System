@@ -511,7 +511,7 @@ const StoreInfo = () => {
                       >
                         {storeInfo.description}
                       </Typography>
-                      {/* TODO: remove! */}
+                      {/* TODO: uncomment it! */}
                       {/* <a href={sessionScannedURL} target="_blank">{sessionScannedURL}</a> */}
                     </CardContent>
                   </Card>
