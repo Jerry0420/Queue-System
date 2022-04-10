@@ -86,15 +86,15 @@ Deploy the following resources inside the K8s cluster:
 ## Services Inside The K8s Cluster
 
 ### Backend
-Developed by `Golang`.
+Developed by `Golang`.   
 Provide REST API and [Server-Sent Event API](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events) interfaces.
 
 ### Frontend
-Developed by `ReactJS` with `Typescript`.
+Developed by `ReactJS` with `Typescript`.   
 Interact with backend by REST API and [Server-Sent Event API](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events) interfaces.
 
 ### gRPC
-Developed by `Golang`.
+Developed by `Golang`.   
 The backend server passes tasks of sending emails and generating CSV files to the gRPC server.
 
 ## Services Outside The K8s Cluster
