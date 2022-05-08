@@ -130,7 +130,7 @@ func (iu *integrationUsecase) SigninStore(ctx context.Context, email string, pas
 	token, err = iu.storeUsecase.GenerateToken(
 		ctx,
 		store,
-		domain.SignKeyTypes.REFRESH,
+		domain.TokenTypes.REFRESH,
 		refreshTokenExpiresAt,
 	)
 	if err != nil {
@@ -150,7 +150,7 @@ func (iu *integrationUsecase) RefreshToken(ctx context.Context, encryptedRefresh
 	tokenClaims, err := iu.storeUsecase.VerifyToken(
 		ctx,
 		encryptedRefreshToken,
-		domain.SignKeyTypes.REFRESH,
+		domain.TokenTypes.REFRESH,
 		true,
 	)
 	if err != nil {
@@ -168,7 +168,7 @@ func (iu *integrationUsecase) RefreshToken(ctx context.Context, encryptedRefresh
 	normalToken, err = iu.storeUsecase.GenerateToken(
 		ctx,
 		store,
-		domain.SignKeyTypes.NORMAL,
+		domain.TokenTypes.NORMAL,
 		tokenExpiresAt,
 	)
 	if err != nil {
@@ -178,7 +178,7 @@ func (iu *integrationUsecase) RefreshToken(ctx context.Context, encryptedRefresh
 	sessionToken, err = iu.storeUsecase.GenerateToken(
 		ctx,
 		store,
-		domain.SignKeyTypes.SESSION,
+		domain.TokenTypes.SESSION,
 		tokenExpiresAt,
 	)
 	if err != nil {
@@ -335,7 +335,7 @@ func (iu *integrationUsecase) ForgetPassword(ctx context.Context, email string) 
 	passwordToken, err := iu.storeUsecase.GenerateToken(
 		ctx,
 		store,
-		domain.SignKeyTypes.PASSWORD,
+		domain.TokenTypes.PASSWORD,
 		time.Now().Add(iu.config.PasswordTokenDuration),
 	)
 	if err != nil {
@@ -352,12 +352,14 @@ func (iu *integrationUsecase) UpdatePassword(ctx context.Context, passwordToken 
 	tokenClaims, err := iu.storeUsecase.VerifyToken(
 		ctx,
 		passwordToken,
-		domain.SignKeyTypes.PASSWORD,
+		domain.TokenTypes.PASSWORD,
 		false,
 	)
 	if err != nil {
 		return store, err
 	}
+	// TODO: delete all password tokens in tokens table
+
 	store = domain.Store{
 		ID:        tokenClaims.StoreID,
 		Email:     tokenClaims.Email,
@@ -396,7 +398,7 @@ func (iu *integrationUsecase) VerifyNormalToken(ctx context.Context, normalToken
 		tokenClaims, err = iu.storeUsecase.VerifyToken(
 			ctx,
 			encryptToken[1],
-			domain.SignKeyTypes.NORMAL,
+			domain.TokenTypes.NORMAL,
 			true,
 		)
 		return tokenClaims, err
@@ -408,8 +410,8 @@ func (iu *integrationUsecase) VerifySessionToken(ctx context.Context, sessionTok
 	tokenClaims, err := iu.storeUsecase.VerifyToken(
 		ctx,
 		sessionToken,
-		domain.SignKeyTypes.SESSION,
-		true, // TODO: change to false to RemoveSignKeyByID
+		domain.TokenTypes.SESSION,
+		true, // TODO: change to false to RemoveTokenByToken
 	)
 	if err != nil {
 		return store, err

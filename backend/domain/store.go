@@ -21,7 +21,6 @@ type TokenClaims struct {
 	Email          string `json:"email"`
 	Name           string `json:"name"`
 	StoreCreatedAt int64  `json:"store_created_at"` // not time.Time
-	SignKeyID      int    `json:"signkey_id"`
 	jwt.StandardClaims
 }
 

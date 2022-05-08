@@ -72,7 +72,7 @@ func main() {
 
 	pgDBTx := pgDB.NewPgDBTx(db, logger)
 	pgDBStoreRepository := pgDB.NewPgDBStoreRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
-	pgDBSignkeyRepository := pgDB.NewPgDBSignKeyRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
+	pgDBTokenRepository := pgDB.NewPgDBTokenRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
 	pgDBSessionRepository := pgDB.NewPgDBSessionRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
 	pgDBQueueRepository := pgDB.NewPgDBQueueRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
 	pgDBCustomerRepository := pgDB.NewPgDBCustomerRepository(db, logger, config.ServerConfig.CONTEXT_TIMEOUT())
@@ -81,10 +81,11 @@ func main() {
 
 	storeUsecase := usecase.NewStoreUsecase(
 		pgDBStoreRepository,
-		pgDBSignkeyRepository,
+		pgDBTokenRepository,
 		logger,
 		usecase.StoreUsecaseConfig{
 			Domain: config.ServerConfig.DOMAIN(),
+			TokenSignKey: config.ServerConfig.TOKEN_SIGN_KEY(),
 		},
 	)
 	sessionUsecase := usecase.NewSessionUsecase(pgDBSessionRepository, logger)

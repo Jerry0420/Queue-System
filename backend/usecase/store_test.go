@@ -15,21 +15,21 @@ import (
 
 func setUpStoreTest() (
 	pgDBStoreRepository *mocks.PgDBStoreRepositoryInterface,
-	pgDBSignKeyRepository *mocks.PgDBSignKeyRepositoryInterface,
+	pgDBTokenRepository *mocks.PgDBTokenRepositoryInterface,
 	storeUsecase usecase.StoreUseCaseInterface,
 ) {
 	pgDBStoreRepository = new(mocks.PgDBStoreRepositoryInterface)
-	pgDBSignKeyRepository = new(mocks.PgDBSignKeyRepositoryInterface)
+	pgDBTokenRepository = new(mocks.PgDBTokenRepositoryInterface)
 	logger := logging.NewLogger([]string{}, true)
 	storeUsecase = usecase.NewStoreUsecase(
 		pgDBStoreRepository,
-		pgDBSignKeyRepository,
+		pgDBTokenRepository,
 		logger,
 		usecase.StoreUsecaseConfig{
 			Domain: "http://localhost.com",
 		},
 	)
-	return pgDBStoreRepository, pgDBSignKeyRepository, storeUsecase
+	return pgDBStoreRepository, pgDBTokenRepository, storeUsecase
 }
 
 func TestUpdateStoreDescription(t *testing.T) {

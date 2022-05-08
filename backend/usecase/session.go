@@ -38,7 +38,7 @@ func (su *sessionUsecase) TopicNameOfUpdateSession(storeId int) string {
 
 func (su *sessionUsecase) GetSessionById(ctx context.Context, sessionId string) (session domain.StoreSession, err error) {
 	if sessionId == "" {
-		return session, domain.ServerError40105
+		return session, domain.ServerError40104
 	}
 	session, err = su.pgDBSessionRepository.GetSessionById(ctx, sessionId)
 	return session, err

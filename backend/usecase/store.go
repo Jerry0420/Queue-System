@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
 	"github.com/jerry0420/queue-system/backend/domain"
 	"github.com/jerry0420/queue-system/backend/logging"
 	"github.com/jerry0420/queue-system/backend/repository/pgDB"
@@ -17,23 +16,24 @@ import (
 )
 
 type StoreUsecaseConfig struct {
-	Domain string
+	Domain       string
+	TokenSignKey string
 }
 
 type storeUsecase struct {
-	pgDBStoreRepository   pgDB.PgDBStoreRepositoryInterface
-	pgDBSignKeyRepository pgDB.PgDBSignKeyRepositoryInterface
-	logger                logging.LoggerTool
-	config                StoreUsecaseConfig
+	pgDBStoreRepository pgDB.PgDBStoreRepositoryInterface
+	pgDBTokenRepository pgDB.PgDBTokenRepositoryInterface
+	logger              logging.LoggerTool
+	config              StoreUsecaseConfig
 }
 
 func NewStoreUsecase(
 	pgDBStoreRepository pgDB.PgDBStoreRepositoryInterface,
-	pgDBSignKeyRepository pgDB.PgDBSignKeyRepositoryInterface,
+	pgDBTokenRepository pgDB.PgDBTokenRepositoryInterface,
 	logger logging.LoggerTool,
 	config StoreUsecaseConfig,
 ) StoreUseCaseInterface {
-	return &storeUsecase{pgDBStoreRepository, pgDBSignKeyRepository, logger, config}
+	return &storeUsecase{pgDBStoreRepository, pgDBTokenRepository, logger, config}
 }
 
 func (su *storeUsecase) ChunkStoresSlice(items [][][]string, chunkSize int) (chunks [][][][]string) {
@@ -97,74 +97,62 @@ func (su *storeUsecase) ValidatePassword(passwordInDb string, incomingPassword s
 	return nil
 }
 
-func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store, signKeyType string, expireTime time.Time) (encryptToken string, err error) {
-	randomUUID := uuid.New().String()
-	saltBytes, err := bcrypt.GenerateFromPassword([]byte(randomUUID), bcrypt.DefaultCost)
-	if err != nil {
-		su.logger.ERRORf("%v", err)
-		return "", domain.ServerError50001
-	}
-	signKey := &domain.SignKey{StoreId: store.ID, SignKey: string(saltBytes), SignKeyType: signKeyType}
-	err = su.pgDBSignKeyRepository.CreateSignKey(ctx, signKey)
-	if err != nil {
-		return "", err
-	}
+func (su *storeUsecase) GenerateToken(ctx context.Context, store domain.Store, tokenType string, expireTime time.Time) (encryptToken string, err error) {
+	// randomUUID := uuid.New().String()
+	// saltBytes, err := bcrypt.GenerateFromPassword([]byte(randomUUID), bcrypt.DefaultCost)
+	// if err != nil {
+	// 	su.logger.ERRORf("%v", err)
+	// 	return "", domain.ServerError50001
+	// }
 
 	claims := domain.TokenClaims{
 		store.ID,
 		store.Email,
 		store.Name,
 		store.CreatedAt.Unix(),
-		signKey.ID,
 		jwt.StandardClaims{
 			IssuedAt:  time.Now().Unix(),
 			ExpiresAt: expireTime.Unix(),
 		},
 	}
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	encryptToken, err = token.SignedString([]byte(signKey.SignKey))
+	encryptToken, err = token.SignedString([]byte(su.config.TokenSignKey))
 	if err != nil {
 		su.logger.ERRORf("%v", err)
 		return encryptToken, domain.ServerError50001
 	}
+	err = su.pgDBTokenRepository.CreateToken(
+		ctx,
+		&domain.Token{StoreId: store.ID, Token: encryptToken, TokenType: tokenType},
+	)
+	if err != nil {
+		return "", err
+	}
 	return encryptToken, err
 }
 
-func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string, signKeyType string, withSignkeyPreserved bool) (tokenClaims domain.TokenClaims, err error) {
-	_, _, err = new(jwt.Parser).ParseUnverified(encryptToken, &tokenClaims)
-	if err != nil {
-		su.logger.ERRORf("%v", err)
-		return domain.TokenClaims{}, domain.ServerError40101
-	}
-
+func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string, tokenType string, withTokenPreserved bool) (tokenClaims domain.TokenClaims, err error) {
 	tokenClaims = domain.TokenClaims{}
 	token, err := jwt.ParseWithClaims(encryptToken, &tokenClaims, func(token *jwt.Token) (interface{}, error) {
-		var getSignKeyFunc func(context.Context, int, string) (domain.SignKey, error)
-		if withSignkeyPreserved == true {
-			getSignKeyFunc = su.pgDBSignKeyRepository.GetSignKeyByID
-		} else {
-			getSignKeyFunc = su.pgDBSignKeyRepository.RemoveSignKeyByID
+		if !withTokenPreserved { // == false
+			su.pgDBTokenRepository.RemoveTokenByToken(ctx, encryptToken, tokenType)
 		}
-		signKey, err := getSignKeyFunc(ctx, tokenClaims.SignKeyID, signKeyType)
-		if err != nil {
-			return nil, err
-		}
-		return []byte(signKey.SignKey), nil
+		return []byte(su.config.TokenSignKey), nil
 	})
 	if err != nil {
 		su.logger.ERRORf("%v", err)
 		if err.(*jwt.ValidationError).Errors == jwt.ValidationErrorExpired {
-			return tokenClaims, domain.ServerError40104
+			return tokenClaims, domain.ServerError40103
 		}
 		if serverError, ok := err.(*jwt.ValidationError).Inner.(*domain.ServerError); ok {
 			return tokenClaims, serverError
 		}
-		return tokenClaims, domain.ServerError40103
+		return tokenClaims, domain.ServerError40101
 	}
 
 	if !token.Valid {
 		su.logger.ERRORf("unvalid token")
-		return tokenClaims, domain.ServerError40103
+		return tokenClaims, domain.ServerError40101
 	}
 
 	return tokenClaims, nil

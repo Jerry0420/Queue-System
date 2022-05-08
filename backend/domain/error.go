@@ -38,12 +38,10 @@ var (
 	ServerError40101 = &ServerError{Code: 40101, Description: "fail to parse jwt token"}
 	// lack of jwt token
 	ServerError40102 = &ServerError{Code: 40102, Description: "lack of jwt token"}
-	// other jwt token parse error
-	ServerError40103 = &ServerError{Code: 40103, Description: "other jwt token parse error"}
 	// jwt token expired
-	ServerError40104 = &ServerError{Code: 40104, Description: "jwt token expired"}
+	ServerError40103 = &ServerError{Code: 40103, Description: "jwt token expired"}
 	// lack of session
-	ServerError40105 = &ServerError{Code: 40105, Description: "lack of session"}
+	ServerError40104 = &ServerError{Code: 40104, Description: "lack of session"}
 	
 	// ============================================================
 
@@ -51,8 +49,8 @@ var (
 	ServerError40401 = &ServerError{Code: 40401, Description: "unsupported url route"}
 	// store not exist.
 	ServerError40402 = &ServerError{Code: 40402, Description: "store not exist."}
-	// sign_key not exist.
-	ServerError40403 = &ServerError{Code: 40403, Description: "sign_key not exist."}
+	// token not exist.
+	ServerError40403 = &ServerError{Code: 40403, Description: "token not exist."}
 	// store_session not exist.
 	ServerError40404 = &ServerError{Code: 40404, Description: "store_session not exist."}
 	// customer not exist.
@@ -67,8 +65,8 @@ var (
 
 	// store already exist. (not exceed 24 hrs)
 	ServerError40901 = &ServerError{Code: 40901, Description: "store already exist. (not exceed 24 hrs)"}
-	// sign_key already exist.
-	ServerError40902 = &ServerError{Code: 40902, Description: "sign_key already exist."}
+	// token already exist.
+	ServerError40902 = &ServerError{Code: 40902, Description: "token already exist."}
 	// store_session already exist.
 	ServerError40903 = &ServerError{Code: 40903, Description: "store_session already exist."}
 
