@@ -66,10 +66,10 @@ services:
       - ../envs/.env.nginx
     container_name: nginx
     command: >
-      sh -c "/nginx.conf.sh
+      sh -c "/nginx.conf.dev.sh
       && nginx -g 'daemon off;' -c /nginx.conf"
     volumes:
-        - ../scripts/nginx/nginx.conf.sh:/nginx.conf.sh
+        - ../scripts/nginx/nginx.conf.dev.sh:/nginx.conf.sh
     networks:
       - queue_system
 
