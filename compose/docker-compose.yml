@@ -96,10 +96,10 @@ services:
       sh -c "/nginx.conf.sh && nginx -g 'daemon off;' -c /nginx.conf"
     secrets:
       - source: nginx-crt
-        target: /run/secrets/nginx-crt
+        target: /run/secrets/nginx.crt
         mode: 0444
       - source: nginx-key
-        target: /run/secrets/nginx-key
+        target: /run/secrets/nginx.key
         mode: 0444
     volumes:
         - ../scripts/nginx/nginx.conf.sh:/nginx.conf.sh
@@ -129,6 +129,8 @@ secrets:
     file: ../cert/server.key
   # nginx
   nginx-crt:
-    file: ../cert/nginx.crt
+    # file: ../scripts/nginx/dev_tls/nginx.crt
+    file: ../scripts/nginx/dev_tls/nginx.crt
   nginx-key:
-    file: ../cert/nginx.key
+    # file: ../scripts/nginx/dev_tls/nginx.key
+    file: ../scripts/nginx/dev_tls/nginx.key

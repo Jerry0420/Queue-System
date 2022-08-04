@@ -19,8 +19,8 @@ http {
     gzip_min_length 128;
     gzip_comp_level 6;
     gzip_types
+        # text/event-stream
         text/plain 
-        text/event-stream 
         text/css 
         text/js 
         text/xml 
@@ -77,7 +77,7 @@ http {
         }
 
         location / {
-            return 301 https://queue-system.com$request_uri;
+            return 301 https://queue-system.com\$request_uri;
         }
     }
 
@@ -91,32 +91,39 @@ http {
 
         server_name _;
 
-        ssl_certificate /run/secrets/nginx-crt;
-        ssl_certificate_key /run/secrets/nginx-key;
+        ssl_certificate /run/secrets/nginx.crt;
+        ssl_certificate_key /run/secrets/nginx.key;
 
         proxy_connect_timeout 75s;
         proxy_read_timeout 86400s;
         proxy_send_timeout 75s;
 
         location /api {
-                proxy_pass http://upstream_backend;
+            proxy_pass http://upstream_backend;
 
-                proxy_set_header Connection '';
-                # proxy_set_header Forwarded \$proxy_add_forwarded;
-                proxy_http_version 1.1;
-                chunked_transfer_encoding off;
+            proxy_set_header Connection '';
+            proxy_http_version 1.1;
+            chunked_transfer_encoding off;
+            
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$http_x_forwarded_proto;
         }
 
         location / {
-                if (\$request_uri ~* \.(css|gif|jpe?g|png|svg|ico)) {
-                    add_header Cache-Control "max-age=31536000";
-                }
+            proxy_pass http://upstream_frontend;
 
-                if (\$request_uri ~* \.(js)) {
-                    add_header Cache-Control "private, max-age=31536000";
-                }
-                # proxy_set_header Forwarded \$proxy_add_forwarded;
-                proxy_pass http://upstream_frontend;
+            if (\$request_uri ~* \.(css|gif|jpe?g|png|svg|ico)) {
+                add_header Cache-Control "max-age=31536000";
+            }
+
+            if (\$request_uri ~* \.(js)) {
+                add_header Cache-Control "private, max-age=31536000";
+            }
+
+            proxy_set_header X-Real-IP \$remote_addr;
+            proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto \$http_x_forwarded_proto;
         }
     }
 }

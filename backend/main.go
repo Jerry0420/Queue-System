@@ -84,7 +84,7 @@ func main() {
 		pgDBTokenRepository,
 		logger,
 		usecase.StoreUsecaseConfig{
-			Domain: config.ServerConfig.DOMAIN(),
+			Domain:       config.ServerConfig.DOMAIN(),
 			TokenSignKey: config.ServerConfig.TOKEN_SIGN_KEY(),
 		},
 	)
@@ -127,7 +127,7 @@ func main() {
 	)
 
 	mw := middleware.NewMiddleware(router, logger, integrationUsecase, sessionUsecase)
-	
+
 	httpAPI.NewHttpAPIRoutes(router, mw, httpAPIDelivery)
 	// for health check
 	httpAPI.NewHttpAPIHealthProbes(router, db, grpcConn, config.ServerConfig.VAULT_SERVER(), config.ServerConfig.ENV())
