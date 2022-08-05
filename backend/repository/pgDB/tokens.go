@@ -43,7 +43,7 @@ func (pskr *pgDBTokenRepository) RemoveTokenByToken(ctx context.Context, token s
 	ctx, cancel := context.WithTimeout(ctx, pskr.contextTimeOut)
 	defer cancel()
 
-	query := `DELETE FROM tokens WHERE token=$1,type=$2`
+	query := `DELETE FROM tokens WHERE token=$1 AND type=$2`
 	result, err := pskr.db.ExecContext(ctx, query, token, tokenType)
 	if err != nil {
 		pskr.logger.ERRORf("error %v", err)
