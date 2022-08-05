@@ -47,6 +47,11 @@ add_crontab:
 
 # ==========================================================
 
+renew_certbot:
+	docker-compose -f ./compose/docker-compose.cert.yml certbot renew
+
+# ==========================================================
+
 kind_create:
 	kind create cluster --config ./k8s/kind.yaml
 
