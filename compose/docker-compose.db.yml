@@ -44,7 +44,7 @@ services:
     command: server -config=/vault/config/vault-config.json
 
   migration_tools:
-    image: alpine:3.14
+    image: golang:1.17.1-alpine
     container_name: migration_tools
     networks:
       - queue_system
