@@ -484,7 +484,7 @@ const StoreInfo = () => {
       >
         {selectedQueue === null && (
           <>
-            <Container maxWidth="md">
+            <Container maxWidth="lg">
               <Container fixed>
                 <Typography gutterBottom variant="h5" component="h2" align="center">
                   Please scan the QRCode to join the queue.
@@ -499,7 +499,7 @@ const StoreInfo = () => {
                         display: 'block',
                         marginLeft: 'auto',
                         marginRight: 'auto',
-                        width: '80%'
+                        width: '70%'
                       }}
                       src={qrcodeImageURL}
                       alt="qrcode image"

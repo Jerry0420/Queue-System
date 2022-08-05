@@ -47,6 +47,11 @@ add_crontab:
 
 # ==========================================================
 
+renew_certbot:
+	docker-compose -f ./compose/docker-compose.cert.yml certbot renew
+
+# ==========================================================
+
 kind_create:
 	kind create cluster --config ./k8s/kind.yaml
 
@@ -99,6 +104,7 @@ microk8s_install:
 	sudo usermod -a -G microk8s ubuntu
 	sudo snap alias microk8s.kubectl kubectl
 	sudo chown -f -R ubuntu ~/.kube
+	newgrp microk8s
 
 microk8s_docker_install:
 	sudo apt update
@@ -115,7 +121,7 @@ microk8s_load_images_grpc:
 	microk8s ctr image import queue-system-grpc.tar 
 
 microk8s_enable_addons:
-	microk8s enable dns ingress storage prometheus metallb
+	microk8s enable dns ingress hostpath-storage metallb
 
 # microk8s config
 # hostname -I | awk '{print $1}'

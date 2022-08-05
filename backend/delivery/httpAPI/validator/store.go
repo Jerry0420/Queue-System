@@ -66,7 +66,7 @@ func StoreSignin(r *http.Request) (domain.Store, error) {
 }
 
 func StoreTokenRefresh(r *http.Request) (*http.Cookie, error) {
-	encryptedRefreshToken, err := r.Cookie(domain.SignKeyTypes.REFRESH)
+	encryptedRefreshToken, err := r.Cookie(domain.TokenTypes.REFRESH)
 	if err != nil || len(encryptedRefreshToken.Value) == 0 {
 		return nil, domain.ServerError40102
 	}
@@ -74,7 +74,7 @@ func StoreTokenRefresh(r *http.Request) (*http.Cookie, error) {
 }
 
 func StoreClose(r *http.Request) (domain.TokenClaims, error) {
-	tokenClaims := r.Context().Value(domain.SignKeyTypes.NORMAL).(domain.TokenClaims)
+	tokenClaims := r.Context().Value(domain.TokenTypes.NORMAL).(domain.TokenClaims)
 	vars := mux.Vars(r)
 	id, err := strconv.Atoi(vars["id"])
 	if err != nil || id != tokenClaims.StoreID {
@@ -132,7 +132,7 @@ func StoreInfoGet(r *http.Request) (storeId int, err error){
 }
 
 func StoreDescriptionUpdate(r *http.Request) (store domain.Store, err error){
-	tokenClaims := r.Context().Value(domain.SignKeyTypes.NORMAL).(domain.TokenClaims)
+	tokenClaims := r.Context().Value(domain.TokenTypes.NORMAL).(domain.TokenClaims)
 	
 	vars := mux.Vars(r)
 	storeId, err := strconv.Atoi(vars["id"])

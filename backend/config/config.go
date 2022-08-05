@@ -94,6 +94,11 @@ func (config Config) GRPCREPLICACOUNT() int {
 	return 2
 }
 
+func (config Config) TOKEN_SIGN_KEY() string {
+	content := config.get("TOKEN_SIGN_KEY")
+	return content
+}
+
 func (config Config) POSTGRES_HOST() string {
 	content := config.get("POSTGRES_HOST")
 	return content

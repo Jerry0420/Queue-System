@@ -50,8 +50,8 @@ type StoreUseCaseInterface interface {
 	VerifyTimeZoneString(inputTimezone string) error
 	EncryptPassword(password string) (string, error)
 	ValidatePassword(passwordInDb string, incomingPassword string) error
-	GenerateToken(ctx context.Context, store domain.Store, signKeyType string, expireTime time.Time) (encryptToken string, err error)
-	VerifyToken(ctx context.Context, encryptToken string, signKeyType string, withSignkeyPreserved bool) (tokenClaims domain.TokenClaims, err error)
+	GenerateToken(ctx context.Context, store domain.Store, tokenType string, expireTime time.Time) (encryptToken string, err error)
+	VerifyToken(ctx context.Context, encryptToken string, tokenType string, withTokenPreserved bool) (tokenClaims domain.TokenClaims, err error)
 	GenerateEmailContentOfForgetPassword(passwordToken string, store domain.Store) (subject string, content string)
 	GenerateEmailContentOfCloseStore(storeName string, storeCreatedAt string) (subject string, content string)
 	GenerateCsvFileNameAndContent(storeCreatedAt time.Time, storeTimezone string, storeName string, content [][]string) (date string, csvFileName string, csvContent []byte)

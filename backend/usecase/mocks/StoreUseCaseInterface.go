@@ -125,20 +125,20 @@ func (_m *StoreUseCaseInterface) GenerateEmailContentOfForgetPassword(passwordTo
 	return r0, r1
 }
 
-// GenerateToken provides a mock function with given fields: ctx, store, signKeyType, expireTime
-func (_m *StoreUseCaseInterface) GenerateToken(ctx context.Context, store domain.Store, signKeyType string, expireTime time.Time) (string, error) {
-	ret := _m.Called(ctx, store, signKeyType, expireTime)
+// GenerateToken provides a mock function with given fields: ctx, store, tokenType, expireTime
+func (_m *StoreUseCaseInterface) GenerateToken(ctx context.Context, store domain.Store, tokenType string, expireTime time.Time) (string, error) {
+	ret := _m.Called(ctx, store, tokenType, expireTime)
 
 	var r0 string
 	if rf, ok := ret.Get(0).(func(context.Context, domain.Store, string, time.Time) string); ok {
-		r0 = rf(ctx, store, signKeyType, expireTime)
+		r0 = rf(ctx, store, tokenType, expireTime)
 	} else {
 		r0 = ret.Get(0).(string)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, domain.Store, string, time.Time) error); ok {
-		r1 = rf(ctx, store, signKeyType, expireTime)
+		r1 = rf(ctx, store, tokenType, expireTime)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -216,20 +216,20 @@ func (_m *StoreUseCaseInterface) VerifyTimeZoneString(inputTimezone string) erro
 	return r0
 }
 
-// VerifyToken provides a mock function with given fields: ctx, encryptToken, signKeyType, withSignkeyPreserved
-func (_m *StoreUseCaseInterface) VerifyToken(ctx context.Context, encryptToken string, signKeyType string, withSignkeyPreserved bool) (domain.TokenClaims, error) {
-	ret := _m.Called(ctx, encryptToken, signKeyType, withSignkeyPreserved)
+// VerifyToken provides a mock function with given fields: ctx, encryptToken, tokenType, withTokenPreserved
+func (_m *StoreUseCaseInterface) VerifyToken(ctx context.Context, encryptToken string, tokenType string, withTokenPreserved bool) (domain.TokenClaims, error) {
+	ret := _m.Called(ctx, encryptToken, tokenType, withTokenPreserved)
 
 	var r0 domain.TokenClaims
 	if rf, ok := ret.Get(0).(func(context.Context, string, string, bool) domain.TokenClaims); ok {
-		r0 = rf(ctx, encryptToken, signKeyType, withSignkeyPreserved)
+		r0 = rf(ctx, encryptToken, tokenType, withTokenPreserved)
 	} else {
 		r0 = ret.Get(0).(domain.TokenClaims)
 	}
 
 	var r1 error
 	if rf, ok := ret.Get(1).(func(context.Context, string, string, bool) error); ok {
-		r1 = rf(ctx, encryptToken, signKeyType, withSignkeyPreserved)
+		r1 = rf(ctx, encryptToken, tokenType, withTokenPreserved)
 	} else {
 		r1 = ret.Error(1)
 	}

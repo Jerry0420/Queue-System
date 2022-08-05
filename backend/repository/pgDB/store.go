@@ -62,7 +62,7 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesAndCustomersById(ctx context.C
 				FROM stores
 				INNER JOIN queues ON stores.id = queues.store_id
 				INNER JOIN customers ON queues.id = customers.queue_id
-				WHERE stores.id=$1 and customers.state='waiting' OR customers.state='processing'
+				WHERE stores.id=$1 and (customers.state='waiting' OR customers.state='processing')
 				UNION
 				SELECT 
 					stores.email, 
@@ -88,7 +88,8 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesAndCustomersById(ctx context.C
 	}
 
 	var store domain.Store
-	queues := make(map[int]domain.Queue)
+	collectedQueues := make(map[int]string)
+	queues := make([]domain.Queue, 0)
 	customers := make(map[int][]*domain.Customer)
 
 	for rows.Next() {
@@ -104,7 +105,12 @@ func (psr *pgDBStoreRepository) GetStoreWithQueuesAndCustomersById(ctx context.C
 			psr.logger.ERRORf("error %v", err)
 			return storeWithQueues, domain.ServerError50002
 		}
-		queues[queue.ID] = queue
+
+		if _, ok := collectedQueues[queue.ID]; !ok {
+			queues = append(queues, queue)
+		}
+		collectedQueues[queue.ID] = ""
+
 		if customer.ID == -1 { // non-exist customer id
 			continue
 		}
