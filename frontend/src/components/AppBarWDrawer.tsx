@@ -98,7 +98,13 @@ const AppBarWDrawer = (props) => {
               >
                 <MenuIcon />
               </IconButton>
-              <Typography variant="h6" noWrap component="div">
+              <Typography 
+                variant="h6" 
+                noWrap 
+                component="div" 
+                style={{cursor: 'pointer'}}
+                onClick={() => window.location.reload()}
+              >
                 {storeInfo.name}
               </Typography>
             </Toolbar>

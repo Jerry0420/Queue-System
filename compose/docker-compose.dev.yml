@@ -69,7 +69,7 @@ services:
       sh -c "/nginx.conf.dev.sh
       && nginx -g 'daemon off;' -c /nginx.conf"
     volumes:
-        - ../scripts/nginx/nginx.conf.dev.sh:/nginx.conf.sh
+        - ../scripts/nginx/nginx.conf.dev.sh:/nginx.conf.dev.sh
     networks:
       - queue_system
 
