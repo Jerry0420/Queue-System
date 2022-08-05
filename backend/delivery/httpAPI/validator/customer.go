@@ -61,7 +61,7 @@ func CustomerCreate(r *http.Request) (session domain.StoreSession, customers []d
 }
 
 func CustomerUpdate(r *http.Request) (storeId int, oldCustomerState string, newCustomerState string, customer domain.Customer, err error) {
-	tokenClaims := r.Context().Value(domain.SignKeyTypes.NORMAL).(domain.TokenClaims)
+	tokenClaims := r.Context().Value(domain.TokenTypes.NORMAL).(domain.TokenClaims)
 
 	vars := mux.Vars(r)
 	customerId, err := strconv.Atoi(vars["id"])

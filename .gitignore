@@ -67,3 +67,5 @@ test.js
 test.html
 report.out
 report.html
+
+/cert/certbot/conf

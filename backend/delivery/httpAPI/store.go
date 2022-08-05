@@ -63,7 +63,7 @@ func (had *HttpAPIDelivery) SigninStore(w http.ResponseWriter, r *http.Request) 
 	cookieMaxAge := int(refreshTokenExpiresAt.Sub(time.Now()).Seconds())
 	
 	cookie := http.Cookie{
-		Name:     domain.SignKeyTypes.REFRESH,
+		Name:     domain.TokenTypes.REFRESH,
 		Value:    token,
 		Secure:   cookieSecure,
 		HttpOnly: true,
@@ -75,7 +75,7 @@ func (had *HttpAPIDelivery) SigninStore(w http.ResponseWriter, r *http.Request) 
 
 	// use cookie: refreshable to check if refresh token exist in the browser. 
 	cookie = http.Cookie{
-		Name:     domain.SignKeyTypes.REFRESH + "able",
+		Name:     domain.TokenTypes.REFRESH + "able",
 		Value:    "true",
 		Secure:   cookieSecure,
 		SameSite: http.SameSiteLaxMode,

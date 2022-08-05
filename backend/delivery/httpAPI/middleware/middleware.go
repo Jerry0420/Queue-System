@@ -66,7 +66,7 @@ func (mw *Middleware) AuthenticationMiddleware(next http.Handler) http.Handler {
 			presenter.JsonResponse(w, nil, err)
 			return
 		}
-		ctx := context.WithValue(r.Context(), domain.SignKeyTypes.NORMAL, tokenClaims)
+		ctx := context.WithValue(r.Context(), domain.TokenTypes.NORMAL, tokenClaims)
 		mw.logger.INFOf(ctx, "storeID: %d", tokenClaims.StoreID)
 		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)

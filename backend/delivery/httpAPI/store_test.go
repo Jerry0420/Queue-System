@@ -150,7 +150,7 @@ func TestGetStoreInfoWithSSE(t *testing.T) {
 		"description": expectedMockStoreDescription,
 	}
 	jsonBody, _ := json.Marshal(params)
-	putContext := context.WithValue(context.Background(), domain.SignKeyTypes.NORMAL, domain.TokenClaims{
+	putContext := context.WithValue(context.Background(), domain.TokenTypes.NORMAL, domain.TokenClaims{
 		StoreID: mockStoreWithQueue.ID,
 		Email:   mockStoreWithQueue.Email,
 		Name:    mockStoreWithQueue.Name,

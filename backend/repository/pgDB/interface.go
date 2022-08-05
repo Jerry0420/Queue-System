@@ -37,10 +37,9 @@ type PgDBStoreRepositoryInterface interface {
 	GetAllExpiredStoresInSlice(ctx context.Context, tx PgDBInterface, expiresTime time.Time) (stores [][][]string, err error)
 }
 
-type PgDBSignKeyRepositoryInterface interface {
-	CreateSignKey(ctx context.Context, signKey *domain.SignKey) error
-	GetSignKeyByID(ctx context.Context, id int, signKeyType string) (signKey domain.SignKey, err error)
-	RemoveSignKeyByID(ctx context.Context, id int, signKeyType string) (signKey domain.SignKey, err error)
+type PgDBTokenRepositoryInterface interface {
+	CreateToken(ctx context.Context, token *domain.Token) error
+	RemoveTokenByToken(ctx context.Context, token string, tokenType string) error
 }
 
 type PgDBQueueRepositoryInterface interface {

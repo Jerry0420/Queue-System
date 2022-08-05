@@ -24,13 +24,12 @@ CREATE TABLE IF NOT EXISTS store_sessions(
 
 -- ----------------------------
 
-CREATE TYPE sign_key_types AS ENUM ('normal', 'password', 'refresh', 'session');
+CREATE TYPE token_types AS ENUM ('normal', 'password', 'refresh', 'session');
 
-CREATE TABLE IF NOT EXISTS sign_keys(
-   id serial PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS tokens(
    store_id integer REFERENCES stores ON DELETE CASCADE,
-   sign_key varchar(64) NOT NULL,
-   type sign_key_types NOT NULL
+   token text NOT NULL,
+   type token_types NOT NULL
 );
 
 -- ----------------------------

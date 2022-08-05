@@ -4,5 +4,5 @@
     "POSTGRES_SSL": "disable",
     "POSTGRES_DEV_USER": "root",
     "POSTGRES_DEV_PASSWORD": "root",
-    "DOMAIN": "https://queue-system.com"
+    "DOMAIN": "https://queue-system.vip"
 }

@@ -41,7 +41,7 @@ func TestCustomerUpdate(t *testing.T) {
 		httpAPIDelivery.CustomerUpdate,
 	).Methods(http.MethodPut).Headers("Content-Type", "application/json")
 
-	ctx := context.WithValue(context.Background(), domain.SignKeyTypes.NORMAL, mockTokenClaims)
+	ctx := context.WithValue(context.Background(), domain.TokenTypes.NORMAL, mockTokenClaims)
 	w := httptest.NewRecorder()
 	params := map[string]interface{}{
 		"store_id":            mockTokenClaims.StoreID,

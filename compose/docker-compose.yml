@@ -10,13 +10,13 @@ services:
     networks:
       - queue_system
     user: 1000:1001
-    ports:
-      - "80:3000"
+    # ports:
+    #   - "3000:3000"
     volumes:
       - frontend_log_dir:/var/log/nginx:rw
       - ../envs/.env.frontend:/etc/config/.env.frontend:ro
-    logging:
-      driver: "none"
+    # logging:
+    #   driver: "none"
 
   grpc:
     build:
@@ -48,8 +48,8 @@ services:
         uid: '1000'
         gid: '1001'
         mode: 0444
-    ports:
-      - "8002:8002"
+    # ports:
+    #   - "8002:8002"
     volumes:
       - grpc_log_dir:/app/grpc/logs:rw
       - ../envs/.env.grpc:/etc/config/.env.grpc:ro
@@ -83,6 +83,30 @@ services:
       - ../envs/.env:/etc/config/.env:ro
     # logging:
     #   driver: "none"
+  
+  nginx:
+    image: nginx:1.18-alpine
+    ports:
+    - '80:80'
+    - '443:443'
+    env_file: 
+      - ../envs/.env.nginx
+    container_name: nginx
+    restart: always
+    command: >
+      sh -c "/nginx.conf.sh && nginx -g 'daemon off;' -c /nginx.conf"
+    secrets:
+      - source: nginx-crt
+        target: /run/secrets/nginx.crt
+        mode: 0444
+      - source: nginx-key
+        target: /run/secrets/nginx.key
+        mode: 0444
+    volumes:
+        - ../scripts/nginx/nginx.conf.sh:/nginx.conf.sh
+        - ../cert/certbot/www:/var/www/certbot/
+    networks:
+      - queue_system
 
 volumes: 
   backend_log_dir: {}
@@ -96,6 +120,7 @@ networks:
 secrets:
   backend-secret:
     file: ../envs/.secret
+  # grpc
   grpc-secret:
     file: ../envs/.secret_grpc
   ca-crt:
@@ -104,3 +129,10 @@ secrets:
     file: ../cert/server.crt
   server-key:
     file: ../cert/server.key
+  # nginx
+  nginx-crt:
+    # file: ../scripts/nginx/dev_tls/nginx.crt
+    file: ../cert/certbot/conf/live/queue-system.vip/fullchain.pem
+  nginx-key:
+    # file: ../scripts/nginx/dev_tls/nginx.key
+    file: ../cert/certbot/conf/live/queue-system.vip/privkey.pem
