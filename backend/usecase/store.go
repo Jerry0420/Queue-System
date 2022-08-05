@@ -160,7 +160,7 @@ func (su *storeUsecase) VerifyToken(ctx context.Context, encryptToken string, to
 
 func (su *storeUsecase) GenerateEmailContentOfForgetPassword(passwordToken string, store domain.Store) (subject string, content string) {
 	// TODO: update email content to html format.
-	resetPasswordUrl := fmt.Sprintf("%s/stores/%d/password/update?password_token=%s", su.config.Domain, store.ID, passwordToken)
+	resetPasswordUrl := fmt.Sprintf("%s/#/stores/%d/password/update?password_token=%s", su.config.Domain, store.ID, passwordToken)
 	return "Queue-System Reset Password", fmt.Sprintf("Hello, %s, please click %s", store.Name, resetPasswordUrl)
 }
 
