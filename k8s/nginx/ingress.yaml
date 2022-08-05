@@ -13,7 +13,7 @@ metadata:
     nginx.ingress.kubernetes.io/limit-burst-multiplier: "10"
     # cors
     # nginx.ingress.kubernetes.io/enable-cors: "true"
-    # nginx.ingress.kubernetes.io/cors-allow-origin: "https://queue.com"
+    # nginx.ingress.kubernetes.io/cors-allow-origin: "https://queue-system.vip"
     # nginx.ingress.kubernetes.io/cors-allow-methods: "GET, POST, OPTIONS, PUT, DELETE, PATCH"
     # nginx.ingress.kubernetes.io/cors-allow-headers: "DNT,X-Mx-ReqToken,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Connection,Authorization"
     # nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
@@ -46,10 +46,10 @@ spec:
   ingressClassName: public
   tls:
   - hosts:
-    - queue.com
+    - queue-system.vip
     secretName: queue-system-secret
   rules:
-  - host: queue.com
+  - host: queue-system.vip
     http:
       paths:
       - path: /api

@@ -23,6 +23,6 @@ kubectl delete secret queue-system-secret \
   --namespace=queue-system || true
 
 kubectl create secret tls queue-system-secret \
-  --cert=$CURRENTDIR/dev_tls/dev.crt \
-  --key=$CURRENTDIR/dev_tls/dev.key \
+  --cert=$CURRENTDIR/../../cert/certbot/conf/live/queue-system.vip/fullchain.pem \
+  --key=$CURRENTDIR/../../cert/certbot/conf/live/queue-system.vip/privkey.pem \
   --namespace=queue-system

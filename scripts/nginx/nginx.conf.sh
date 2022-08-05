@@ -77,7 +77,7 @@ http {
         }
 
         location / {
-            return 301 https://queue-system.com\$request_uri;
+            return 301 https://queue-system.vip\$request_uri;
         }
     }
 

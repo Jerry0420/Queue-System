@@ -76,8 +76,8 @@ services:
         uid: '1000'
         gid: '1001'
         mode: 0444
-    # ports:
-    #   - "8000:8000"
+    ports:
+      - "8000:8000"
     volumes:
       - backend_log_dir:/app/backend/logs:rw
       - ../envs/.env:/etc/config/.env:ro
@@ -103,6 +103,7 @@ services:
         mode: 0444
     volumes:
         - ../scripts/nginx/nginx.conf.sh:/nginx.conf.sh
+        - ../cert/certbot/www:/var/www/certbot/
     networks:
       - queue_system
 
@@ -130,7 +131,7 @@ secrets:
   # nginx
   nginx-crt:
     # file: ../scripts/nginx/dev_tls/nginx.crt
-    file: ../scripts/nginx/dev_tls/nginx.crt
+    file: ../cert/certbot/conf/live/queue-system.vip/fullchain.pem
   nginx-key:
     # file: ../scripts/nginx/dev_tls/nginx.key
-    file: ../scripts/nginx/dev_tls/nginx.key
+    file: ../cert/certbot/conf/live/queue-system.vip/privkey.pem

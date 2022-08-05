@@ -1,0 +1,20 @@
+version: '3.7'
+services: 
+    certbot:
+        image: certbot/certbot:latest
+        command: certonly --webroot --webroot-path /var/www/certbot/ -d queue-system.vip --email jeerywa@gmail.com
+        # command: "renew"
+        container_name: certbot
+        volumes:
+            - ../cert/certbot/www/:/var/www/certbot/:rw
+            - ../cert/certbot/conf/:/etc/letsencrypt/:rw
+        networks:
+          - echo_valley
+
+    # https://mindsers.blog/post/https-using-nginx-certbot-docker/
+    # docker-compose run --rm  certbot certonly --webroot --webroot-path /var/www/certbot/ -d queue-system.vip --email jeerywa@gmail.com
+    # docker-compose run --rm certbot renew
+
+networks: 
+  queue_system:
+    external: true
