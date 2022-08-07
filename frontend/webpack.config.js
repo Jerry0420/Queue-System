@@ -9,7 +9,7 @@ module.exports = (env, argv) => {
   return {
       entry: ['@babel/polyfill', './src/index.tsx'],
       output: {
-        filename: 'bundle.js',
+        filename: '[contenthash]..bundle.js',
         path: path.resolve(__dirname, './dist/'),
       },
       resolve: { extensions: ['.js', '.jsx', '.ts', '.tsx'] },

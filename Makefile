@@ -91,6 +91,9 @@ docker_build_grpc:
 	rm -r grpc_temp
 	docker save queue-system-grpc:v$(ver) > queue-system-grpc.tar
 
+docker_clean_all:
+	docker system prune -a
+
 # ==============================================================================
 
 vm_create:
