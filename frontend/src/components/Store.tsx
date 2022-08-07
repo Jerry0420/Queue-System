@@ -76,6 +76,8 @@ const StoreInfo = () => {
       },
       () => {
          // TODO: show error message
+         // force signout
+         clearCookieAndLocalstorage()
          navigate("/")
       }
     )
