@@ -63,7 +63,7 @@ Every account will persist for 24 hrs. After 24 hrs, Queue System will suspend t
 
 # Architecture
 ![](https://raw.githubusercontent.com/Jerry0420/queue-system/main/images/architecture.png)
-Queue System setups a K8s cluster inside an AWS EC2 instance with MicroK8s and uses `Nginx Ingress Controller` and `MetalLB` (Load-Balancer) to expose Queue System service to the CDN.
+Queue System setups a Kubernetes cluster inside an AWS EC2 instance with MicroK8s and uses `Nginx Ingress Controller` and `MetalLB` (Load-Balancer) to expose Queue System service to the Content Delivery Network (CDN).
 
 *p.s. Considering the cost, I used MicroK8s to create the k8s cluster and MetalLB as load-balancer instead of using AWS EKS and AWS ELB.*
 
