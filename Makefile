@@ -48,7 +48,8 @@ add_crontab:
 # ==========================================================
 
 renew_certbot:
-	docker-compose -f ./compose/docker-compose.cert.yml certbot renew
+	docker-compose -f ./compose/docker-compose.cert.yml run --rm certbot renew
+	docker restart nginx
 
 # ==========================================================
 
