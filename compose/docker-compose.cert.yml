@@ -10,8 +10,8 @@ services:
           - queue_system
 
     # https://mindsers.blog/post/https-using-nginx-certbot-docker/
-    # docker-compose run --rm  certbot certonly --webroot --webroot-path /var/www/certbot/ -d queue-system.vip --email jeerywa@gmail.com
-    # docker-compose run --rm certbot renew
+    # docker-compose -f ./compose/docker-compose.cert.yml run --rm  certbot certonly --webroot --webroot-path /var/www/certbot/ -d queue-system.vip --email jeerywa@gmail.com
+    # docker-compose -f ./compose/docker-compose.cert.yml run --rm certbot renew
 
 networks: 
   queue_system:
